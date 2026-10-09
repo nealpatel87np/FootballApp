@@ -7,11 +7,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const dataDir = path.join(__dirname, 'data');
 const dbPath = path.join(dataDir, 'football.db');
+const importFilePath = path.join(dataDir, 'old-data.json');
 
 fs.mkdirSync(dataDir, { recursive: true });
-
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
 
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
@@ -32,8 +30,54 @@ const db = new sqlite3.Database(dbPath, (err) => {
       console.error('Failed to create players table:', createErr.message);
       process.exit(1);
     }
+
+    importOldData();
   });
 });
+
+function importOldData() {
+  if (!fs.existsSync(importFilePath)) {
+    console.log('No old-data.json file found. Skipping import.');
+    return;
+  }
+
+  try {
+    const raw = fs.readFileSync(importFilePath, 'utf8');
+    const parsed = JSON.parse(raw);
+    const rows = Array.isArray(parsed)
+      ? parsed
+      : parsed.players || parsed.data || [];
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      console.log('old-data.json is empty or not an array.');
+      return;
+    }
+
+    rows.forEach((player, index) => {
+      const name = (player.name || player.player || player.playerName || `Player ${index + 1}`).trim();
+      const available = player.available || player.status || player.availability || 'both';
+
+      if (!name) return;
+
+      db.run(
+        'INSERT OR IGNORE INTO players (name, available) VALUES (?, ?)',
+        [name, available],
+        (err) => {
+          if (err) {
+            console.error('Error importing player:', err.message);
+          }
+        }
+      );
+    });
+
+    console.log(`Imported ${rows.length} player records from old-data.json`);
+  } catch (error) {
+    console.error('Failed to import old data:', error.message);
+  }
+}
+
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/api/players', (req, res) => {
   db.all('SELECT * FROM players ORDER BY created_at DESC', [], (err, rows) => {
@@ -96,7 +140,7 @@ app.delete('/api/players/:id', (req, res) => {
   });
 });
 
-app.get('*', (req, res) => {
+app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
