@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Football App</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Football App</h1>
+      <p class="subtitle">Basic database-connected player list</p>
+
+      <section class="card">
+        <h2>Add player</h2>
+        <form id="player-form">
+          <label for="player-name">Player name</label>
+          <input id="player-name" name="name" type="text" placeholder="e.g. Alex" required />
+
+          <label for="player-available">Available days</label>
+          <select id="player-available" name="available">
+            <option value="both">Both days</option>
+            <option value="monday">Monday</option>
+            <option value="thursday">Thursday</option>
+          </select>
+
+          <button type="submit">Add player</button>
+        </form>
+        <p id="message" class="message"></p>
+      </section>
+
+      <section class="card">
+        <h2>Players</h2>
+        <ul id="player-list" class="player-list"></ul>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
