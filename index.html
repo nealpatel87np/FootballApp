@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Football organisation</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -109,6 +110,7 @@
 <body>
 <div class="app">
   <h2><i class="ti ti-ball-football" style="margin-right:8px;font-size:20px"></i>Football organisation</h2>
+  <div id="sync-status" style="font-size:11px;color:var(--text-muted);margin:-8px 0 14px 2px"></div>
 
   <div class="nav">
     <button class="nb active" onclick="goTab('setup')">Setup</button>
@@ -282,12 +284,121 @@
 </div>
 
 <script>
+/* ---- DATABASE (Supabase) SETUP ----
+   1. Create a free project at https://supabase.com
+   2. Open the SQL editor there and run schema.sql, then (optionally, once) seed.sql
+   3. In Settings -> API, copy your Project URL and the "anon public" key below
+   These two values are meant to be public/client-side - access is controlled by
+   the Row Level Security policies in schema.sql, not by keeping this key secret.
+*/
+const SUPABASE_URL = 'https://myzzeeqltyjxsjydzhix.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_ksy5ky5Q2e4fJM40_wf98w_Hf28qXM6';
+
+const sb = (typeof supabase !== 'undefined' && !SUPABASE_URL.includes('YOUR-PROJECT'))
+  ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
 let S = { players: [], games: [], reserveNext: [] };
-try {
-  const d = localStorage.getItem('fbv3');
-  if (d) { S = JSON.parse(d); if (!Array.isArray(S.reserveNext)) S.reserveNext = []; }
-} catch(e) {}
-function save() { try { localStorage.setItem('fbv3', JSON.stringify(S)); } catch(e) {} }
+
+function setSyncStatus(text, isError) {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  el.textContent = text;
+  el.style.color = isError ? 'var(--text-danger)' : 'var(--text-muted)';
+}
+
+function loadLocal() {
+  try {
+    const d = localStorage.getItem('fbv3');
+    if (d) { S = JSON.parse(d); if (!Array.isArray(S.reserveNext)) S.reserveNext = []; }
+  } catch (e) {}
+}
+
+function dbToPlayer(p) {
+  return { id: p.id, name: p.name, avail: p.avail, pref: p.pref, guarMon: p.guar_mon, guarThu: p.guar_thu, played: p.played, reserved: p.reserved, lastPlayed: p.last_played };
+}
+function dbToGame(g) {
+  return { id: g.id, date: g.date, day: g.day, iso: g.iso, manual: g.manual, playingIds: g.playing_ids || [], reserveIds: g.reserve_ids || [] };
+}
+
+function rerenderAll() {
+  renderPlayers(); exportSummary();
+  if (document.getElementById('page-history').classList.contains('active')) renderHistory();
+}
+
+async function loadState() {
+  loadLocal(); // show whatever's on this device immediately
+  rerenderAll();
+
+  if (!sb) { setSyncStatus('No database connected yet - add your Supabase details in the code.', true); return; }
+
+  setSyncStatus('Loading from database…');
+  try {
+    const [{ data: players, error: pErr }, { data: games, error: gErr }, { data: state, error: sErr }] = await Promise.all([
+      sb.from('players').select('*'),
+      sb.from('games').select('*').order('iso', { ascending: true, nullsFirst: true }).order('id', { ascending: true }),
+      sb.from('app_state').select('*').eq('id', 1).maybeSingle()
+    ]);
+    if (pErr) throw pErr; if (gErr) throw gErr; if (sErr) throw sErr;
+
+    S = {
+      players: (players || []).map(dbToPlayer),
+      games: (games || []).map(dbToGame),
+      reserveNext: (state && state.reserve_next) || []
+    };
+    try { localStorage.setItem('fbv3', JSON.stringify(S)); } catch (e) {}
+    setSyncStatus('Up to date.');
+  } catch (e) {
+    console.error('Could not load from Supabase, showing the last saved copy on this device', e);
+    setSyncStatus('Could not reach the database - showing the last saved copy on this device.', true);
+  }
+  rerenderAll();
+}
+
+let syncChain = Promise.resolve();
+function save() {
+  try { localStorage.setItem('fbv3', JSON.stringify(S)); } catch (e) {}
+  if (!sb) return;
+  // Chain each sync after the previous one so saves from quick successive
+  // edits land in order instead of racing each other.
+  syncChain = syncChain.then(syncToSupabase);
+}
+
+async function syncToSupabase() {
+  setSyncStatus('Saving…');
+  try {
+    const playerIds = S.players.map(p => p.id);
+    const delP = await sb.from('players').delete().not('id', 'in', `(${playerIds.length ? playerIds.join(',') : '-1'})`);
+    if (delP.error) throw delP.error;
+    if (S.players.length) {
+      const { error } = await sb.from('players').upsert(S.players.map(p => ({
+        id: p.id, name: p.name, avail: p.avail, pref: p.pref,
+        guar_mon: !!p.guarMon, guar_thu: !!p.guarThu,
+        played: p.played || 0, reserved: p.reserved || 0, last_played: p.lastPlayed || null
+      })));
+      if (error) throw error;
+    }
+
+    const gameIds = S.games.map(g => g.id);
+    const delG = await sb.from('games').delete().not('id', 'in', `(${gameIds.length ? gameIds.join(',') : '-1'})`);
+    if (delG.error) throw delG.error;
+    if (S.games.length) {
+      const { error } = await sb.from('games').upsert(S.games.map(g => ({
+        id: g.id, date: g.date, day: g.day, iso: g.iso || null, manual: !!g.manual,
+        playing_ids: g.playingIds, reserve_ids: g.reserveIds
+      })));
+      if (error) throw error;
+    }
+
+    const { error: stateErr } = await sb.from('app_state').upsert({ id: 1, reserve_next: S.reserveNext });
+    if (stateErr) throw stateErr;
+
+    setSyncStatus('Saved to database.');
+  } catch (e) {
+    console.error('Supabase sync failed', e);
+    setSyncStatus('Save failed - check your connection. Your data is still safe on this device.', true);
+  }
+}
 
 let currentDay = null, builtPlaying = [], builtReserves = [], confirmedGameIdx = null;
 
@@ -477,12 +588,16 @@ function applyImport(text) {
   let d;
   try { d = JSON.parse(text); } catch (e) { setMsg('imp-msg', "That isn't valid data.", false); return; }
   if (!d || !Array.isArray(d.players) || !Array.isArray(d.games)) { setMsg('imp-msg', 'Data format not recognised.', false); return; }
-  if (!confirm(`Replace data on this device with ${d.players.length} players and ${d.games.length} games?\n\nYour current data will be backed up first.`)) return;
+  if (!confirm(`Replace data${sb ? ' in the shared database' : ' on this device'} with ${d.players.length} players and ${d.games.length} games?\n\nYour current data will be backed up first.`)) return;
   try { localStorage.setItem('fbv3_backup', getRawData()); } catch (e) {}
-  S = { players: d.players, games: d.games, reserveNext: Array.isArray(d.reserveNext) ? d.reserveNext : [] };
+  S = {
+    players: d.players,
+    games: d.games.map(g => g.id ? g : { ...g, id: Date.now() + Math.floor(Math.random() * 1000) }),
+    reserveNext: Array.isArray(d.reserveNext) ? d.reserveNext : []
+  };
   save(); renderPlayers(); exportSummary();
   document.getElementById('imp').value = '';
-  setMsg('imp-msg', `Imported ${S.players.length} players and ${S.games.length} games.`, true);
+  setMsg('imp-msg', `Imported ${S.players.length} players and ${S.games.length} games${sb ? ' - pushing to the shared database…' : ''}.`, true);
 }
 
 /* ---- GAME FLOW ---- */
@@ -555,7 +670,7 @@ function confirmGame() {
   const day = currentDay;
   const date = new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
   const playingIds = builtPlaying.map(p => p.id), reserveIds = builtReserves.map(p => p.id);
-  S.games.push({ date, day, playingIds: [...playingIds], reserveIds: [...reserveIds] });
+  S.games.push({ id: Date.now(), date, day, iso: isoToday(), playingIds: [...playingIds], reserveIds: [...reserveIds] });
   confirmedGameIdx = S.games.length - 1;
   S.players.forEach(p => { if (playingIds.includes(p.id)) { p.played++; p.lastPlayed = date; } if (reserveIds.includes(p.id)) p.reserved++; });
   S.reserveNext = reserveIds;
@@ -715,7 +830,7 @@ function saveManualGame() {
   const dt = isoToDate(iso), date = fmtGameDate(dt), t = dt.getTime();
   if (S.games.some(g => gameTime(g) === t) && !confirm(`There is already a game on ${date}. Add another one?`)) return;
 
-  const game = { date, day, iso, manual: true, playingIds, reserveIds };
+  const game = { id: Date.now(), date, day, iso, manual: true, playingIds, reserveIds };
   // Insert in date order (after any games on the same date)
   let at = S.games.length;
   for (let i = 0; i < S.games.length; i++) { const gt = gameTime(S.games[i]); if (!isNaN(gt) && gt > t) { at = i; break; } }
@@ -825,8 +940,7 @@ function toggleLog(gIdx) {
   chev.style.transform = isOpen ? '' : 'rotate(180deg)';
 }
 
-renderPlayers();
-exportSummary();
+loadState();
 </script>
 </body>
 </html>
