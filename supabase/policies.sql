@@ -16,7 +16,7 @@ create table if not exists public.organisers (
 alter table public.organisers enable row level security;
 
 insert into public.organisers (email) values
-  ('organiser@example.com')
+  ('neal.patel87.np@gmail.com')
 on conflict do nothing;
 
 -- Checks the signed-in user's email against the list. Runs with the owner's
