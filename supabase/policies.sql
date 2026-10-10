@@ -1,40 +1,12 @@
 -- Access rules for the football organisation page.
--- Run once in the Supabase SQL editor (and again whenever you change it).
+-- Run in the Supabase SQL editor.
 --
--- Result: anyone can view the data; only signed-in organisers listed in
--- public.organisers can add, change or delete it.
---
--- Before running: replace organiser@example.com below with the organisers'
--- real sign-in emails. Each organiser also needs a user account under
--- Authentication > Users in Supabase (use "Invite user").
+-- Result: anyone who can open the page can view, add, change and delete the
+-- data. There is no sign-in. Run this if saving from the page stops working
+-- because of stricter rules (for example an earlier version of this file
+-- that only allowed signed-in organisers).
 
--- 1. Who counts as an organiser
-create table if not exists public.organisers (
-  email text primary key
-);
--- No policies on this table: it can't be read or changed through the public API.
-alter table public.organisers enable row level security;
-
-insert into public.organisers (email) values
-  ('neal.patel87.np@gmail.com')
-on conflict do nothing;
-
--- Checks the signed-in user's email against the list. Runs with the owner's
--- rights so it can read public.organisers, which visitors can't.
-create or replace function public.is_organiser()
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select exists (
-    select 1 from public.organisers
-    where lower(email) = lower(auth.jwt() ->> 'email')
-  );
-$$;
-
--- 2. Remove whatever policies these tables had before
+-- 1. Remove whatever policies these tables had before
 do $$
 declare r record;
 begin
@@ -46,21 +18,16 @@ begin
   end loop;
 end $$;
 
--- 3. Anyone can read; organisers can write
+-- 2. The organiser list and its check are no longer used
+drop function if exists public.is_organiser();
+drop table if exists public.organisers;
+
+-- 3. Anyone can read and write
 alter table public.players enable row level security;
-create policy "Anyone can read players" on public.players for select using (true);
-create policy "Organisers can add players" on public.players for insert to authenticated with check (public.is_organiser());
-create policy "Organisers can change players" on public.players for update to authenticated using (public.is_organiser()) with check (public.is_organiser());
-create policy "Organisers can delete players" on public.players for delete to authenticated using (public.is_organiser());
+create policy "Anyone can use players" on public.players for all using (true) with check (true);
 
 alter table public.games enable row level security;
-create policy "Anyone can read games" on public.games for select using (true);
-create policy "Organisers can add games" on public.games for insert to authenticated with check (public.is_organiser());
-create policy "Organisers can change games" on public.games for update to authenticated using (public.is_organiser()) with check (public.is_organiser());
-create policy "Organisers can delete games" on public.games for delete to authenticated using (public.is_organiser());
+create policy "Anyone can use games" on public.games for all using (true) with check (true);
 
 alter table public.app_state enable row level security;
-create policy "Anyone can read app state" on public.app_state for select using (true);
-create policy "Organisers can add app state" on public.app_state for insert to authenticated with check (public.is_organiser());
-create policy "Organisers can change app state" on public.app_state for update to authenticated using (public.is_organiser()) with check (public.is_organiser());
-create policy "Organisers can delete app state" on public.app_state for delete to authenticated using (public.is_organiser());
+create policy "Anyone can use app state" on public.app_state for all using (true) with check (true);
