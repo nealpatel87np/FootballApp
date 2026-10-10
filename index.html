@@ -391,7 +391,7 @@
     </div>
     <div class="card">
       <h3>Games</h3>
-      <p class="hint">Tap a game to change the organiser and tick who has paid.</p>
+      <p class="hint">Tap a game to change the organiser and tick who has paid. <span id="money-owed" style="color:var(--text-danger)"></span></p>
       <div id="money-games"></div>
     </div>
     <div class="card">
@@ -1355,19 +1355,22 @@ function renderMoneyNotice() {
 function renderMoney() {
   renderMoneyNotice();
   const h = moneyHoldings(), tracked = trackedGames();
-  let kitty = 0, admin = 0, spent = 0, owed = 0, owedPeople = 0, owedGames = 0;
-  ORGANISERS.forEach(o => { kitty += h[o].kitty; admin += h[o].admin; spent += h[o].spent; });
+  let kitty = 0, owed = 0, owedPeople = 0, owedGames = 0;
+  ORGANISERS.forEach(o => { kitty += h[o].kitty; });
   tracked.forEach(({ g, m }) => { const s = gameSplit(g, m); owed += s.owed; owedPeople += s.unpaid; if (s.unpaid) owedGames++; });
   const st = S.money.settings;
 
+  // Only real money is shown here: the kitty and who holds it. Admin is taken off each
+  // game's surplus but not displayed; unpaid money is shown with the games instead.
   document.getElementById('money-tiles').innerHTML =
-    `<div class="stat kit"><div class="l">In the kitty</div><div class="n">${gbp(kitty)}</div><div class="s">Held between Neal, Kev and Gav. ${gbp(spent)} spent so far.</div></div>` +
-    `<div class="stat"><div class="l">Set aside for admin</div><div class="n">${gbp(admin)}</div><div class="s">${st.adminPct}% of each game's surplus</div></div>` +
-    `<div class="stat owed"><div class="l">Still owed</div><div class="n">${gbp(owed)}</div><div class="s">${owedPeople ? `${owedPeople} payment${owedPeople === 1 ? '' : 's'} across ${owedGames} game${owedGames === 1 ? '' : 's'}. Joins the kitty when paid.` : 'Everyone has paid'}</div></div>`;
+    `<div class="stat kit" style="grid-column:1 / -1"><div class="l">In the kitty</div><div class="n">${gbp(kitty)}</div><div class="s">Held between Neal, Kev and Gav</div></div>`;
+  document.getElementById('money-owed').textContent = owedPeople
+    ? `${gbp(owed)} still to collect: ${owedPeople} payment${owedPeople === 1 ? '' : 's'} across ${owedGames} game${owedGames === 1 ? '' : 's'}.`
+    : 'Everyone has paid.';
   document.getElementById('money-holders').innerHTML = ORGANISERS.map(o => {
     const x = h[o], short = x.kitty < 0;
     return `<div class="holder${short ? ' short' : ''}"><div class="top">${whoBadge(o)}<span>${x.games} game${x.games === 1 ? '' : 's'}</span></div>` +
-      `<div class="k">${gbp(x.kitty)}</div><div class="s">${short ? `Has paid out ${gbp(-x.kitty)} more than they hold. ` : ''}Plus ${gbp(x.admin)} admin.${moneyShowOpening ? ` Started with ${gbp(S.money.opening[o])}.` : ''}</div></div>`;
+      `<div class="k">${gbp(x.kitty)}</div><div class="s">${short ? `Has paid out ${gbp(-x.kitty)} more than they hold. ` : ''}${moneyShowOpening ? `Started with ${gbp(S.money.opening[o])}.` : ''}</div></div>`;
   }).join('');
 
   // Settings inputs (don't overwrite a field while someone is typing in it)
@@ -1381,7 +1384,7 @@ function renderMoney() {
   const full = 12 * st.price - st.pitch, fullAdmin = full > 0 ? Math.round(full * st.adminPct / 100) : 0;
   const breakEven = st.price > 0 ? Math.ceil(st.pitch / st.price) : null;
   document.getElementById('m-rule-hint').textContent =
-    `A full game of 12 collects ${gbp(12 * st.price)}: ${gbp(full)} over the pitch, ${gbp(fullAdmin)} to admin and ${gbp(full - fullAdmin)} to the kitty.` +
+    `A full game of 12 collects ${gbp(12 * st.price)} and adds ${gbp(full - fullAdmin)} to the kitty.` +
     (breakEven ? ` The pitch is covered from ${breakEven} players.` : '') + ' Changes apply to games booked from now on.';
 
   // Games, newest first
@@ -1416,11 +1419,9 @@ function renderMoney() {
           <table class="split"><tbody>
             <tr><td class="q">Collected (${s.paid} × ${gbp(m.price)})</td><td>${gbp(s.collected)}</td></tr>
             <tr><td class="q">Pitch</td><td>−${gbp(m.pitch)}</td></tr>
-            <tr><td class="q">${s.over >= 0 ? 'Surplus' : 'Shortfall'}</td><td>${gbp(s.over)}</td></tr>
-            <tr><td class="q">Admin (${m.adminPct}% of surplus)</td><td>${s.admin ? '−' + gbp(s.admin) : gbp(0)}</td></tr>
-            <tr><td>${s.toKitty >= 0 ? 'To the kitty' : 'From the kitty'}</td><td>${gbp(s.toKitty)}</td></tr>
+            <tr><td>${s.toKitty >= 0 ? 'To the kitty (after admin)' : 'From the kitty'}</td><td>${gbp(s.toKitty)}</td></tr>
           </tbody></table>
-          <p class="hint" style="margin-top:8px">${esc(m.org)} collects the money and pays the pitch, so ${s.toKitty >= 0 ? `the ${gbp(s.toKitty)} for the kitty and ${gbp(s.admin)} admin stay with ${esc(m.org)}` : `${esc(m.org)} covers the ${gbp(-s.toKitty)} shortfall from the kitty money they hold`}.</p>
+          <p class="hint" style="margin-top:8px">${esc(m.org)} collects the money and pays the pitch, so ${s.toKitty >= 0 ? `the ${gbp(s.toKitty)} for the kitty stays with ${esc(m.org)}` : `${esc(m.org)} covers the ${gbp(-s.toKitty)} shortfall from the kitty money they hold`}.</p>
         </div></div>`;
     }
     return `<div class="mgame"><button class="mgame-row" onclick="moneyToggleGame(${g.id})" aria-expanded="${open}">${head}<span class="m">${g.playingIds.length} played · ${s.paid} paid · ${gbp(s.collected)} collected</span></span>` +
@@ -1429,7 +1430,7 @@ function renderMoney() {
 
   // Ledger: starting balances, tracked games and spends, with a running balance
   const rows = ORGANISERS.map(o => ({ iso: '', what: 'Starting balance', sub: 'Held before the app', org: o, amt: S.money.opening[o], order: 0 }));
-  tracked.forEach(({ g, m }) => { const s = gameSplit(g, m); rows.push({ iso: g.iso || '', date: g.date, what: `${dayLabel(g.day)} game`, sub: `${s.paid} paid, ${gbp(s.admin)} to admin`, org: m.org, amt: s.toKitty, order: 1 }); });
+  tracked.forEach(({ g, m }) => { const s = gameSplit(g, m); rows.push({ iso: g.iso || '', date: g.date, what: `${dayLabel(g.day)} game`, sub: `${s.paid} paid`, org: m.org, amt: s.toKitty, order: 1 }); });
   S.money.spends.forEach(x => rows.push({ iso: x.iso, what: x.what, sub: x.cat, org: x.from, amt: -x.amount, order: 2, spendId: x.id }));
   rows.sort((a, b) => a.iso.localeCompare(b.iso) || a.order - b.order);
   let bal = 0; rows.forEach(r => { bal += r.amt; r.bal = bal; });
