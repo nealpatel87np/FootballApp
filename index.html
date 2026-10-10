@@ -855,12 +855,12 @@ function renderPlayers() {
   if (!S.players.length) { el.innerHTML = '<p style="color:var(--text-muted);font-size:13px">No players added yet.</p>'; return; }
   el.innerHTML = S.players.map(p => {
     const db = p.avail === 'mon' ? `<span class="badge b-mon">Mon only</span>` : p.avail === 'thu' ? `<span class="badge b-thu">Thu only</span>` : `<span class="badge b-both">Both</span>`;
-    const pb = p.pref !== 'none' ? `<span class="badge b-pref">pref ${p.pref}</span>` : '';
-    const gm = p.guarMon ? `<span class="badge b-guar">guar Mon</span>` : '';
-    const gt = p.guarThu ? `<span class="badge b-guar">guar Thu</span>` : '';
-    const rn = S.reserveNext.includes(p.id) ? `<span class="badge b-res">→next</span>` : '';
+    const pb = p.pref !== 'none' ? `<span class="badge b-pref">Pref ${p.pref === 'mon' ? 'Mon' : 'Thu'}</span>` : '';
+    const gm = p.guarMon ? `<span class="badge b-guar">Guar Mon</span>` : '';
+    const gt = p.guarThu ? `<span class="badge b-guar">Guar Thu</span>` : '';
+    const rn = S.reserveNext.includes(p.id) ? `<span class="badge b-res">→Next</span>` : '';
     return `<div class="row" id="prow-${p.id}">
-      <span class="name">${esc(p.name)} <span class="sub">${p.played}gp · ${p.reserved}res</span></span>
+      <span class="name">${esc(p.name)} <span class="sub">${p.played} GP · ${p.reserved} Resv</span></span>
       ${db}${pb}${gm}${gt}${rn}
       <button class="btn xs" onclick="editPlayer(${p.id})" title="Edit player"><i class="ti ti-edit"></i></button>
     </div>`;
@@ -980,8 +980,8 @@ function startGame(day) {
   else n.style.display = 'none';
   const gs = eligible.filter(p => guarIds.includes(p.id)), os = eligible.filter(p => !guarIds.includes(p.id));
   let html = '';
-  if (gs.length) { html += `<div class="sh">Guaranteed spot</div>`; html += gs.map(p => `<div class="chkrow"><input type="checkbox" id="av-${p.id}" value="${p.id}" checked><label for="av-${p.id}">${esc(p.name)}${rNext.includes(p.id) ? ' <span class="badge b-guar" style="font-size:10px">→next</span>' : ''}</label></div>`).join(''); }
-  if (os.length) { if (gs.length) html += `<div class="sh">Other eligible players</div>`; html += os.map(p => `<div class="chkrow"><input type="checkbox" id="av-${p.id}" value="${p.id}" ${rNext.includes(p.id) ? 'checked' : ''}><label for="av-${p.id}">${esc(p.name)}${rNext.includes(p.id) ? ' <span class="badge b-guar" style="font-size:10px">→next</span>' : ''}</label></div>`).join(''); }
+  if (gs.length) { html += `<div class="sh">Guaranteed spot</div>`; html += gs.map(p => `<div class="chkrow"><input type="checkbox" id="av-${p.id}" value="${p.id}" checked><label for="av-${p.id}">${esc(p.name)}${rNext.includes(p.id) ? ' <span class="badge b-guar" style="font-size:10px">→Next</span>' : ''}</label></div>`).join(''); }
+  if (os.length) { if (gs.length) html += `<div class="sh">Other eligible players</div>`; html += os.map(p => `<div class="chkrow"><input type="checkbox" id="av-${p.id}" value="${p.id}" ${rNext.includes(p.id) ? 'checked' : ''}><label for="av-${p.id}">${esc(p.name)}${rNext.includes(p.id) ? ' <span class="badge b-guar" style="font-size:10px">→Next</span>' : ''}</label></div>`).join(''); }
   if (!eligible.length) html = '<p style="color:var(--text-muted);font-size:13px">No eligible players for this day.</p>';
   document.getElementById('avail-list').innerHTML = html;
   document.getElementById('step-day').style.display = 'none';
@@ -1019,15 +1019,15 @@ function renderSquad() {
   document.getElementById('play-count').textContent = builtPlaying.length;
   document.getElementById('squad-playing').innerHTML = builtPlaying.map((p, i) => {
     const tags = [];
-    if (day === 'mon' ? p.guarMon : p.guarThu) tags.push(`<span class="badge b-guar">guar</span>`);
-    if (rNext.includes(p.id)) tags.push(`<span class="badge b-guar">→next</span>`);
+    if (day === 'mon' ? p.guarMon : p.guarThu) tags.push(`<span class="badge b-guar">Guar</span>`);
+    if (rNext.includes(p.id)) tags.push(`<span class="badge b-guar">→Next</span>`);
     if (p.avail !== 'both') tags.push(`<span class="badge ${p.avail === 'mon' ? 'b-mon' : 'b-thu'}">${p.avail === 'mon' ? 'Mon' : 'Thu'} only</span>`);
-    return `<div class="row"><span class="num">${i + 1}</span><span class="name">${esc(p.name)}</span>${tags.join('')}<button class="mv tor" onclick="moveToReserve(${p.id})"><i class="ti ti-arrow-down"></i> reserve</button></div>`;
+    return `<div class="row"><span class="num">${i + 1}</span><span class="name">${esc(p.name)}</span>${tags.join('')}<button class="mv tor" onclick="moveToReserve(${p.id})"><i class="ti ti-arrow-down"></i> Reserve</button></div>`;
   }).join('');
   const rb = document.getElementById('res-box');
   if (!builtReserves.length) { rb.style.display = 'none'; return; }
   rb.style.display = 'block';
-  document.getElementById('squad-reserve').innerHTML = builtReserves.map(p => `<div class="row"><span class="name">${esc(p.name)} <span class="sub">${p.reserved} times reserved</span></span><button class="mv top" onclick="moveToPlaying(${p.id})"><i class="ti ti-arrow-up"></i> add to squad</button></div>`).join('');
+  document.getElementById('squad-reserve').innerHTML = builtReserves.map(p => `<div class="row"><span class="name">${esc(p.name)} <span class="sub">${p.reserved} times reserved</span></span><button class="mv top" onclick="moveToPlaying(${p.id})"><i class="ti ti-arrow-up"></i> Add to squad</button></div>`).join('');
 }
 
 function moveToReserve(id) { const idx = builtPlaying.findIndex(p => p.id === id); if (idx === -1) return; const [p] = builtPlaying.splice(idx, 1); builtReserves.unshift(p); renderSquad(); }
@@ -1059,14 +1059,14 @@ function renderPostGame() {
   document.getElementById('post-play-count').textContent = g.playingIds.length;
   document.getElementById('post-playing').innerHTML = g.playingIds.map((id, i) => {
     const p = S.players.find(x => x.id === id); const name = p ? p.name : '?';
-    return `<div class="row"><span class="num">${i + 1}</span><span class="name">${esc(name)}</span><button class="mv tor" onclick="postMoveToReserve(${id},${confirmedGameIdx})"><i class="ti ti-arrow-down"></i> reserve</button><button class="mv del" onclick="postRemove(${id},${confirmedGameIdx})"><i class="ti ti-trash"></i> remove</button></div>`;
+    return `<div class="row"><span class="num">${i + 1}</span><span class="name">${esc(name)}</span><button class="mv tor" onclick="postMoveToReserve(${id},${confirmedGameIdx})"><i class="ti ti-arrow-down"></i> Reserve</button><button class="mv del" onclick="postRemove(${id},${confirmedGameIdx})"><i class="ti ti-trash"></i> Remove</button></div>`;
   }).join('');
   const prw = document.getElementById('post-reserve-wrap');
   if (!g.reserveIds.length) { prw.style.display = 'none'; return; }
   prw.style.display = 'block';
   document.getElementById('post-reserve').innerHTML = g.reserveIds.map(id => {
     const p = S.players.find(x => x.id === id); const name = p ? p.name : '?';
-    return `<div class="row"><span class="name">${esc(name)}</span><button class="mv top" onclick="postMoveToPlaying(${id},${confirmedGameIdx})"><i class="ti ti-arrow-up"></i> add to squad</button><button class="mv del" onclick="postRemove(${id},${confirmedGameIdx})"><i class="ti ti-trash"></i> remove</button></div>`;
+    return `<div class="row"><span class="name">${esc(name)}</span><button class="mv top" onclick="postMoveToPlaying(${id},${confirmedGameIdx})"><i class="ti ti-arrow-up"></i> Add to squad</button><button class="mv del" onclick="postRemove(${id},${confirmedGameIdx})"><i class="ti ti-trash"></i> Remove</button></div>`;
   }).join('');
 }
 
@@ -1248,8 +1248,8 @@ function renderHistory() {
   if (!S.players.length) { pd.innerHTML = '<p style="color:var(--text-muted);font-size:13px">No players yet.</p>'; }
   else {
     pd.innerHTML = [...S.players].sort((a, b) => b.played - a.played).map(p => {
-      const db = p.avail === 'mon' ? `<span class="badge b-mon">Mon</span>` : p.avail === 'thu' ? `<span class="badge b-thu">Thu</span>` : `<span class="badge b-both">both</span>`;
-      const rn = S.reserveNext.includes(p.id) ? `<span class="badge b-res">→next</span>` : '';
+      const db = p.avail === 'mon' ? `<span class="badge b-mon">Mon</span>` : p.avail === 'thu' ? `<span class="badge b-thu">Thu</span>` : `<span class="badge b-both">Both</span>`;
+      const rn = S.reserveNext.includes(p.id) ? `<span class="badge b-res">→Next</span>` : '';
       return `<div class="row"><span class="name">${esc(p.name)}</span>${db}${rn}<span style="font-size:12px;color:var(--text-secondary)">${p.played} played · ${p.reserved} reserved</span></div>`;
     }).join('');
   }
@@ -1278,10 +1278,10 @@ function renderLogEntry(gIdx) {
 
   const playingRows = g.playingIds.map((id, i) => {
     const p = S.players.find(x => x.id === id); const name = p ? p.name : '?';
-    return `<div class="row"><span class="num">${i + 1}</span><span class="name">${esc(name)}</span><button class="mv tor" onclick="postMoveToReserve(${id},${gIdx})"><i class="ti ti-arrow-down"></i> reserve</button><button class="mv del" onclick="postRemove(${id},${gIdx})"><i class="ti ti-trash"></i> remove</button></div>`;
+    return `<div class="row"><span class="num">${i + 1}</span><span class="name">${esc(name)}</span><button class="mv tor" onclick="postMoveToReserve(${id},${gIdx})"><i class="ti ti-arrow-down"></i> Reserve</button><button class="mv del" onclick="postRemove(${id},${gIdx})"><i class="ti ti-trash"></i> Remove</button></div>`;
   }).join('') || '<p style="font-size:13px;color:var(--text-muted)">No players.</p>';
 
-  const reserveRows = g.reserveIds.length ? `<div style="margin-top:10px"><div style="font-size:12px;font-weight:500;color:var(--text-danger);margin-bottom:6px">Reserves</div>${g.reserveIds.map(id => { const p = S.players.find(x => x.id === id); const name = p ? p.name : '?'; return `<div class="row"><span class="name">${esc(name)}</span><button class="mv top" onclick="postMoveToPlaying(${id},${gIdx})"><i class="ti ti-arrow-up"></i> add to squad</button><button class="mv del" onclick="postRemove(${id},${gIdx})"><i class="ti ti-trash"></i> remove</button></div>`; }).join('')}</div>` : '';
+  const reserveRows = g.reserveIds.length ? `<div style="margin-top:10px"><div style="font-size:12px;font-weight:500;color:var(--text-danger);margin-bottom:6px">Reserves</div>${g.reserveIds.map(id => { const p = S.players.find(x => x.id === id); const name = p ? p.name : '?'; return `<div class="row"><span class="name">${esc(name)}</span><button class="mv top" onclick="postMoveToPlaying(${id},${gIdx})"><i class="ti ti-arrow-up"></i> Add to squad</button><button class="mv del" onclick="postRemove(${id},${gIdx})"><i class="ti ti-trash"></i> Remove</button></div>`; }).join('')}</div>` : '';
 
   const addRow = notInGame.length ? `<div class="log-add-row">
     <select id="log-add-sel-${gIdx}" style="margin-top:0">
@@ -1298,7 +1298,7 @@ function renderLogEntry(gIdx) {
   container.innerHTML = `
     <div class="log-header" onclick="toggleLog(${gIdx})">
       <div>
-        <div class="log-title">${esc(g.date)} — ${dayLabel(g.day)} ${g.manual ? '<span class="badge b-pref" style="font-size:10px;margin-left:4px">manual</span>' : ''}${isLatest ? '<span class="badge b-guar" style="font-size:10px;margin-left:4px">latest</span>' : ''}</div>
+        <div class="log-title">${esc(g.date)} — ${dayLabel(g.day)} ${g.manual ? '<span class="badge b-pref" style="font-size:10px;margin-left:4px">Manual</span>' : ''}${isLatest ? '<span class="badge b-guar" style="font-size:10px;margin-left:4px">Latest</span>' : ''}</div>
         <div class="log-meta">${g.playingIds.length} playing · ${g.reserveIds.length} reserve${g.reserveIds.length !== 1 ? 's' : ''}</div>
       </div>
       <i class="ti ti-chevron-down" id="log-chevron-${gIdx}" style="color:var(--text-muted);transition:transform .2s;${wasOpen ? 'transform:rotate(180deg)' : ''}"></i>
@@ -1389,14 +1389,14 @@ function renderMoney() {
   const kittyIfPaid = kitty + tracked.reduce((sum, { g, m }) =>
     sum + gameSplit(g, { ...m, paidIds: g.playingIds }).toKitty - gameSplit(g, m).toKitty, 0);
   document.getElementById('money-tiles').innerHTML =
-    `<div class="stat kit"><div class="l">In the kitty</div><div class="n">${gbp(kitty)}</div><div class="s">Held between Neal, Kev and Gav</div></div>` +
+    `<div class="stat kit"><div class="l">In the kitty</div><div class="n">${gbp(kitty)}</div></div>` +
     `<div class="stat owed"><div class="l">Still owed</div><div class="n">${gbp(owed)}</div><div class="s">${owedPeople
       ? `${owedPeople} payment${owedPeople === 1 ? '' : 's'} across ${owedGames} game${owedGames === 1 ? '' : 's'}. Once collected, the kitty will be ${gbp(kittyIfPaid)}.`
       : 'Everyone has paid.'}</div></div>`;
   document.getElementById('money-holders').innerHTML = ORGANISERS.map(o => {
     const x = h[o], short = x.kitty < 0;
     return `<div class="holder${short ? ' short' : ''}"><div class="top">${whoBadge(o)}<span>${x.games} game${x.games === 1 ? '' : 's'}</span></div>` +
-      `<div class="k">${gbp(x.kitty)}</div><div class="s">${x.owed ? `<span class="owe">${gbp(x.owed)} still to collect.</span> ` : ''}${short ? `Has paid out ${gbp(-x.kitty)} more than they hold. ` : ''}${moneyShowOpening ? `Started with ${gbp(S.money.opening[o])}.` : ''}</div></div>`;
+      `<div class="k">${gbp(x.kitty)}</div><div class="s">${x.owed ? `<span class="owe">${gbp(x.owed)} still to collect.</span> ` : ''}${short ? `Has paid out ${gbp(-x.kitty)} more than they hold. ` : ''}</div></div>`;
   }).join('');
 
   // Settings inputs (don't overwrite a field while someone is typing in it)
