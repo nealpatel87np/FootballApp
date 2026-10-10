@@ -32,6 +32,19 @@ This project is a very simple football app that stores player data in a local SQ
 - `public/styles.css` - styling
 - `data/football.db` - database file created automatically
 
+## Football organisation page
+`index.html` in the project root is the football organisation page. It is published with GitHub Pages and saves its data to Supabase.
+
+### WhatsApp message
+The page can write the weekly WhatsApp message for you.
+
+- After you build a squad on **Run game**, a **WhatsApp message** card appears under it. It also shows on the confirmation screen.
+- Set the date, time and venue, and tick **Pitch has been booked** if you've booked it. The message preview updates as you move players around.
+- The message lists the day, date, time, venue, player count and squad, followed by any reserves.
+- **Copy for WhatsApp** copies the message so you can paste it into the group. **Open WhatsApp** opens WhatsApp with the message filled in.
+- In the game log, each game has a **WhatsApp update** button that writes the same message for that game.
+- The time and venue are remembered separately for Monday, Thursday and ad hoc games, and the pitch-booked tick is remembered too. These settings are saved on your device only, not in the database.
+
 ## Notes
 This is a basic example for learning. For a real app, you would usually add:
 - team selection logic
