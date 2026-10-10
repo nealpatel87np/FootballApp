@@ -1031,14 +1031,23 @@ function renderSquad() {
 function moveToReserve(id) { const idx = builtPlaying.findIndex(p => p.id === id); if (idx === -1) return; const [p] = builtPlaying.splice(idx, 1); builtReserves.unshift(p); renderSquad(); }
 function moveToPlaying(id) { const idx = builtReserves.findIndex(p => p.id === id); if (idx === -1) return; const [p] = builtReserves.splice(idx, 1); builtPlaying.push(p); renderSquad(); }
 
+// The date of the next Monday or Thursday (today if the game is today)
+function nextGameIso(day) {
+  const target = day === 'mon' ? 1 : 4, d = new Date();
+  d.setDate(d.getDate() + ((target - d.getDay() + 7) % 7));
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
 function confirmGame() {
   const day = currentDay;
-  const date = new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  // Date the game for the day it's played, not the day the squad was picked
+  const iso = nextGameIso(day), date = fmtGameDate(isoToDate(iso));
   const playingIds = builtPlaying.map(p => p.id), reserveIds = builtReserves.map(p => p.id);
   const gameId = Date.now(), org = document.getElementById('org-select').value;
-  S.games.push({ id: gameId, date, day, iso: isoToday(), playingIds: [...playingIds], reserveIds: [...reserveIds] });
+  S.games.push({ id: gameId, date, day, iso, playingIds: [...playingIds], reserveIds: [...reserveIds] });
+  sortGames(S.games);
   S.money.games.push(newGameMoney(gameId, org));
-  confirmedGameIdx = S.games.length - 1;
+  confirmedGameIdx = S.games.findIndex(g => g.id === gameId);
   S.players.forEach(p => { if (playingIds.includes(p.id)) { p.played++; p.lastPlayed = date; } if (reserveIds.includes(p.id)) p.reserved++; });
   S.reserveNext = reserveIds;
   save();
@@ -1302,12 +1311,29 @@ function renderLogEntry(gIdx) {
       <i class="ti ti-chevron-down" id="log-chevron-${gIdx}" style="color:var(--text-muted);transition:transform .2s;${wasOpen ? 'transform:rotate(180deg)' : ''}"></i>
     </div>
     <div class="log-body${wasOpen ? ' open' : ''}" id="log-body-${gIdx}">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <label for="log-date-${gIdx}" style="margin:0">Game date</label>
+        <input type="date" id="log-date-${gIdx}" value="${esc(g.iso || '')}" style="width:auto;margin:0" onchange="logSetDate(${gIdx}, this.value)">
+      </div>
       <div style="font-size:12px;font-weight:500;color:var(--text-success);margin-bottom:6px">Playing</div>
       ${playingRows}
       ${reserveRows}
       ${addRow}
       <div style="margin-top:12px"><button class="btn sm dghost" onclick="deleteGame(${gIdx})"><i class="ti ti-trash"></i> Delete this game</button></div>
     </div>`;
+}
+
+// Correct a game's date; the game type follows the weekday (Monday, Thursday or ad hoc)
+function logSetDate(gIdx, iso) {
+  const g = S.games[gIdx]; if (!g || !iso) return;
+  const dow = isoToDate(iso).getDay();
+  g.iso = iso; g.date = fmtGameDate(isoToDate(iso)); g.day = dow === 1 ? 'mon' : dow === 4 ? 'thu' : 'adhoc';
+  const confirmedId = confirmedGameIdx !== null && S.games[confirmedGameIdx] ? S.games[confirmedGameIdx].id : null;
+  sortGames(S.games);
+  if (confirmedId !== null) confirmedGameIdx = S.games.findIndex(x => x.id === confirmedId);
+  save(); renderPlayers(); renderHistory();
+  const i = S.games.findIndex(x => x.id === g.id);
+  if (document.getElementById('log-body-' + i)) toggleLog(i);   // keep the edited game open if it's still in view
 }
 
 function toggleLog(gIdx) {
