@@ -399,6 +399,7 @@
       <h3>Games</h3>
       <p class="hint">Tap a game to change the organiser and tick who has paid.</p>
       <div id="money-games"></div>
+      <div id="money-games-more"></div>
     </div>
     <div class="card">
       <h3>Kitty ledger</h3>
@@ -409,6 +410,7 @@
           <tbody id="money-ledger"></tbody>
         </table>
       </div>
+      <div id="money-ledger-more"></div>
       <div class="spend-form">
         <div class="wide"><label for="sp-what">Spend from the kitty</label><input type="text" id="sp-what" placeholder="e.g. Curry after Thursday"></div>
         <div><label for="sp-cat">Type</label><select id="sp-cat"><option>Dinner</option><option>Drinks</option><option>Football</option><option>Other</option></select></div>
@@ -1235,6 +1237,10 @@ function deleteGame(gIdx) {
 }
 
 /* ---- HISTORY ---- */
+// How much of the long lists to show (resets on reload)
+const RECENT_GAMES = 5, LEDGER_ROWS = 15;
+let histShowAll = false, moneyShowAllGames = false, moneyShowFullLedger = false;
+
 function renderHistory() {
   const gs = S.games;
   document.getElementById('hist-stats').innerHTML = `<div class="stat"><div class="n">${gs.length}</div><div class="l">Games run</div></div><div class="stat"><div class="n">${S.players.length}</div><div class="l">Players</div></div>`;
@@ -1249,8 +1255,11 @@ function renderHistory() {
   }
   const ld = document.getElementById('hist-log');
   if (!gs.length) { ld.innerHTML = '<p style="color:var(--text-muted);font-size:13px">No games yet.</p>'; return; }
-  ld.innerHTML = [...gs].map((g, i) => `<div class="log-entry" id="log-entry-${i}"></div>`).reverse().join('');
-  [...gs].forEach((g, i) => renderLogEntry(i));
+  // Newest 5 games, unless someone asked to see older ones
+  const firstShown = histShowAll ? 0 : Math.max(0, gs.length - RECENT_GAMES);
+  ld.innerHTML = gs.map((g, i) => i >= firstShown ? `<div class="log-entry" id="log-entry-${i}"></div>` : '').reverse().join('') +
+    (gs.length > RECENT_GAMES ? `<button class="btn sm" style="margin-top:4px" onclick="histShowAll = !histShowAll; renderHistory()">${histShowAll ? 'Show only the latest 5' : `Show older games (${firstShown})`}</button>` : '');
+  gs.forEach((g, i) => { if (i >= firstShown) renderLogEntry(i); });
 }
 
 function renderLogEntry(gIdx) {
@@ -1411,7 +1420,14 @@ function renderMoney() {
   // Games, newest first
   const gamesEl = document.getElementById('money-games');
   if (!S.games.length) { gamesEl.innerHTML = '<p style="color:var(--text-muted);font-size:13px">No games yet.</p>'; }
-  else gamesEl.innerHTML = [...S.games].reverse().map(g => {
+  // Newest 5 games, plus any older game where money is still owed (and the one that's open)
+  const newestFirst = [...S.games].reverse();
+  const owesMoney = g => { const m = S.money.games.find(x => x.gameId === g.id); return m && gameSplit(g, m).unpaid > 0; };
+  const shownGames = moneyShowAllGames ? newestFirst : newestFirst.filter((g, i) => i < RECENT_GAMES || owesMoney(g) || g.id === moneyOpenGame);
+  const hiddenGames = newestFirst.length - shownGames.length;
+  document.getElementById('money-games-more').innerHTML = (hiddenGames || moneyShowAllGames) && newestFirst.length > RECENT_GAMES
+    ? `<button class="btn sm" style="margin-top:8px" onclick="moneyShowAllGames = !moneyShowAllGames; renderMoney()">${moneyShowAllGames ? 'Show only recent games and money owed' : `Show older games (${hiddenGames})`}</button>` : '';
+  if (S.games.length) gamesEl.innerHTML = shownGames.map(g => {
     const m = S.money.games.find(x => x.gameId === g.id);
     const head = `<span class="when"><span class="d">${esc(g.date)}</span> <span class="badge ${g.day === 'mon' ? 'b-mon' : g.day === 'thu' ? 'b-thu' : 'b-both'}">${dayLabel(g.day)}</span>`;
     if (!m) {
@@ -1455,7 +1471,11 @@ function renderMoney() {
   S.money.spends.forEach(x => rows.push({ iso: x.iso, what: x.what, sub: x.cat, org: x.from, amt: -x.amount, order: 2, spendId: x.id }));
   rows.sort((a, b) => a.iso.localeCompare(b.iso) || a.order - b.order);
   let bal = 0; rows.forEach(r => { bal += r.amt; r.bal = bal; });
-  document.getElementById('money-ledger').innerHTML = rows.reverse().map(r => {
+  rows.reverse();
+  const ledgerRows = moneyShowFullLedger ? rows : rows.slice(0, LEDGER_ROWS);
+  document.getElementById('money-ledger-more').innerHTML = rows.length > LEDGER_ROWS
+    ? `<button class="btn sm" style="margin-top:8px" onclick="moneyShowFullLedger = !moneyShowFullLedger; renderMoney()">${moneyShowFullLedger ? 'Show only the latest 15' : `Show full ledger (${rows.length - LEDGER_ROWS} more)`}</button>` : '';
+  document.getElementById('money-ledger').innerHTML = ledgerRows.map(r => {
     const when = r.date || (r.iso ? fmtGameDate(isoToDate(r.iso)) : '—');
     const del = r.spendId ? ` <button class="btn xs dghost" style="padding:0 4px" title="Delete this spend" onclick="moneyDeleteSpend(${r.spendId})"><i class="ti ti-x"></i></button>` : '';
     return `<tr><td style="white-space:nowrap">${esc(when)}</td><td>${esc(r.what)}${del}<small>${esc(r.sub)}</small></td><td>${whoBadge(r.org)}</td>` +
