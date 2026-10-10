@@ -219,6 +219,22 @@
         <div class="rh"><i class="ti ti-clock"></i> Reserves</div>
         <div id="squad-reserve"></div>
       </div>
+      <div class="card" id="wa-card">
+        <h3><i class="ti ti-brand-whatsapp" style="color:#25a244"></i> WhatsApp message</h3>
+        <div class="g2" style="gap:10px">
+          <div><label>Date</label><input type="date" id="wa-date" oninput="waRefresh()"></div>
+          <div><label>Time</label><input type="text" id="wa-time" oninput="waSaveSettings()"></div>
+        </div>
+        <label>Venue</label>
+        <input type="text" id="wa-venue" oninput="waSaveSettings()">
+        <label class="chklbl"><input type="checkbox" id="wa-booked" onchange="waSaveSettings()"> <span>Pitch has been booked</span></label>
+        <textarea id="wa-preview" rows="10" readonly style="width:100%;margin-top:12px;padding:10px;border:0.5px solid var(--border-strong);border-radius:var(--radius);background:var(--surface-1);color:var(--text-primary);font-size:13px;font-family:inherit;line-height:1.45"></textarea>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+          <button class="btn primary" onclick="waCopy()"><i class="ti ti-copy"></i> Copy for WhatsApp</button>
+          <button class="btn" onclick="waOpen()"><i class="ti ti-brand-whatsapp"></i> Open WhatsApp</button>
+        </div>
+        <div id="wa-msg" class="hint" style="margin:6px 0 0"></div>
+      </div>
       <p class="hint"><i class="ti ti-info-circle"></i> Adjust the squad before confirming.</p>
       <div style="display:flex;gap:10px">
         <button class="btn" onclick="backToAvail()"><i class="ti ti-arrow-left"></i> Back</button>
@@ -241,6 +257,7 @@
   </div>
 
   <!-- HISTORY -->
+  <div id="wa-park" style="display:none"></div>
   <div id="page-history" class="page">
     <div id="hist-stats" class="g2" style="margin-bottom:12px"></div>
     <div class="card"><h3>Player stats</h3><div id="hist-players"><p style="color:var(--text-muted);font-size:13px">No data yet.</p></div></div>
@@ -939,6 +956,168 @@ function toggleLog(gIdx) {
   body.classList.toggle('open', !isOpen);
   chev.style.transform = isOpen ? '' : 'rotate(180deg)';
 }
+
+
+/* ---- WHATSAPP MESSAGE ---- */
+const WA_KEY = 'fbv3_whatsapp';   // separate key: never touches the main fbv3 data
+let WA = { mon: { time: '6:30 PM', venue: 'Harrow Powerleague' }, thu: { time: '6:30 PM', venue: 'Harrow Powerleague' }, adhoc: { time: '6:30 PM', venue: 'Harrow Powerleague' }, booked: true };
+try { const w = JSON.parse(localStorage.getItem(WA_KEY) || 'null'); if (w && w.mon && w.thu) WA = Object.assign(WA, w); } catch (e) {}
+if (!WA.adhoc) WA.adhoc = Object.assign({}, WA.mon);
+let waDay = null, waCtx = null, waGameIdx = null;   // waGameIdx set = message for a game in the history log
+
+function waNextDate(day) {
+  const target = day === 'mon' ? 1 : 4, d = new Date();
+  d.setDate(d.getDate() + ((target - d.getDay() + 7) % 7));
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function waOrdinal(n) { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+function waPrettyDate(iso) {
+  if (!iso) return '';
+  const dt = isoToDate(iso);
+  return dt.toLocaleDateString('en-GB', { weekday: 'long' }) + ' ' + waOrdinal(dt.getDate()) + ' ' + dt.toLocaleDateString('en-GB', { month: 'long' });
+}
+function waTitleDay(day) {
+  const iso = document.getElementById('wa-date').value;
+  if (iso) return isoToDate(iso).toLocaleDateString('en-GB', { weekday: 'long' }).toUpperCase();
+  return day === 'mon' ? 'MONDAY' : day === 'thu' ? 'THURSDAY' : '';
+}
+function waNames() {
+  const nm = id => { const p = S.players.find(x => x.id === id); return p ? p.name : '?'; };
+  if (waGameIdx !== null && S.games[waGameIdx]) {
+    const g = S.games[waGameIdx];
+    return { playing: g.playingIds.map(nm), reserves: g.reserveIds.map(nm) };
+  }
+  const done = document.getElementById('step-done').style.display === 'block';
+  if (done && confirmedGameIdx !== null && S.games[confirmedGameIdx]) {
+    const g = S.games[confirmedGameIdx];
+    return { playing: g.playingIds.map(nm), reserves: g.reserveIds.map(nm) };
+  }
+  return { playing: builtPlaying.map(p => p.name), reserves: builtReserves.map(p => p.name) };
+}
+function waText() {
+  const day = waDay || currentDay || 'mon';
+  const { playing, reserves } = waNames();
+  const n = playing.length;
+  let count = `We have ${n}.`;
+  if (reserves.length) count += ` ${reserves.length} reserve${reserves.length === 1 ? '' : 's'}`;
+  else if (n < 12) count += ` Need ${12 - n} more`;
+  else count += ' No reserves';
+  const lines = [
+    `⚽️ ${waTitleDay(day)} FOOTBALL ⚽️`, '',
+    `📅 ${waPrettyDate(document.getElementById('wa-date').value)}`,
+    `⏰ ${document.getElementById('wa-time').value.trim()}`,
+    `📍 ${document.getElementById('wa-venue').value.trim()}`, '',
+    count, '',
+    ...playing
+  ];
+  if (reserves.length) lines.push('', '*Reserves*', '', ...reserves);
+  if (document.getElementById('wa-booked').checked) lines.push('', '*Pitch has been booked*');
+  return lines.join('\n');
+}
+function waRefresh() {
+  if (!document.getElementById('wa-preview')) return;
+  document.getElementById('wa-preview').value = waText();
+  document.getElementById('wa-msg').textContent = '';
+}
+function waSaveSettings() {
+  const day = waDay || currentDay || 'mon';
+  WA[day] = { time: document.getElementById('wa-time').value, venue: document.getElementById('wa-venue').value };
+  WA.booked = document.getElementById('wa-booked').checked;
+  try { localStorage.setItem(WA_KEY, JSON.stringify(WA)); } catch (e) {}
+  waRefresh();
+}
+function waMount(where) {
+  const card = document.getElementById('wa-card');
+  if (where === 'done') {
+    const btn = document.querySelector('#step-done button[onclick="resetGame()"]').parentElement;
+    btn.before(card);
+  } else {
+    document.querySelector('#step-squad > p.hint').before(card);
+  }
+  waGameIdx = null;
+  if (waCtx !== 'live:' + currentDay) {   // new day picked: reset date, load that day's time and venue
+    waCtx = 'live:' + currentDay;
+    waDay = currentDay;
+    document.getElementById('wa-date').value = waNextDate(waDay);
+    document.getElementById('wa-time').value = WA[waDay].time;
+    document.getElementById('wa-venue').value = WA[waDay].venue;
+  }
+  document.getElementById('wa-booked').checked = !!WA.booked;
+  waRefresh();
+}
+function waCopy() {
+  const text = waText(), ta = document.getElementById('wa-preview');
+  ta.value = text;
+  const fallback = () => {
+    ta.focus(); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+    setMsg('wa-msg', ok ? 'Copied. Paste it into the WhatsApp group.' : 'Text selected. Copy it manually.', true);
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(() => setMsg('wa-msg', 'Copied. Paste it into the WhatsApp group.', true)).catch(fallback);
+  } else fallback();
+}
+function waOpen() { window.open('https://wa.me/?text=' + encodeURIComponent(waText()), '_blank'); }
+
+// Hook into the existing flow so the card follows the squad and updates as you move players
+const _waBuildSquad = buildSquad;   buildSquad = function () { _waBuildSquad(); if (document.getElementById('step-squad').style.display === 'block') waMount('squad'); };
+const _waRenderSquad = renderSquad; renderSquad = function () { _waRenderSquad(); waRefresh(); };
+const _waConfirm = confirmGame;     confirmGame = function () { _waConfirm(); waMount('done'); };
+const _waRenderPost = renderPostGame; renderPostGame = function () { _waRenderPost(); waRefresh(); };
+const _waReset = resetGame;         resetGame = function () { _waReset(); waCtx = null; waGameIdx = null; document.querySelector('#step-squad > p.hint').before(document.getElementById('wa-card')); };
+
+/* ---- WHATSAPP IN THE GAME LOG ---- */
+function waPark() { const c = document.getElementById('wa-card'); document.getElementById('wa-park').appendChild(c); }
+function waGameIso(g) {
+  if (g.iso) return g.iso;
+  const t = gameTime(g); if (isNaN(t)) return '';
+  const d = new Date(t);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function waAttachToLog(gIdx) {
+  const body = document.getElementById('log-body-' + gIdx); if (!body) return false;
+  body.lastElementChild.before(document.getElementById('wa-card'));
+  return true;
+}
+function waToggleLog(gIdx) {
+  if (waGameIdx === gIdx) { waGameIdx = null; waCtx = null; waPark(); return; }
+  const g = S.games[gIdx]; if (!g) return;
+  waGameIdx = gIdx; waCtx = 'game:' + gIdx;
+  waDay = WA[g.day] ? g.day : 'adhoc';
+  document.getElementById('wa-date').value = waGameIso(g);
+  document.getElementById('wa-time').value = WA[waDay].time;
+  document.getElementById('wa-venue').value = WA[waDay].venue;
+  document.getElementById('wa-booked').checked = !!WA.booked;
+  waAttachToLog(gIdx);
+  waRefresh();
+  document.getElementById('wa-card').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+// Rebuilding a log entry wipes its contents, so lift the card out first and put it back after
+const _waRenderLogEntry = renderLogEntry;
+renderLogEntry = function (gIdx) {
+  const hadCard = waGameIdx === gIdx && document.querySelector('#log-entry-' + gIdx + ' #wa-card');
+  if (hadCard) waPark();
+  _waRenderLogEntry(gIdx);
+  const body = document.getElementById('log-body-' + gIdx);
+  if (body) body.lastElementChild.insertAdjacentHTML('afterbegin',
+    `<button class="btn sm" style="margin-right:6px" onclick="waToggleLog(${gIdx})"><i class="ti ti-brand-whatsapp"></i> WhatsApp update</button>`);
+  if (hadCard && waAttachToLog(gIdx)) waRefresh();
+};
+// Back to Run game: bring the message box back to the squad or confirmation screen
+const _waGoTab = goTab;
+goTab = function (t) {
+  _waGoTab(t);
+  if (t === 'game' && waGameIdx !== null) {
+    if (document.getElementById('step-done').style.display === 'block') { waCtx = null; waMount('done'); }
+    else if (document.getElementById('step-squad').style.display === 'block') { waCtx = null; waMount('squad'); }
+  }
+};
+// Full history redraw (e.g. after deleting or adding a game) closes the message box
+const _waRenderHistory = renderHistory;
+renderHistory = function () {
+  if (waGameIdx !== null) { waGameIdx = null; waCtx = null; waPark(); }
+  _waRenderHistory();
+};
 
 loadState();
 </script>
