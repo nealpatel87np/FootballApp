@@ -45,6 +45,21 @@ The page can write the weekly WhatsApp message for you.
 - In the game log, each game has a **WhatsApp update** button that writes the same message for that game.
 - The time and venue are remembered separately for Monday, Thursday and ad hoc games, and the pitch-booked tick is remembered too. These settings are saved on your device only, not in the database.
 
+### Organiser sign-in
+Anyone with the link can view the page, but only signed-in organisers can save changes to the database. Changes made while signed out are kept on that device and sent when an organiser signs in there.
+
+To set it up in Supabase (once):
+
+1. **Authentication > URL Configuration:** set the Site URL to the GitHub Pages address of the page, and add the same address under Redirect URLs.
+2. **Authentication > Users:** use **Invite user** for each organiser's email.
+3. **SQL Editor:** open `supabase/policies.sql`, replace `organiser@example.com` with the organisers' emails, and run it. This lets everyone read the data and only listed organisers change it.
+4. Optional: under **Authentication > Sign In / Providers**, turn off "Allow new users to sign up".
+
+To sign in, enter your email on the page, press **Send sign-in link**, and open the link from your email on the same device.
+
+### How saving works
+Each save sends only the players and games that changed since the last successful save. A device with an out-of-date copy can't delete rows it never saw. If two organisers edit the same player or game, the later save wins for that row.
+
 ## Notes
 This is a basic example for learning. For a real app, you would usually add:
 - team selection logic
