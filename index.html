@@ -369,8 +369,7 @@
     <div class="card">
       <h3>Kitty</h3>
       <div class="money-tiles" id="money-tiles"></div>
-      <div class="sh">Who's holding the kitty</div>
-      <div class="holders" id="money-holders"></div>
+      <div class="holders" id="money-holders" style="margin-top:10px"></div>
     </div>
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
@@ -403,7 +402,6 @@
     </div>
     <div class="card">
       <h3>Kitty ledger</h3>
-      <p class="hint">Every pound in and out, newest first.</p>
       <div class="tablewrap">
         <table class="ledger">
           <thead><tr><th>Date</th><th>What</th><th>Held by</th><th class="r">In</th><th class="r">Out</th><th class="r">Balance</th></tr></thead>
@@ -854,7 +852,7 @@ function renderPlayers() {
   const el = document.getElementById('player-list');
   if (!S.players.length) { el.innerHTML = '<p style="color:var(--text-muted);font-size:13px">No players added yet.</p>'; return; }
   el.innerHTML = S.players.map(p => {
-    const db = p.avail === 'mon' ? `<span class="badge b-mon">Mon only</span>` : p.avail === 'thu' ? `<span class="badge b-thu">Thu only</span>` : `<span class="badge b-both">Both</span>`;
+    const db = p.avail === 'mon' ? `<span class="badge b-mon">Mon Only</span>` : p.avail === 'thu' ? `<span class="badge b-thu">Thu Only</span>` : `<span class="badge b-both">Both</span>`;
     const pb = p.pref !== 'none' ? `<span class="badge b-pref">Pref ${p.pref === 'mon' ? 'Mon' : 'Thu'}</span>` : '';
     const gm = p.guarMon ? `<span class="badge b-guar">Guar Mon</span>` : '';
     const gt = p.guarThu ? `<span class="badge b-guar">Guar Thu</span>` : '';
@@ -1021,7 +1019,7 @@ function renderSquad() {
     const tags = [];
     if (day === 'mon' ? p.guarMon : p.guarThu) tags.push(`<span class="badge b-guar">Guar</span>`);
     if (rNext.includes(p.id)) tags.push(`<span class="badge b-guar">→Next</span>`);
-    if (p.avail !== 'both') tags.push(`<span class="badge ${p.avail === 'mon' ? 'b-mon' : 'b-thu'}">${p.avail === 'mon' ? 'Mon' : 'Thu'} only</span>`);
+    if (p.avail !== 'both') tags.push(`<span class="badge ${p.avail === 'mon' ? 'b-mon' : 'b-thu'}">${p.avail === 'mon' ? 'Mon' : 'Thu'} Only</span>`);
     return `<div class="row"><span class="num">${i + 1}</span><span class="name">${esc(p.name)}</span>${tags.join('')}<button class="mv tor" onclick="moveToReserve(${p.id})"><i class="ti ti-arrow-down"></i> Reserve</button></div>`;
   }).join('');
   const rb = document.getElementById('res-box');
@@ -1250,7 +1248,7 @@ function renderHistory() {
     pd.innerHTML = [...S.players].sort((a, b) => b.played - a.played).map(p => {
       const db = p.avail === 'mon' ? `<span class="badge b-mon">Mon</span>` : p.avail === 'thu' ? `<span class="badge b-thu">Thu</span>` : `<span class="badge b-both">Both</span>`;
       const rn = S.reserveNext.includes(p.id) ? `<span class="badge b-res">→Next</span>` : '';
-      return `<div class="row"><span class="name">${esc(p.name)}</span>${db}${rn}<span style="font-size:12px;color:var(--text-secondary)">${p.played} played · ${p.reserved} reserved</span></div>`;
+      return `<div class="row"><span class="name">${esc(p.name)}</span>${db}${rn}<span style="font-size:12px;color:var(--text-secondary)">${p.played} Played · ${p.reserved} Reserved</span></div>`;
     }).join('');
   }
   const ld = document.getElementById('hist-log');
@@ -1472,6 +1470,8 @@ function renderMoney() {
   rows.sort((a, b) => a.iso.localeCompare(b.iso) || a.order - b.order);
   let bal = 0; rows.forEach(r => { bal += r.amt; r.bal = bal; });
   rows.reverse();
+  // Starting balance rows only show when the starting balances are shown (the running balance still counts them)
+  if (!moneyShowOpening) rows.splice(0, rows.length, ...rows.filter(r => r.order !== 0));
   const ledgerRows = moneyShowFullLedger ? rows : rows.slice(0, LEDGER_ROWS);
   document.getElementById('money-ledger-more').innerHTML = rows.length > LEDGER_ROWS
     ? `<button class="btn sm" style="margin-top:8px" onclick="moneyShowFullLedger = !moneyShowFullLedger; renderMoney()">${moneyShowFullLedger ? 'Show only the latest 15' : `Show full ledger (${rows.length - LEDGER_ROWS} more)`}</button>` : '';
