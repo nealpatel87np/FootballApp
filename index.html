@@ -105,13 +105,14 @@
   .log-body.open { display: block; }
   .log-add-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 0.5px solid var(--border); flex-wrap: wrap; }
   .log-add-row select { margin-top: 0; width: auto; flex: 1; min-width: 140px; }
-  .money-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .money-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .money-tiles .stat { text-align: left; min-width: 0; }
   .money-tiles .stat .s { font-size: 11px; color: var(--text-secondary); margin-top: 4px; line-height: 1.4; }
   .money-tiles .kit { background: var(--bg-success); }
   .money-tiles .kit .l, .money-tiles .kit .s { color: var(--text-success); }
   .money-tiles .owed .n { color: var(--text-danger); }
-  @media (max-width: 480px) { .money-tiles { grid-template-columns: 1fr 1fr; } .money-tiles .kit { grid-column: 1 / -1; } }
+  @media (max-width: 480px) { .money-tiles { grid-template-columns: 1fr; } }
+  .holder .owe { color: var(--text-danger); }
   .holders { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
   @media (max-width: 480px) { .holders { grid-template-columns: 1fr; } }
   .holder { border: 0.5px solid var(--border-strong); border-radius: var(--radius); padding: 10px 12px; min-width: 0; }
@@ -372,7 +373,11 @@
       <div class="holders" id="money-holders"></div>
     </div>
     <div class="card">
-      <h3>How each game is split</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        <h3 style="margin:0">How each game is split</h3>
+        <button class="btn xs" id="m-split-toggle" onclick="moneyToggleSplit()" aria-expanded="false" aria-controls="m-split-box">Show</button>
+      </div>
+      <div id="m-split-box" style="margin-top:10px">
       <div class="money-grid">
         <div><label for="m-price">Each player pays (£)</label><input type="number" id="m-price" step="0.5" min="0" onchange="moneySettingsChanged()"></div>
         <div><label for="m-pitch">Pitch costs (£)</label><input type="number" id="m-pitch" step="1" min="0" onchange="moneySettingsChanged()"></div>
@@ -388,10 +393,11 @@
         <div><label for="m-open-Kev">Kev (£)</label><input type="number" id="m-open-Kev" step="0.01" onchange="moneySettingsChanged()"></div>
         <div><label for="m-open-Gav">Gav (£)</label><input type="number" id="m-open-Gav" step="0.01" onchange="moneySettingsChanged()"></div>
       </div>
+      </div>
     </div>
     <div class="card">
       <h3>Games</h3>
-      <p class="hint">Tap a game to change the organiser and tick who has paid. <span id="money-owed" style="color:var(--text-danger)"></span></p>
+      <p class="hint">Tap a game to change the organiser and tick who has paid.</p>
       <div id="money-games"></div>
     </div>
     <div class="card">
@@ -1314,6 +1320,14 @@ let moneyOpenGame = null;
 // Starting balances are hidden unless someone chooses to show them (remembered per device)
 let moneyShowOpening = false;
 try { moneyShowOpening = localStorage.getItem('fbv3_show_opening') === '1'; } catch (e) {}
+// "How each game is split" is hidden unless someone chooses to show it (remembered per device)
+let moneyShowSplit = false;
+try { moneyShowSplit = localStorage.getItem('fbv3_show_split') === '1'; } catch (e) {}
+function moneyToggleSplit() {
+  moneyShowSplit = !moneyShowSplit;
+  try { localStorage.setItem('fbv3_show_split', moneyShowSplit ? '1' : '0'); } catch (e) {}
+  renderMoney();
+}
 function moneyToggleOpening() {
   moneyShowOpening = !moneyShowOpening;
   try { localStorage.setItem('fbv3_show_opening', moneyShowOpening ? '1' : '0'); } catch (e) {}
@@ -1339,8 +1353,8 @@ function trackedGames() {
 }
 function moneyHoldings() {
   const h = {};
-  ORGANISERS.forEach(o => { h[o] = { kitty: S.money.opening[o], admin: 0, games: 0, spent: 0 }; });
-  trackedGames().forEach(({ g, m }) => { const s = gameSplit(g, m); h[m.org].kitty += s.toKitty; h[m.org].admin += s.admin; h[m.org].games++; });
+  ORGANISERS.forEach(o => { h[o] = { kitty: S.money.opening[o], admin: 0, games: 0, spent: 0, owed: 0 }; });
+  trackedGames().forEach(({ g, m }) => { const s = gameSplit(g, m); h[m.org].kitty += s.toKitty; h[m.org].admin += s.admin; h[m.org].owed += s.owed; h[m.org].games++; });
   S.money.spends.forEach(x => { h[x.from].kitty -= x.amount; h[x.from].spent += x.amount; });
   return h;
 }
@@ -1360,23 +1374,30 @@ function renderMoney() {
   tracked.forEach(({ g, m }) => { const s = gameSplit(g, m); owed += s.owed; owedPeople += s.unpaid; if (s.unpaid) owedGames++; });
   const st = S.money.settings;
 
-  // Only real money is shown here: the kitty and who holds it. Admin is taken off each
-  // game's surplus but not displayed; unpaid money is shown with the games instead.
+  // Only real money is shown: the kitty, who holds it, and what players still owe.
+  // Admin is taken off each game's surplus but not displayed.
+  // What the kitty will be once everyone pays (unpaid money, less admin on any extra surplus)
+  const kittyIfPaid = kitty + tracked.reduce((sum, { g, m }) =>
+    sum + gameSplit(g, { ...m, paidIds: g.playingIds }).toKitty - gameSplit(g, m).toKitty, 0);
   document.getElementById('money-tiles').innerHTML =
-    `<div class="stat kit" style="grid-column:1 / -1"><div class="l">In the kitty</div><div class="n">${gbp(kitty)}</div><div class="s">Held between Neal, Kev and Gav</div></div>`;
-  document.getElementById('money-owed').textContent = owedPeople
-    ? `${gbp(owed)} still to collect: ${owedPeople} payment${owedPeople === 1 ? '' : 's'} across ${owedGames} game${owedGames === 1 ? '' : 's'}.`
-    : 'Everyone has paid.';
+    `<div class="stat kit"><div class="l">In the kitty</div><div class="n">${gbp(kitty)}</div><div class="s">Held between Neal, Kev and Gav</div></div>` +
+    `<div class="stat owed"><div class="l">Still owed</div><div class="n">${gbp(owed)}</div><div class="s">${owedPeople
+      ? `${owedPeople} payment${owedPeople === 1 ? '' : 's'} across ${owedGames} game${owedGames === 1 ? '' : 's'}. Once collected, the kitty will be ${gbp(kittyIfPaid)}.`
+      : 'Everyone has paid.'}</div></div>`;
   document.getElementById('money-holders').innerHTML = ORGANISERS.map(o => {
     const x = h[o], short = x.kitty < 0;
     return `<div class="holder${short ? ' short' : ''}"><div class="top">${whoBadge(o)}<span>${x.games} game${x.games === 1 ? '' : 's'}</span></div>` +
-      `<div class="k">${gbp(x.kitty)}</div><div class="s">${short ? `Has paid out ${gbp(-x.kitty)} more than they hold. ` : ''}${moneyShowOpening ? `Started with ${gbp(S.money.opening[o])}.` : ''}</div></div>`;
+      `<div class="k">${gbp(x.kitty)}</div><div class="s">${x.owed ? `<span class="owe">${gbp(x.owed)} still to collect.</span> ` : ''}${short ? `Has paid out ${gbp(-x.kitty)} more than they hold. ` : ''}${moneyShowOpening ? `Started with ${gbp(S.money.opening[o])}.` : ''}</div></div>`;
   }).join('');
 
   // Settings inputs (don't overwrite a field while someone is typing in it)
   const setVal = (id, v) => { const el = document.getElementById(id); if (el && document.activeElement !== el) el.value = v; };
   setVal('m-price', (st.price / 100).toFixed(2)); setVal('m-pitch', (st.pitch / 100).toFixed(2)); setVal('m-admin', st.adminPct);
   ORGANISERS.forEach(o => setVal('m-open-' + o, (S.money.opening[o] / 100).toFixed(2)));
+  document.getElementById('m-split-box').style.display = moneyShowSplit ? '' : 'none';
+  const stog = document.getElementById('m-split-toggle');
+  stog.textContent = moneyShowSplit ? 'Hide' : 'Show';
+  stog.setAttribute('aria-expanded', String(moneyShowSplit));
   document.getElementById('m-open-box').style.display = moneyShowOpening ? '' : 'none';
   const tog = document.getElementById('m-open-toggle');
   tog.textContent = moneyShowOpening ? 'Hide starting balances' : 'Show starting balances';
