@@ -379,8 +379,11 @@
         <div><label for="m-admin">Admin share of surplus (%)</label><input type="number" id="m-admin" step="1" min="0" max="100" onchange="moneySettingsChanged()"></div>
       </div>
       <p class="hint" id="m-rule-hint" style="margin:8px 0 0"></p>
-      <div class="sh">Starting balances (money each person held before the app)</div>
-      <div class="money-grid">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:14px;flex-wrap:wrap">
+        <div class="sh" style="margin:0">Starting balances (money each person held before the app)</div>
+        <button class="btn xs" id="m-open-toggle" onclick="moneyToggleOpening()" aria-expanded="false" aria-controls="m-open-box">Show starting balances</button>
+      </div>
+      <div class="money-grid" id="m-open-box" style="margin-top:8px">
         <div><label for="m-open-Neal">Neal (£)</label><input type="number" id="m-open-Neal" step="0.01" onchange="moneySettingsChanged()"></div>
         <div><label for="m-open-Kev">Kev (£)</label><input type="number" id="m-open-Kev" step="0.01" onchange="moneySettingsChanged()"></div>
         <div><label for="m-open-Gav">Gav (£)</label><input type="number" id="m-open-Gav" step="0.01" onchange="moneySettingsChanged()"></div>
@@ -1308,6 +1311,14 @@ const gbp = p => (p < 0 ? '−' : '') + '£' + (Math.abs(p) / 100).toFixed(2);
 const whoBadge = n => `<span class="who w-${esc(n)}">${esc(n)}</span>`;
 const poundsToPence = v => { const n = parseFloat(v); return Number.isFinite(n) ? Math.round(n * 100) : null; };
 let moneyOpenGame = null;
+// Starting balances are hidden unless someone chooses to show them (remembered per device)
+let moneyShowOpening = false;
+try { moneyShowOpening = localStorage.getItem('fbv3_show_opening') === '1'; } catch (e) {}
+function moneyToggleOpening() {
+  moneyShowOpening = !moneyShowOpening;
+  try { localStorage.setItem('fbv3_show_opening', moneyShowOpening ? '1' : '0'); } catch (e) {}
+  renderMoney();
+}
 
 function newGameMoney(gameId, org) {
   const st = S.money.settings;
@@ -1356,13 +1367,17 @@ function renderMoney() {
   document.getElementById('money-holders').innerHTML = ORGANISERS.map(o => {
     const x = h[o], short = x.kitty < 0;
     return `<div class="holder${short ? ' short' : ''}"><div class="top">${whoBadge(o)}<span>${x.games} game${x.games === 1 ? '' : 's'}</span></div>` +
-      `<div class="k">${gbp(x.kitty)}</div><div class="s">${short ? `Has paid out ${gbp(-x.kitty)} more than they hold. ` : ''}Plus ${gbp(x.admin)} admin. Started with ${gbp(S.money.opening[o])}.</div></div>`;
+      `<div class="k">${gbp(x.kitty)}</div><div class="s">${short ? `Has paid out ${gbp(-x.kitty)} more than they hold. ` : ''}Plus ${gbp(x.admin)} admin.${moneyShowOpening ? ` Started with ${gbp(S.money.opening[o])}.` : ''}</div></div>`;
   }).join('');
 
   // Settings inputs (don't overwrite a field while someone is typing in it)
   const setVal = (id, v) => { const el = document.getElementById(id); if (el && document.activeElement !== el) el.value = v; };
   setVal('m-price', (st.price / 100).toFixed(2)); setVal('m-pitch', (st.pitch / 100).toFixed(2)); setVal('m-admin', st.adminPct);
   ORGANISERS.forEach(o => setVal('m-open-' + o, (S.money.opening[o] / 100).toFixed(2)));
+  document.getElementById('m-open-box').style.display = moneyShowOpening ? '' : 'none';
+  const tog = document.getElementById('m-open-toggle');
+  tog.textContent = moneyShowOpening ? 'Hide starting balances' : 'Show starting balances';
+  tog.setAttribute('aria-expanded', String(moneyShowOpening));
   const full = 12 * st.price - st.pitch, fullAdmin = full > 0 ? Math.round(full * st.adminPct / 100) : 0;
   const breakEven = st.price > 0 ? Math.ceil(st.pitch / st.price) : null;
   document.getElementById('m-rule-hint').textContent =
