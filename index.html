@@ -37,8 +37,8 @@
   h3 { font-size: 15px; font-weight: 500; margin-bottom: 10px; }
   .card { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 12px; }
   .page { display: none; } .page.active { display: block; }
-  input[type=text], input[type=email], input[type=date], select { width: 100%; padding: 8px 10px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); font-size: 14px; background: var(--surface-2); color: var(--text-primary); margin-top: 4px; }
-  input[type=text]:focus, input[type=email]:focus, input[type=date]:focus, select:focus { outline: 2px solid var(--fill-accent); outline-offset: 1px; }
+  input[type=text], input[type=date], select { width: 100%; padding: 8px 10px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); font-size: 14px; background: var(--surface-2); color: var(--text-primary); margin-top: 4px; }
+  input[type=text]:focus, input[type=date]:focus, select:focus { outline: 2px solid var(--fill-accent); outline-offset: 1px; }
   label { font-size: 13px; color: var(--text-secondary); display: block; margin-top: 10px; }
   label:first-child { margin-top: 0; }
   .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius); font-size: 14px; cursor: pointer; border: 0.5px solid var(--border-strong); background: transparent; color: var(--text-primary); transition: background .12s; }
@@ -111,12 +111,6 @@
 <div class="app">
   <h2><i class="ti ti-ball-football" style="margin-right:8px;font-size:20px"></i>Football organisation</h2>
   <div id="sync-status" style="font-size:11px;color:var(--text-muted);margin:-8px 0 14px 2px"></div>
-  <div id="auth-bar" style="display:none;font-size:12px;margin:-8px 0 14px 2px;align-items:center;gap:8px;flex-wrap:wrap">
-    <span id="auth-text" style="color:var(--text-secondary)"></span>
-    <input type="email" id="auth-email" placeholder="Organiser email" style="width:200px;margin-top:0;padding:4px 8px;font-size:12px">
-    <button class="btn xs" id="auth-send" onclick="authSendLink()">Send sign-in link</button>
-    <button class="btn xs" id="auth-out" onclick="authSignOut()">Sign out</button>
-  </div>
 
   <div class="nav">
     <button class="nb active" onclick="goTab('setup')">Setup</button>
@@ -358,34 +352,13 @@ function cleanState(d) {
   };
 }
 
-/* ---- SYNC STATUS AND SIGN-IN ---- */
+/* ---- SYNC STATUS ---- */
 function setSyncStatus(text, isError) {
   const el = document.getElementById('sync-status');
   if (!el) return;
   el.textContent = text;
   el.style.color = isError ? 'var(--text-danger)' : 'var(--text-muted)';
 }
-
-let authUser = null;
-function renderAuth() {
-  const bar = document.getElementById('auth-bar');
-  if (!bar) return;
-  if (!sb) { bar.style.display = 'none'; return; }
-  bar.style.display = 'flex';
-  const signedIn = !!authUser;
-  document.getElementById('auth-text').textContent = signedIn ? `Signed in as ${authUser.email}` : 'Viewing only. Organisers sign in to save changes.';
-  document.getElementById('auth-email').style.display = signedIn ? 'none' : '';
-  document.getElementById('auth-send').style.display = signedIn ? 'none' : '';
-  document.getElementById('auth-out').style.display = signedIn ? '' : 'none';
-}
-async function authSendLink() {
-  const email = document.getElementById('auth-email').value.trim();
-  if (!email) return;
-  // Only existing organiser accounts get a link; set them up in Supabase under Authentication > Users
-  const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname, shouldCreateUser: false } });
-  document.getElementById('auth-text').textContent = error ? 'Could not send the link: ' + error.message : 'Check your email for the sign-in link.';
-}
-async function authSignOut() { await sb.auth.signOut(); }
 
 /* ---- LOAD AND SAVE ---- */
 const SYNCED_KEY = 'fbv3_synced';   // last copy known to match the database
@@ -450,6 +423,21 @@ function rerenderAll() {
   if (document.getElementById('page-history').classList.contains('active')) renderHistory();
 }
 
+// Everything currently in the database
+async function fetchDb() {
+  const [{ data: players, error: pErr }, { data: games, error: gErr }, { data: state, error: sErr }] = await Promise.all([
+    sb.from('players').select('*'),
+    sb.from('games').select('*').order('iso', { ascending: true, nullsFirst: true }).order('id', { ascending: true }),
+    sb.from('app_state').select('*').eq('id', 1).maybeSingle()
+  ]);
+  if (pErr) throw pErr; if (gErr) throw gErr; if (sErr) throw sErr;
+  return cleanState({
+    players: (players || []).map(dbToPlayer),
+    games: (games || []).map(dbToGame),
+    reserveNext: state && state.reserve_next
+  });
+}
+
 async function loadState() {
   loadLocal(); // show whatever's on this device immediately
   rerenderAll();
@@ -459,18 +447,7 @@ async function loadState() {
   setSyncStatus('Loading from database…');
   const synced = loadSynced();
   try {
-    const [{ data: players, error: pErr }, { data: games, error: gErr }, { data: state, error: sErr }] = await Promise.all([
-      sb.from('players').select('*'),
-      sb.from('games').select('*').order('iso', { ascending: true, nullsFirst: true }).order('id', { ascending: true }),
-      sb.from('app_state').select('*').eq('id', 1).maybeSingle()
-    ]);
-    if (pErr) throw pErr; if (gErr) throw gErr; if (sErr) throw sErr;
-
-    const db = cleanState({
-      players: (players || []).map(dbToPlayer),
-      games: (games || []).map(dbToGame),
-      reserveNext: state && state.reserve_next
-    });
+    const db = await fetchDb();
     // Changes made on this device that never reached the database are kept and sent again
     const pending = synced ? diffState(synced, S) : null;
     setBaseline(db);
@@ -500,7 +477,6 @@ function save() {
 // device never saw are left alone, so an out-of-date copy can't wipe them.
 async function syncToSupabase() {
   if (!sb || !baseline) return;
-  if (!authUser) { setSyncStatus('Not signed in - changes are kept on this device until an organiser signs in.', true); return; }
   const snap = JSON.parse(JSON.stringify(S));
   const d = diffState(baseline, snap);
   if (diffEmpty(d)) { setSyncStatus('Up to date.'); return; }
@@ -538,17 +514,10 @@ async function syncToSupabase() {
   } catch (e) {
     console.error('Supabase sync failed', e);
     // The baseline is unchanged, so the next save retries everything still outstanding
-    if (e && e.code === '42501') setSyncStatus('Save refused - this account is not on the organiser list. Your changes are kept on this device.', true);
+    if (e && e.code === '42501') setSyncStatus('Save refused by the database access rules. Your changes are kept on this device.', true);
     else setSyncStatus('Save failed - check your connection. Your data is still safe on this device.', true);
   }
 }
-
-if (sb) sb.auth.onAuthStateChange((event, session) => {
-  authUser = session ? session.user : null;
-  renderAuth();
-  // Push anything changed while signed out
-  if (authUser && baseline) syncChain = syncChain.then(syncToSupabase);
-});
 
 let currentDay = null, builtPlaying = [], builtReserves = [], confirmedGameIdx = null;
 
@@ -741,7 +710,11 @@ function applyImport(text) {
   if (!confirm(`Replace data${sb ? ' in the shared database' : ' on this device'} with ${d.players.length} players and ${d.games.length} games?\n\nYour current data will be backed up first.`)) return;
   try { localStorage.setItem('fbv3_backup', getRawData()); } catch (e) {}
   S = cleanState(d);
-  save(); renderPlayers(); exportSummary();
+  try { localStorage.setItem('fbv3', JSON.stringify(S)); } catch (e) {}
+  // An import replaces everything, so compare against what the database holds right now,
+  // including rows this device has never seen
+  if (sb) syncChain = syncChain.then(async () => { try { setBaseline(await fetchDb()); } catch (e) {} }).then(syncToSupabase);
+  renderPlayers(); exportSummary();
   document.getElementById('imp').value = '';
   setMsg('imp-msg', `Imported ${S.players.length} players and ${S.games.length} games${sb ? ' - pushing to the shared database…' : ''}.`, true);
 }
@@ -1248,7 +1221,6 @@ renderHistory = function () {
   _waRenderHistory();
 };
 
-renderAuth();
 loadState();
 </script>
 </body>
