@@ -37,8 +37,8 @@
   h3 { font-size: 15px; font-weight: 500; margin-bottom: 10px; }
   .card { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 12px; }
   .page { display: none; } .page.active { display: block; }
-  input[type=text], input[type=date], select { width: 100%; padding: 8px 10px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); font-size: 14px; background: var(--surface-2); color: var(--text-primary); margin-top: 4px; }
-  input[type=text]:focus, input[type=date]:focus, select:focus { outline: 2px solid var(--fill-accent); outline-offset: 1px; }
+  input[type=text], input[type=email], input[type=date], select { width: 100%; padding: 8px 10px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); font-size: 14px; background: var(--surface-2); color: var(--text-primary); margin-top: 4px; }
+  input[type=text]:focus, input[type=email]:focus, input[type=date]:focus, select:focus { outline: 2px solid var(--fill-accent); outline-offset: 1px; }
   label { font-size: 13px; color: var(--text-secondary); display: block; margin-top: 10px; }
   label:first-child { margin-top: 0; }
   .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius); font-size: 14px; cursor: pointer; border: 0.5px solid var(--border-strong); background: transparent; color: var(--text-primary); transition: background .12s; }
@@ -111,6 +111,12 @@
 <div class="app">
   <h2><i class="ti ti-ball-football" style="margin-right:8px;font-size:20px"></i>Football organisation</h2>
   <div id="sync-status" style="font-size:11px;color:var(--text-muted);margin:-8px 0 14px 2px"></div>
+  <div id="auth-bar" style="display:none;font-size:12px;margin:-8px 0 14px 2px;align-items:center;gap:8px;flex-wrap:wrap">
+    <span id="auth-text" style="color:var(--text-secondary)"></span>
+    <input type="email" id="auth-email" placeholder="Organiser email" style="width:200px;margin-top:0;padding:4px 8px;font-size:12px">
+    <button class="btn xs" id="auth-send" onclick="authSendLink()">Send sign-in link</button>
+    <button class="btn xs" id="auth-out" onclick="authSignOut()">Sign out</button>
+  </div>
 
   <div class="nav">
     <button class="nb active" onclick="goTab('setup')">Setup</button>
@@ -303,10 +309,10 @@
 <script>
 /* ---- DATABASE (Supabase) SETUP ----
    1. Create a free project at https://supabase.com
-   2. Open the SQL editor there and run schema.sql, then (optionally, once) seed.sql
+   2. Open the SQL editor there and run supabase/policies.sql (see the README)
    3. In Settings -> API, copy your Project URL and the "anon public" key below
    These two values are meant to be public/client-side - access is controlled by
-   the Row Level Security policies in schema.sql, not by keeping this key secret.
+   the Row Level Security policies in supabase/policies.sql, not by keeping this key secret.
 */
 const SUPABASE_URL = 'https://myzzeeqltyjxsjydzhix.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_ksy5ky5Q2e4fJM40_wf98w_Hf28qXM6';
@@ -317,6 +323,42 @@ const sb = (typeof supabase !== 'undefined' && !SUPABASE_URL.includes('YOUR-PROJ
 
 let S = { players: [], games: [], reserveNext: [] };
 
+/* ---- SAFE TEXT AND CLEAN RECORDS ---- */
+// Escape text from storage, the database or an import before it goes into HTML
+function esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+// Give loaded records the exact shape the page expects (numeric ids, known values only)
+const toId = v => { const n = Number(v); return v !== null && v !== '' && Number.isFinite(n) ? n : null; };
+const toIds = a => (Array.isArray(a) ? a.map(toId).filter(n => n !== null) : []);
+function cleanPlayer(p, fallbackId) {
+  return {
+    id: toId(p.id) ?? fallbackId, name: String(p.name ?? ''),
+    avail: ['mon', 'thu', 'both'].includes(p.avail) ? p.avail : 'both',
+    pref: ['mon', 'thu'].includes(p.pref) ? p.pref : 'none',
+    guarMon: !!p.guarMon, guarThu: !!p.guarThu,
+    played: Number(p.played) || 0, reserved: Number(p.reserved) || 0,
+    lastPlayed: p.lastPlayed ? String(p.lastPlayed) : null
+  };
+}
+function cleanGame(g, fallbackId) {
+  return {
+    id: toId(g.id) ?? fallbackId, date: String(g.date ?? ''),
+    day: ['mon', 'thu'].includes(g.day) ? g.day : 'adhoc',
+    iso: typeof g.iso === 'string' ? g.iso : null, manual: !!g.manual,
+    playingIds: toIds(g.playingIds), reserveIds: toIds(g.reserveIds)
+  };
+}
+function cleanState(d) {
+  const base = Date.now();   // ids for older records saved before ids existed
+  return {
+    players: (Array.isArray(d && d.players) ? d.players : []).map((p, i) => cleanPlayer(p, base + i)),
+    games: (Array.isArray(d && d.games) ? d.games : []).map((g, i) => cleanGame(g, base + 1000 + i)),
+    reserveNext: toIds(d && d.reserveNext)
+  };
+}
+
+/* ---- SYNC STATUS AND SIGN-IN ---- */
 function setSyncStatus(text, isError) {
   const el = document.getElementById('sync-status');
   if (!el) return;
@@ -324,11 +366,43 @@ function setSyncStatus(text, isError) {
   el.style.color = isError ? 'var(--text-danger)' : 'var(--text-muted)';
 }
 
+let authUser = null;
+function renderAuth() {
+  const bar = document.getElementById('auth-bar');
+  if (!bar) return;
+  if (!sb) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  const signedIn = !!authUser;
+  document.getElementById('auth-text').textContent = signedIn ? `Signed in as ${authUser.email}` : 'Viewing only. Organisers sign in to save changes.';
+  document.getElementById('auth-email').style.display = signedIn ? 'none' : '';
+  document.getElementById('auth-send').style.display = signedIn ? 'none' : '';
+  document.getElementById('auth-out').style.display = signedIn ? '' : 'none';
+}
+async function authSendLink() {
+  const email = document.getElementById('auth-email').value.trim();
+  if (!email) return;
+  // Only existing organiser accounts get a link; set them up in Supabase under Authentication > Users
+  const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname, shouldCreateUser: false } });
+  document.getElementById('auth-text').textContent = error ? 'Could not send the link: ' + error.message : 'Check your email for the sign-in link.';
+}
+async function authSignOut() { await sb.auth.signOut(); }
+
+/* ---- LOAD AND SAVE ---- */
+const SYNCED_KEY = 'fbv3_synced';   // last copy known to match the database
+let baseline = null;                // same, in memory; null until we know what the database holds
+
 function loadLocal() {
   try {
     const d = localStorage.getItem('fbv3');
-    if (d) { S = JSON.parse(d); if (!Array.isArray(S.reserveNext)) S.reserveNext = []; }
+    if (d) S = cleanState(JSON.parse(d));
   } catch (e) {}
+}
+function loadSynced() {
+  try { const d = localStorage.getItem(SYNCED_KEY); return d ? cleanState(JSON.parse(d)) : null; } catch (e) { return null; }
+}
+function setBaseline(state) {
+  baseline = JSON.parse(JSON.stringify(state));
+  try { localStorage.setItem(SYNCED_KEY, JSON.stringify(baseline)); } catch (e) {}
 }
 
 function dbToPlayer(p) {
@@ -336,6 +410,39 @@ function dbToPlayer(p) {
 }
 function dbToGame(g) {
   return { id: g.id, date: g.date, day: g.day, iso: g.iso, manual: g.manual, playingIds: g.playing_ids || [], reserveIds: g.reserve_ids || [] };
+}
+// Same order the database query uses: by date (undated first), then by id
+function sortGames(games) {
+  return games.sort((a, b) => (a.iso || '').localeCompare(b.iso || '') || a.id - b.id);
+}
+
+// What changed between two copies, row by row
+function diffState(base, cur) {
+  const key = (list, clean) => new Map(list.map(x => [x.id, JSON.stringify(clean(x))]));
+  const bp = key(base.players, cleanPlayer), cp = key(cur.players, cleanPlayer);
+  const bg = key(base.games, cleanGame), cg = key(cur.games, cleanGame);
+  return {
+    upPlayers: cur.players.filter(p => bp.get(p.id) !== cp.get(p.id)),
+    delPlayers: base.players.filter(p => !cp.has(p.id)).map(p => p.id),
+    upGames: cur.games.filter(g => bg.get(g.id) !== cg.get(g.id)),
+    delGames: base.games.filter(g => !cg.has(g.id)).map(g => g.id),
+    reserveNext: JSON.stringify(base.reserveNext) !== JSON.stringify(cur.reserveNext) ? cur.reserveNext : null
+  };
+}
+function diffEmpty(d) {
+  return !d.upPlayers.length && !d.delPlayers.length && !d.upGames.length && !d.delGames.length && d.reserveNext === null;
+}
+function applyDiff(target, d) {
+  const merge = (list, del, up) => {
+    const out = list.filter(x => !del.includes(x.id));
+    up.forEach(x => { const i = out.findIndex(y => y.id === x.id); if (i === -1) out.push(x); else out[i] = x; });
+    return out;
+  };
+  return {
+    players: merge(target.players, d.delPlayers, d.upPlayers),
+    games: sortGames(merge(target.games, d.delGames, d.upGames)),
+    reserveNext: d.reserveNext ?? target.reserveNext
+  };
 }
 
 function rerenderAll() {
@@ -350,6 +457,7 @@ async function loadState() {
   if (!sb) { setSyncStatus('No database connected yet - add your Supabase details in the code.', true); return; }
 
   setSyncStatus('Loading from database…');
+  const synced = loadSynced();
   try {
     const [{ data: players, error: pErr }, { data: games, error: gErr }, { data: state, error: sErr }] = await Promise.all([
       sb.from('players').select('*'),
@@ -358,15 +466,22 @@ async function loadState() {
     ]);
     if (pErr) throw pErr; if (gErr) throw gErr; if (sErr) throw sErr;
 
-    S = {
+    const db = cleanState({
       players: (players || []).map(dbToPlayer),
       games: (games || []).map(dbToGame),
-      reserveNext: (state && state.reserve_next) || []
-    };
+      reserveNext: state && state.reserve_next
+    });
+    // Changes made on this device that never reached the database are kept and sent again
+    const pending = synced ? diffState(synced, S) : null;
+    setBaseline(db);
+    S = pending && !diffEmpty(pending) ? applyDiff(db, pending) : db;
     try { localStorage.setItem('fbv3', JSON.stringify(S)); } catch (e) {}
-    setSyncStatus('Up to date.');
+    if (pending && !diffEmpty(pending)) syncChain = syncChain.then(syncToSupabase);
+    else setSyncStatus('Up to date.');
   } catch (e) {
     console.error('Could not load from Supabase, showing the last saved copy on this device', e);
+    // Only changes made from here on (or still waiting from before) will be sent
+    baseline = synced || JSON.parse(JSON.stringify(S));
     setSyncStatus('Could not reach the database - showing the last saved copy on this device.', true);
   }
   rerenderAll();
@@ -381,41 +496,59 @@ function save() {
   syncChain = syncChain.then(syncToSupabase);
 }
 
+// Sends only the rows that changed since the last successful sync. Rows this
+// device never saw are left alone, so an out-of-date copy can't wipe them.
 async function syncToSupabase() {
+  if (!sb || !baseline) return;
+  if (!authUser) { setSyncStatus('Not signed in - changes are kept on this device until an organiser signs in.', true); return; }
+  const snap = JSON.parse(JSON.stringify(S));
+  const d = diffState(baseline, snap);
+  if (diffEmpty(d)) { setSyncStatus('Up to date.'); return; }
   setSyncStatus('Saving…');
   try {
-    const playerIds = S.players.map(p => p.id);
-    const delP = await sb.from('players').delete().not('id', 'in', `(${playerIds.length ? playerIds.join(',') : '-1'})`);
-    if (delP.error) throw delP.error;
-    if (S.players.length) {
-      const { error } = await sb.from('players').upsert(S.players.map(p => ({
+    if (d.delPlayers.length) {
+      const { error } = await sb.from('players').delete().in('id', d.delPlayers);
+      if (error) throw error;
+    }
+    if (d.upPlayers.length) {
+      const { error } = await sb.from('players').upsert(d.upPlayers.map(p => ({
         id: p.id, name: p.name, avail: p.avail, pref: p.pref,
         guar_mon: !!p.guarMon, guar_thu: !!p.guarThu,
         played: p.played || 0, reserved: p.reserved || 0, last_played: p.lastPlayed || null
       })));
       if (error) throw error;
     }
-
-    const gameIds = S.games.map(g => g.id);
-    const delG = await sb.from('games').delete().not('id', 'in', `(${gameIds.length ? gameIds.join(',') : '-1'})`);
-    if (delG.error) throw delG.error;
-    if (S.games.length) {
-      const { error } = await sb.from('games').upsert(S.games.map(g => ({
+    if (d.delGames.length) {
+      const { error } = await sb.from('games').delete().in('id', d.delGames);
+      if (error) throw error;
+    }
+    if (d.upGames.length) {
+      const { error } = await sb.from('games').upsert(d.upGames.map(g => ({
         id: g.id, date: g.date, day: g.day, iso: g.iso || null, manual: !!g.manual,
         playing_ids: g.playingIds, reserve_ids: g.reserveIds
       })));
       if (error) throw error;
     }
-
-    const { error: stateErr } = await sb.from('app_state').upsert({ id: 1, reserve_next: S.reserveNext });
-    if (stateErr) throw stateErr;
-
+    if (d.reserveNext) {
+      const { error } = await sb.from('app_state').upsert({ id: 1, reserve_next: d.reserveNext });
+      if (error) throw error;
+    }
+    setBaseline(snap);
     setSyncStatus('Saved to database.');
   } catch (e) {
     console.error('Supabase sync failed', e);
-    setSyncStatus('Save failed - check your connection. Your data is still safe on this device.', true);
+    // The baseline is unchanged, so the next save retries everything still outstanding
+    if (e && e.code === '42501') setSyncStatus('Save refused - this account is not on the organiser list. Your changes are kept on this device.', true);
+    else setSyncStatus('Save failed - check your connection. Your data is still safe on this device.', true);
   }
 }
+
+if (sb) sb.auth.onAuthStateChange((event, session) => {
+  authUser = session ? session.user : null;
+  renderAuth();
+  // Push anything changed while signed out
+  if (authUser && baseline) syncChain = syncChain.then(syncToSupabase);
+});
 
 let currentDay = null, builtPlaying = [], builtReserves = [], confirmedGameIdx = null;
 
@@ -465,7 +598,7 @@ function editPlayer(id) {
   const div = document.createElement('div');
   div.className = 'ei'; div.id = 'edit-' + id;
   div.innerHTML = `
-    <input type="text" id="en-${id}" value="${p.name}" style="width:130px;margin-top:0">
+    <input type="text" id="en-${id}" value="${esc(p.name)}" style="width:130px;margin-top:0">
     <select id="ea-${id}" style="margin-top:0;width:auto" onchange="toggleEP(${id})">
       <option value="mon" ${p.avail==='mon'?'selected':''}>Mon only</option>
       <option value="thu" ${p.avail==='thu'?'selected':''}>Thu only</option>
@@ -512,7 +645,7 @@ function renderPlayers() {
     const gt = p.guarThu ? `<span class="badge b-guar">guar Thu</span>` : '';
     const rn = S.reserveNext.includes(p.id) ? `<span class="badge b-res">→next</span>` : '';
     return `<div class="row" id="prow-${p.id}">
-      <span class="name">${p.name} <span class="sub">${p.played}gp · ${p.reserved}res</span></span>
+      <span class="name">${esc(p.name)} <span class="sub">${p.played}gp · ${p.reserved}res</span></span>
       ${db}${pb}${gm}${gt}${rn}
       <button class="btn xs" onclick="editPlayer(${p.id})" title="Edit player"><i class="ti ti-edit"></i></button>
     </div>`;
@@ -607,11 +740,7 @@ function applyImport(text) {
   if (!d || !Array.isArray(d.players) || !Array.isArray(d.games)) { setMsg('imp-msg', 'Data format not recognised.', false); return; }
   if (!confirm(`Replace data${sb ? ' in the shared database' : ' on this device'} with ${d.players.length} players and ${d.games.length} games?\n\nYour current data will be backed up first.`)) return;
   try { localStorage.setItem('fbv3_backup', getRawData()); } catch (e) {}
-  S = {
-    players: d.players,
-    games: d.games.map(g => g.id ? g : { ...g, id: Date.now() + Math.floor(Math.random() * 1000) }),
-    reserveNext: Array.isArray(d.reserveNext) ? d.reserveNext : []
-  };
+  S = cleanState(d);
   save(); renderPlayers(); exportSummary();
   document.getElementById('imp').value = '';
   setMsg('imp-msg', `Imported ${S.players.length} players and ${S.games.length} games${sb ? ' - pushing to the shared database…' : ''}.`, true);
@@ -626,12 +755,12 @@ function startGame(day) {
   const rNext = S.reserveNext;
   const gNames = guarIds.map(id => { const p = S.players.find(x => x.id === id); return p ? p.name : ''; }).filter(Boolean);
   const n = document.getElementById('guar-notice');
-  if (gNames.length) { n.style.display = 'block'; n.innerHTML = `<i class="ti ti-star"></i> <strong>${gNames.join(', ')}</strong> ${gNames.length === 1 ? 'is' : 'are'} on the guaranteed list — pre-selected.`; }
+  if (gNames.length) { n.style.display = 'block'; n.innerHTML = `<i class="ti ti-star"></i> <strong>${gNames.map(esc).join(', ')}</strong> ${gNames.length === 1 ? 'is' : 'are'} on the guaranteed list — pre-selected.`; }
   else n.style.display = 'none';
   const gs = eligible.filter(p => guarIds.includes(p.id)), os = eligible.filter(p => !guarIds.includes(p.id));
   let html = '';
-  if (gs.length) { html += `<div class="sh">Guaranteed spot</div>`; html += gs.map(p => `<div class="chkrow"><input type="checkbox" id="av-${p.id}" value="${p.id}" checked><label for="av-${p.id}">${p.name}${rNext.includes(p.id) ? ' <span class="badge b-guar" style="font-size:10px">→next</span>' : ''}</label></div>`).join(''); }
-  if (os.length) { if (gs.length) html += `<div class="sh">Other eligible players</div>`; html += os.map(p => `<div class="chkrow"><input type="checkbox" id="av-${p.id}" value="${p.id}" ${rNext.includes(p.id) ? 'checked' : ''}><label for="av-${p.id}">${p.name}${rNext.includes(p.id) ? ' <span class="badge b-guar" style="font-size:10px">→next</span>' : ''}</label></div>`).join(''); }
+  if (gs.length) { html += `<div class="sh">Guaranteed spot</div>`; html += gs.map(p => `<div class="chkrow"><input type="checkbox" id="av-${p.id}" value="${p.id}" checked><label for="av-${p.id}">${esc(p.name)}${rNext.includes(p.id) ? ' <span class="badge b-guar" style="font-size:10px">→next</span>' : ''}</label></div>`).join(''); }
+  if (os.length) { if (gs.length) html += `<div class="sh">Other eligible players</div>`; html += os.map(p => `<div class="chkrow"><input type="checkbox" id="av-${p.id}" value="${p.id}" ${rNext.includes(p.id) ? 'checked' : ''}><label for="av-${p.id}">${esc(p.name)}${rNext.includes(p.id) ? ' <span class="badge b-guar" style="font-size:10px">→next</span>' : ''}</label></div>`).join(''); }
   if (!eligible.length) html = '<p style="color:var(--text-muted);font-size:13px">No eligible players for this day.</p>';
   document.getElementById('avail-list').innerHTML = html;
   document.getElementById('step-day').style.display = 'none';
@@ -672,12 +801,12 @@ function renderSquad() {
     if (day === 'mon' ? p.guarMon : p.guarThu) tags.push(`<span class="badge b-guar">guar</span>`);
     if (rNext.includes(p.id)) tags.push(`<span class="badge b-guar">→next</span>`);
     if (p.avail !== 'both') tags.push(`<span class="badge ${p.avail === 'mon' ? 'b-mon' : 'b-thu'}">${p.avail === 'mon' ? 'Mon' : 'Thu'} only</span>`);
-    return `<div class="row"><span class="num">${i + 1}</span><span class="name">${p.name}</span>${tags.join('')}<button class="mv tor" onclick="moveToReserve(${p.id})"><i class="ti ti-arrow-down"></i> reserve</button></div>`;
+    return `<div class="row"><span class="num">${i + 1}</span><span class="name">${esc(p.name)}</span>${tags.join('')}<button class="mv tor" onclick="moveToReserve(${p.id})"><i class="ti ti-arrow-down"></i> reserve</button></div>`;
   }).join('');
   const rb = document.getElementById('res-box');
   if (!builtReserves.length) { rb.style.display = 'none'; return; }
   rb.style.display = 'block';
-  document.getElementById('squad-reserve').innerHTML = builtReserves.map(p => `<div class="row"><span class="name">${p.name} <span class="sub">${p.reserved} times reserved</span></span><button class="mv top" onclick="moveToPlaying(${p.id})"><i class="ti ti-arrow-up"></i> add to squad</button></div>`).join('');
+  document.getElementById('squad-reserve').innerHTML = builtReserves.map(p => `<div class="row"><span class="name">${esc(p.name)} <span class="sub">${p.reserved} times reserved</span></span><button class="mv top" onclick="moveToPlaying(${p.id})"><i class="ti ti-arrow-up"></i> add to squad</button></div>`).join('');
 }
 
 function moveToReserve(id) { const idx = builtPlaying.findIndex(p => p.id === id); if (idx === -1) return; const [p] = builtPlaying.splice(idx, 1); builtReserves.unshift(p); renderSquad(); }
@@ -707,14 +836,14 @@ function renderPostGame() {
   document.getElementById('post-play-count').textContent = g.playingIds.length;
   document.getElementById('post-playing').innerHTML = g.playingIds.map((id, i) => {
     const p = S.players.find(x => x.id === id); const name = p ? p.name : '?';
-    return `<div class="row"><span class="num">${i + 1}</span><span class="name">${name}</span><button class="mv tor" onclick="postMoveToReserve(${id},${confirmedGameIdx})"><i class="ti ti-arrow-down"></i> reserve</button><button class="mv del" onclick="postRemove(${id},${confirmedGameIdx})"><i class="ti ti-trash"></i> remove</button></div>`;
+    return `<div class="row"><span class="num">${i + 1}</span><span class="name">${esc(name)}</span><button class="mv tor" onclick="postMoveToReserve(${id},${confirmedGameIdx})"><i class="ti ti-arrow-down"></i> reserve</button><button class="mv del" onclick="postRemove(${id},${confirmedGameIdx})"><i class="ti ti-trash"></i> remove</button></div>`;
   }).join('');
   const prw = document.getElementById('post-reserve-wrap');
   if (!g.reserveIds.length) { prw.style.display = 'none'; return; }
   prw.style.display = 'block';
   document.getElementById('post-reserve').innerHTML = g.reserveIds.map(id => {
     const p = S.players.find(x => x.id === id); const name = p ? p.name : '?';
-    return `<div class="row"><span class="name">${name}</span><button class="mv top" onclick="postMoveToPlaying(${id},${confirmedGameIdx})"><i class="ti ti-arrow-up"></i> add to squad</button><button class="mv del" onclick="postRemove(${id},${confirmedGameIdx})"><i class="ti ti-trash"></i> remove</button></div>`;
+    return `<div class="row"><span class="name">${esc(name)}</span><button class="mv top" onclick="postMoveToPlaying(${id},${confirmedGameIdx})"><i class="ti ti-arrow-up"></i> add to squad</button><button class="mv del" onclick="postRemove(${id},${confirmedGameIdx})"><i class="ti ti-trash"></i> remove</button></div>`;
   }).join('');
 }
 
@@ -812,7 +941,7 @@ function toggleManual() {
   const pl = document.getElementById('mg-players');
   if (!S.players.length) pl.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Add players in Setup first.</p>';
   else pl.innerHTML = [...S.players].sort((a, b) => a.name.localeCompare(b.name)).map(p =>
-    `<div class="row"><span class="name">${p.name}</span><select id="mg-r-${p.id}" style="margin-top:0;width:auto" onchange="mgCount()"><option value="">Not in game</option><option value="playing">Playing</option><option value="reserve">Reserve</option></select></div>`
+    `<div class="row"><span class="name">${esc(p.name)}</span><select id="mg-r-${p.id}" style="margin-top:0;width:auto" onchange="mgCount()"><option value="">Not in game</option><option value="playing">Playing</option><option value="reserve">Reserve</option></select></div>`
   ).join('');
   mgCount();
   box.style.display = 'block';
@@ -890,7 +1019,7 @@ function renderHistory() {
     pd.innerHTML = [...S.players].sort((a, b) => b.played - a.played).map(p => {
       const db = p.avail === 'mon' ? `<span class="badge b-mon">Mon</span>` : p.avail === 'thu' ? `<span class="badge b-thu">Thu</span>` : `<span class="badge b-both">both</span>`;
       const rn = S.reserveNext.includes(p.id) ? `<span class="badge b-res">→next</span>` : '';
-      return `<div class="row"><span class="name">${p.name}</span>${db}${rn}<span style="font-size:12px;color:var(--text-secondary)">${p.played} played · ${p.reserved} reserved</span></div>`;
+      return `<div class="row"><span class="name">${esc(p.name)}</span>${db}${rn}<span style="font-size:12px;color:var(--text-secondary)">${p.played} played · ${p.reserved} reserved</span></div>`;
     }).join('');
   }
   const ld = document.getElementById('hist-log');
@@ -915,15 +1044,15 @@ function renderLogEntry(gIdx) {
 
   const playingRows = g.playingIds.map((id, i) => {
     const p = S.players.find(x => x.id === id); const name = p ? p.name : '?';
-    return `<div class="row"><span class="num">${i + 1}</span><span class="name">${name}</span><button class="mv tor" onclick="postMoveToReserve(${id},${gIdx})"><i class="ti ti-arrow-down"></i> reserve</button><button class="mv del" onclick="postRemove(${id},${gIdx})"><i class="ti ti-trash"></i> remove</button></div>`;
+    return `<div class="row"><span class="num">${i + 1}</span><span class="name">${esc(name)}</span><button class="mv tor" onclick="postMoveToReserve(${id},${gIdx})"><i class="ti ti-arrow-down"></i> reserve</button><button class="mv del" onclick="postRemove(${id},${gIdx})"><i class="ti ti-trash"></i> remove</button></div>`;
   }).join('') || '<p style="font-size:13px;color:var(--text-muted)">No players.</p>';
 
-  const reserveRows = g.reserveIds.length ? `<div style="margin-top:10px"><div style="font-size:12px;font-weight:500;color:var(--text-danger);margin-bottom:6px">Reserves</div>${g.reserveIds.map(id => { const p = S.players.find(x => x.id === id); const name = p ? p.name : '?'; return `<div class="row"><span class="name">${name}</span><button class="mv top" onclick="postMoveToPlaying(${id},${gIdx})"><i class="ti ti-arrow-up"></i> add to squad</button><button class="mv del" onclick="postRemove(${id},${gIdx})"><i class="ti ti-trash"></i> remove</button></div>`; }).join('')}</div>` : '';
+  const reserveRows = g.reserveIds.length ? `<div style="margin-top:10px"><div style="font-size:12px;font-weight:500;color:var(--text-danger);margin-bottom:6px">Reserves</div>${g.reserveIds.map(id => { const p = S.players.find(x => x.id === id); const name = p ? p.name : '?'; return `<div class="row"><span class="name">${esc(name)}</span><button class="mv top" onclick="postMoveToPlaying(${id},${gIdx})"><i class="ti ti-arrow-up"></i> add to squad</button><button class="mv del" onclick="postRemove(${id},${gIdx})"><i class="ti ti-trash"></i> remove</button></div>`; }).join('')}</div>` : '';
 
   const addRow = notInGame.length ? `<div class="log-add-row">
     <select id="log-add-sel-${gIdx}" style="margin-top:0">
       <option value="">Add a player…</option>
-      ${notInGame.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+      ${notInGame.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('')}
     </select>
     <select id="log-add-role-${gIdx}" style="margin-top:0;width:auto">
       <option value="playing">Playing</option>
@@ -935,7 +1064,7 @@ function renderLogEntry(gIdx) {
   container.innerHTML = `
     <div class="log-header" onclick="toggleLog(${gIdx})">
       <div>
-        <div class="log-title">${g.date} — ${dayLabel(g.day)} ${g.manual ? '<span class="badge b-pref" style="font-size:10px;margin-left:4px">manual</span>' : ''}${isLatest ? '<span class="badge b-guar" style="font-size:10px;margin-left:4px">latest</span>' : ''}</div>
+        <div class="log-title">${esc(g.date)} — ${dayLabel(g.day)} ${g.manual ? '<span class="badge b-pref" style="font-size:10px;margin-left:4px">manual</span>' : ''}${isLatest ? '<span class="badge b-guar" style="font-size:10px;margin-left:4px">latest</span>' : ''}</div>
         <div class="log-meta">${g.playingIds.length} playing · ${g.reserveIds.length} reserve${g.reserveIds.length !== 1 ? 's' : ''}</div>
       </div>
       <i class="ti ti-chevron-down" id="log-chevron-${gIdx}" style="color:var(--text-muted);transition:transform .2s;${wasOpen ? 'transform:rotate(180deg)' : ''}"></i>
@@ -1119,6 +1248,7 @@ renderHistory = function () {
   _waRenderHistory();
 };
 
+renderAuth();
 loadState();
 </script>
 </body>
