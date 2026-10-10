@@ -50,7 +50,7 @@ The **Money** tab tracks payments, the pitch cost and the kitty.
 
 - Each player pays £8.50 and the pitch costs £80. Anything collected over the pitch cost is the surplus: 10% of it goes to admin and the rest to the kitty. If too few pay to cover the pitch, the shortfall comes out of the kitty. These amounts can be changed on the Money tab, and changes apply to games booked after that.
 - The money is held by Neal, Kev or Gav. Choose who's organising on **Run game** before picking the day; that person collects the money and pays for the pitch. On the Money tab you can change a game's organiser, tick who has paid, or mark everyone as paid.
-- The kitty is one total, and the Money tab also shows how much of it each organiser holds. Enter what each of them held before the app under **Starting balances**. These are hidden until you press **Show starting balances**, and each device remembers whether they're shown.
+- The kitty is one total, and the Money tab also shows how much of it each organiser holds. Only these real totals are shown: the 10% admin share is taken off each game but not displayed, and money still to collect is listed with the games. Enter what each of them held before the app under **Starting balances**. These are hidden until you press **Show starting balances**, and each device remembers whether they're shown.
 - Record kitty spends (dinner, drinks, football) with who paid them. The **Kitty ledger** lists every pound in and out with a running balance.
 - Games from before this feature aren't counted unless you press **Track money** on them. Games added by hand can be tracked by choosing an organiser in the add-game form.
 
