@@ -105,6 +105,59 @@
   .log-body.open { display: block; }
   .log-add-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 0.5px solid var(--border); flex-wrap: wrap; }
   .log-add-row select { margin-top: 0; width: auto; flex: 1; min-width: 140px; }
+  .money-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .money-tiles .stat { text-align: left; min-width: 0; }
+  .money-tiles .stat .s { font-size: 11px; color: var(--text-secondary); margin-top: 4px; line-height: 1.4; }
+  .money-tiles .kit { background: var(--bg-success); }
+  .money-tiles .kit .l, .money-tiles .kit .s { color: var(--text-success); }
+  .money-tiles .owed .n { color: var(--text-danger); }
+  @media (max-width: 480px) { .money-tiles { grid-template-columns: 1fr 1fr; } .money-tiles .kit { grid-column: 1 / -1; } }
+  .holders { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 480px) { .holders { grid-template-columns: 1fr; } }
+  .holder { border: 0.5px solid var(--border-strong); border-radius: var(--radius); padding: 10px 12px; min-width: 0; }
+  .holder .top { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+  .holder .k { font-size: 20px; font-weight: 500; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .holder .s { font-size: 11px; color: var(--text-secondary); margin-top: 3px; line-height: 1.45; }
+  .holder.short .k { color: var(--text-danger); }
+  .who { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+  .w-Neal { background: var(--bg-accent); color: var(--text-accent); }
+  .w-Kev { background: var(--bg-pro); color: var(--text-pro); }
+  .w-Gav { background: var(--bg-warning); color: var(--text-warning); }
+  .money-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 480px) { .money-grid { grid-template-columns: 1fr; } }
+  .mgame { border-top: 0.5px solid var(--border); }
+  .mgame:first-child { border-top: none; }
+  .mgame-row { width: 100%; display: flex; align-items: center; gap: 8px; padding: 10px 0; background: none; border: none; color: inherit; font: inherit; text-align: left; cursor: pointer; flex-wrap: wrap; }
+  .mgame-row .when { flex: 1 1 150px; min-width: 0; }
+  .mgame-row .when .d { font-weight: 500; }
+  .mgame-row .when .m { display: block; font-size: 12px; color: var(--text-secondary); margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .res { font-size: 13px; font-weight: 500; padding: 2px 10px; border-radius: 20px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .res.up { background: var(--bg-success); color: var(--text-success); }
+  .res.down { background: var(--bg-danger); color: var(--text-danger); }
+  .mgame-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; padding: 0 0 14px; }
+  @media (max-width: 520px) { .mgame-body { grid-template-columns: 1fr; } }
+  .pay { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; cursor: pointer; margin: 0; color: var(--text-primary); }
+  .pay input { width: 16px; height: 16px; accent-color: var(--fill-accent); margin: 0; flex-shrink: 0; }
+  .pay.unpaid span { color: var(--text-danger); }
+  .split { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .split td { padding: 5px 0; border-bottom: 0.5px solid var(--border); }
+  .split td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  .split tr:last-child td { border-bottom: none; font-weight: 500; }
+  .split .q { color: var(--text-secondary); }
+  .tablewrap { overflow-x: auto; }
+  table.ledger { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 480px; }
+  .ledger th { text-align: left; font-size: 11px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; padding: 0 8px 6px 0; border-bottom: 0.5px solid var(--border-strong); }
+  .ledger td { padding: 7px 8px 7px 0; border-bottom: 0.5px solid var(--border); vertical-align: top; }
+  .ledger tr:last-child td { border-bottom: none; }
+  .ledger .r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ledger .in { color: var(--text-success); }
+  .ledger .out { color: var(--text-danger); }
+  .ledger .bal { font-weight: 500; }
+  .ledger small { display: block; color: var(--text-secondary); font-size: 11px; margin-top: 1px; }
+  .spend-form { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: end; margin-top: 14px; padding-top: 14px; border-top: 0.5px solid var(--border); }
+  @media (max-width: 520px) { .spend-form { grid-template-columns: 1fr 1fr; } .spend-form .wide { grid-column: 1 / -1; } }
+  .spend-form label, .money-grid label { margin-top: 0; }
+  input[type=number] { width: 100%; padding: 8px 10px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); font-size: 14px; background: var(--surface-2); color: var(--text-primary); margin-top: 4px; }
 </style>
 </head>
 <body>
@@ -116,6 +169,7 @@
     <button class="nb active" onclick="goTab('setup')">Setup</button>
     <button class="nb" onclick="goTab('game')">Run game</button>
     <button class="nb" onclick="goTab('history')">History</button>
+    <button class="nb" onclick="goTab('money')">Money</button>
   </div>
 
   <!-- SETUP -->
@@ -192,7 +246,11 @@
     <div id="step-day">
       <div class="card">
         <h3>Which day are you running?</h3>
-        <div style="display:flex;gap:10px;margin-top:8px">
+        <label for="org-select">Who's organising? They collect the money and pay for the pitch.</label>
+        <select id="org-select" style="max-width:220px" onchange="try { localStorage.setItem('fbv3_org', this.value); } catch (e) {}">
+          <option>Neal</option><option>Kev</option><option>Gav</option>
+        </select>
+        <div style="display:flex;gap:10px;margin-top:12px">
           <button class="btn" style="flex:1;justify-content:center;padding:16px;font-size:15px" onclick="startGame('mon')"><i class="ti ti-calendar"></i> Monday</button>
           <button class="btn" style="flex:1;justify-content:center;padding:16px;font-size:15px" onclick="startGame('thu')"><i class="ti ti-calendar"></i> Thursday</button>
         </div>
@@ -286,6 +344,11 @@
         <div class="sh">Players</div>
         <div id="mg-players"></div>
         <div id="mg-count" class="hint" style="margin-top:8px"></div>
+        <label for="mg-org">Money</label>
+        <select id="mg-org" style="max-width:260px">
+          <option value="">Don't track money for this game</option>
+          <option value="Neal">Organised by Neal</option><option value="Kev">Organised by Kev</option><option value="Gav">Organised by Gav</option>
+        </select>
         <label class="chklbl"><input type="checkbox" id="mg-carry" checked> <span>Guarantee reserves a spot next game (only applies if this is the most recent game)</span></label>
         <div id="mg-err" class="err"></div>
         <div style="display:flex;gap:8px;margin-top:6px">
@@ -296,6 +359,57 @@
 
       <p class="hint">Tap a game to expand and edit the squad.</p>
       <div id="hist-log"><p style="color:var(--text-muted);font-size:13px">No games yet.</p></div>
+    </div>
+  </div>
+
+  <!-- MONEY -->
+  <div id="page-money" class="page">
+    <div id="money-notice" class="notice" style="display:none"></div>
+    <div class="card">
+      <h3>Kitty</h3>
+      <div class="money-tiles" id="money-tiles"></div>
+      <div class="sh">Who's holding the kitty</div>
+      <div class="holders" id="money-holders"></div>
+    </div>
+    <div class="card">
+      <h3>How each game is split</h3>
+      <div class="money-grid">
+        <div><label for="m-price">Each player pays (£)</label><input type="number" id="m-price" step="0.5" min="0" onchange="moneySettingsChanged()"></div>
+        <div><label for="m-pitch">Pitch costs (£)</label><input type="number" id="m-pitch" step="1" min="0" onchange="moneySettingsChanged()"></div>
+        <div><label for="m-admin">Admin share of surplus (%)</label><input type="number" id="m-admin" step="1" min="0" max="100" onchange="moneySettingsChanged()"></div>
+      </div>
+      <p class="hint" id="m-rule-hint" style="margin:8px 0 0"></p>
+      <div class="sh">Starting balances (money each person held before the app)</div>
+      <div class="money-grid">
+        <div><label for="m-open-Neal">Neal (£)</label><input type="number" id="m-open-Neal" step="0.01" onchange="moneySettingsChanged()"></div>
+        <div><label for="m-open-Kev">Kev (£)</label><input type="number" id="m-open-Kev" step="0.01" onchange="moneySettingsChanged()"></div>
+        <div><label for="m-open-Gav">Gav (£)</label><input type="number" id="m-open-Gav" step="0.01" onchange="moneySettingsChanged()"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Games</h3>
+      <p class="hint">Tap a game to change the organiser and tick who has paid.</p>
+      <div id="money-games"></div>
+    </div>
+    <div class="card">
+      <h3>Kitty ledger</h3>
+      <p class="hint">Every pound in and out, newest first.</p>
+      <div class="tablewrap">
+        <table class="ledger">
+          <thead><tr><th>Date</th><th>What</th><th>Held by</th><th class="r">In</th><th class="r">Out</th><th class="r">Balance</th></tr></thead>
+          <tbody id="money-ledger"></tbody>
+        </table>
+      </div>
+      <div class="spend-form">
+        <div class="wide"><label for="sp-what">Spend from the kitty</label><input type="text" id="sp-what" placeholder="e.g. Curry after Thursday"></div>
+        <div><label for="sp-cat">Type</label><select id="sp-cat"><option>Dinner</option><option>Drinks</option><option>Football</option><option>Other</option></select></div>
+        <div><label for="sp-from">Paid by</label><select id="sp-from"><option>Neal</option><option>Kev</option><option>Gav</option></select></div>
+        <div><label for="sp-amt">Amount (£)</label><input type="number" id="sp-amt" step="0.01" min="0" placeholder="0.00"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
+        <button class="btn primary sm" onclick="moneyAddSpend()"><i class="ti ti-plus"></i> Add spend</button>
+        <span id="sp-err" class="err" style="margin:0"></span>
+      </div>
     </div>
   </div>
 </div>
@@ -315,7 +429,8 @@ const sb = (typeof supabase !== 'undefined' && !SUPABASE_URL.includes('YOUR-PROJ
   ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
 
-let S = { players: [], games: [], reserveNext: [] };
+let S = { players: [], games: [], reserveNext: [], money: null };   // replaced by cleanState() below
+let moneyDb = true;   // false when the money tables haven't been added to the database yet
 
 /* ---- SAFE TEXT AND CLEAN RECORDS ---- */
 // Escape text from storage, the database or an import before it goes into HTML
@@ -343,14 +458,55 @@ function cleanGame(g, fallbackId) {
     playingIds: toIds(g.playingIds), reserveIds: toIds(g.reserveIds)
   };
 }
+// Money: who organised each game (and so holds its money), who paid, and kitty spends.
+// Amounts are whole pence.
+const ORGANISERS = ['Neal', 'Kev', 'Gav'];
+const SPEND_TYPES = ['Dinner', 'Drinks', 'Football', 'Other'];
+const toPence = v => { const n = Math.round(Number(v)); return Number.isFinite(n) ? n : 0; };
+const toPct = (v, dflt) => { const n = Number(v); return v !== null && v !== undefined && v !== '' && Number.isFinite(n) ? Math.min(100, Math.max(0, n)) : dflt; };
+function cleanGameMoney(m) {
+  return {
+    gameId: toId(m.gameId), org: ORGANISERS.includes(m.org) ? m.org : ORGANISERS[0],
+    price: toPence(m.price), pitch: toPence(m.pitch), adminPct: toPct(m.adminPct, 10),
+    paidIds: toIds(m.paidIds)
+  };
+}
+function cleanSpend(x, fallbackId) {
+  return {
+    id: toId(x.id) ?? fallbackId, iso: typeof x.iso === 'string' ? x.iso : '', what: String(x.what ?? ''),
+    cat: SPEND_TYPES.includes(x.cat) ? x.cat : 'Other', from: ORGANISERS.includes(x.from) ? x.from : ORGANISERS[0],
+    amount: toPence(x.amount)
+  };
+}
+function cleanMoneySettings(m) {
+  const st = (m && m.settings) || {}, op = (m && m.opening) || {};
+  return {
+    settings: {
+      price: st.price != null ? toPence(st.price) : 850,
+      pitch: st.pitch != null ? toPence(st.pitch) : 8000,
+      adminPct: toPct(st.adminPct, 10)
+    },
+    opening: Object.fromEntries(ORGANISERS.map(n => [n, toPence(op[n])]))
+  };
+}
+function cleanMoney(m) {
+  const base = Date.now();
+  return {
+    ...cleanMoneySettings(m),
+    games: (Array.isArray(m && m.games) ? m.games : []).map(cleanGameMoney).filter(x => x.gameId !== null),
+    spends: (Array.isArray(m && m.spends) ? m.spends : []).map((x, i) => cleanSpend(x, base + i))
+  };
+}
 function cleanState(d) {
   const base = Date.now();   // ids for older records saved before ids existed
   return {
     players: (Array.isArray(d && d.players) ? d.players : []).map((p, i) => cleanPlayer(p, base + i)),
     games: (Array.isArray(d && d.games) ? d.games : []).map((g, i) => cleanGame(g, base + 1000 + i)),
-    reserveNext: toIds(d && d.reserveNext)
+    reserveNext: toIds(d && d.reserveNext),
+    money: cleanMoney(d && d.money)
   };
 }
+S = cleanState(null);
 
 /* ---- SYNC STATUS ---- */
 function setSyncStatus(text, isError) {
@@ -391,36 +547,54 @@ function sortGames(games) {
 
 // What changed between two copies, row by row
 function diffState(base, cur) {
-  const key = (list, clean) => new Map(list.map(x => [x.id, JSON.stringify(clean(x))]));
+  const key = (list, clean, k = 'id') => new Map(list.map(x => [x[k], JSON.stringify(clean(x))]));
   const bp = key(base.players, cleanPlayer), cp = key(cur.players, cleanPlayer);
   const bg = key(base.games, cleanGame), cg = key(cur.games, cleanGame);
+  const bm = key(base.money.games, cleanGameMoney, 'gameId'), cm = key(cur.money.games, cleanGameMoney, 'gameId');
+  const bs = key(base.money.spends, cleanSpend), cs = key(cur.money.spends, cleanSpend);
+  const bset = JSON.stringify(cleanMoneySettings(base.money)), cset = JSON.stringify(cleanMoneySettings(cur.money));
   return {
     upPlayers: cur.players.filter(p => bp.get(p.id) !== cp.get(p.id)),
     delPlayers: base.players.filter(p => !cp.has(p.id)).map(p => p.id),
     upGames: cur.games.filter(g => bg.get(g.id) !== cg.get(g.id)),
     delGames: base.games.filter(g => !cg.has(g.id)).map(g => g.id),
-    reserveNext: JSON.stringify(base.reserveNext) !== JSON.stringify(cur.reserveNext) ? cur.reserveNext : null
+    reserveNext: JSON.stringify(base.reserveNext) !== JSON.stringify(cur.reserveNext) ? cur.reserveNext : null,
+    upGameMoney: cur.money.games.filter(m => bm.get(m.gameId) !== cm.get(m.gameId)),
+    delGameMoney: base.money.games.filter(m => !cm.has(m.gameId)).map(m => m.gameId),
+    upSpends: cur.money.spends.filter(x => bs.get(x.id) !== cs.get(x.id)),
+    delSpends: base.money.spends.filter(x => !cs.has(x.id)).map(x => x.id),
+    moneySettings: bset !== cset ? cleanMoneySettings(cur.money) : null
   };
 }
-function diffEmpty(d) {
+function coreDiffEmpty(d) {
   return !d.upPlayers.length && !d.delPlayers.length && !d.upGames.length && !d.delGames.length && d.reserveNext === null;
 }
+function moneyDiffEmpty(d) {
+  return !d.upGameMoney.length && !d.delGameMoney.length && !d.upSpends.length && !d.delSpends.length && d.moneySettings === null;
+}
+function diffEmpty(d) { return coreDiffEmpty(d) && moneyDiffEmpty(d); }
 function applyDiff(target, d) {
-  const merge = (list, del, up) => {
-    const out = list.filter(x => !del.includes(x.id));
-    up.forEach(x => { const i = out.findIndex(y => y.id === x.id); if (i === -1) out.push(x); else out[i] = x; });
+  const merge = (list, del, up, k = 'id') => {
+    const out = list.filter(x => !del.includes(x[k]));
+    up.forEach(x => { const i = out.findIndex(y => y[k] === x[k]); if (i === -1) out.push(x); else out[i] = x; });
     return out;
   };
   return {
     players: merge(target.players, d.delPlayers, d.upPlayers),
     games: sortGames(merge(target.games, d.delGames, d.upGames)),
-    reserveNext: d.reserveNext ?? target.reserveNext
+    reserveNext: d.reserveNext ?? target.reserveNext,
+    money: {
+      ...(d.moneySettings || { settings: target.money.settings, opening: target.money.opening }),
+      games: merge(target.money.games, d.delGameMoney, d.upGameMoney, 'gameId'),
+      spends: merge(target.money.spends, d.delSpends, d.upSpends)
+    }
   };
 }
 
 function rerenderAll() {
   renderPlayers(); exportSummary();
   if (document.getElementById('page-history').classList.contains('active')) renderHistory();
+  if (document.getElementById('page-money').classList.contains('active')) renderMoney();
 }
 
 // Everything currently in the database
@@ -431,10 +605,28 @@ async function fetchDb() {
     sb.from('app_state').select('*').eq('id', 1).maybeSingle()
   ]);
   if (pErr) throw pErr; if (gErr) throw gErr; if (sErr) throw sErr;
-  return cleanState({
+  const db = cleanState({
     players: (players || []).map(dbToPlayer),
     games: (games || []).map(dbToGame),
     reserveNext: state && state.reserve_next
+  });
+  // Money lives in its own tables. If they haven't been created yet the rest still loads.
+  try { db.money = await fetchMoney(); moneyDb = true; }
+  catch (e) { console.warn('Money tables not available yet', e); moneyDb = false; }
+  return db;
+}
+async function fetchMoney() {
+  const [{ data: gm, error: e1 }, { data: sp, error: e2 }, { data: ms, error: e3 }] = await Promise.all([
+    sb.from('game_money').select('*'),
+    sb.from('kitty_spends').select('*').order('spent_on', { ascending: true }).order('id', { ascending: true }),
+    sb.from('money_settings').select('*').eq('id', 1).maybeSingle()
+  ]);
+  if (e1) throw e1; if (e2) throw e2; if (e3) throw e3;
+  return cleanMoney({
+    settings: ms ? { price: ms.price_p, pitch: ms.pitch_p, adminPct: ms.admin_pct } : null,
+    opening: ms ? ms.opening : null,
+    games: (gm || []).map(r => ({ gameId: r.game_id, org: r.organiser, price: r.price_p, pitch: r.pitch_p, adminPct: r.admin_pct, paidIds: r.paid_ids })),
+    spends: (sp || []).map(r => ({ id: r.id, iso: r.spent_on, what: r.what, cat: r.category, from: r.paid_by, amount: r.amount_p }))
   });
 }
 
@@ -446,14 +638,17 @@ async function loadState() {
 
   setSyncStatus('Loading from database…');
   const synced = loadSynced();
+  const localMoney = S.money;
   try {
     const db = await fetchDb();
     // Changes made on this device that never reached the database are kept and sent again
     const pending = synced ? diffState(synced, S) : null;
     setBaseline(db);
     S = pending && !diffEmpty(pending) ? applyDiff(db, pending) : db;
+    // No money tables yet: keep this device's money and keep trying to send it
+    if (!moneyDb) S.money = localMoney;
     try { localStorage.setItem('fbv3', JSON.stringify(S)); } catch (e) {}
-    if (pending && !diffEmpty(pending)) syncChain = syncChain.then(syncToSupabase);
+    if (!diffEmpty(diffState(baseline, S))) syncChain = syncChain.then(syncToSupabase);
     else setSyncStatus('Up to date.');
   } catch (e) {
     console.error('Could not load from Supabase, showing the last saved copy on this device', e);
@@ -509,13 +704,52 @@ async function syncToSupabase() {
       const { error } = await sb.from('app_state').upsert({ id: 1, reserve_next: d.reserveNext });
       if (error) throw error;
     }
-    setBaseline(snap);
-    setSyncStatus('Saved to database.');
+    setBaseline({ ...baseline, players: snap.players, games: snap.games, reserveNext: snap.reserveNext });
   } catch (e) {
     console.error('Supabase sync failed', e);
     // The baseline is unchanged, so the next save retries everything still outstanding
     if (e && e.code === '42501') setSyncStatus('Save refused by the database access rules. Your changes are kept on this device.', true);
     else setSyncStatus('Save failed - check your connection. Your data is still safe on this device.', true);
+    return;
+  }
+  if (moneyDiffEmpty(d)) { setSyncStatus('Saved to database.'); return; }
+  try {
+    if (d.delGameMoney.length) {
+      const { error } = await sb.from('game_money').delete().in('game_id', d.delGameMoney);
+      if (error) throw error;
+    }
+    if (d.upGameMoney.length) {
+      const { error } = await sb.from('game_money').upsert(d.upGameMoney.map(m => ({
+        game_id: m.gameId, organiser: m.org, price_p: m.price, pitch_p: m.pitch, admin_pct: m.adminPct, paid_ids: m.paidIds
+      })));
+      if (error) throw error;
+    }
+    if (d.delSpends.length) {
+      const { error } = await sb.from('kitty_spends').delete().in('id', d.delSpends);
+      if (error) throw error;
+    }
+    if (d.upSpends.length) {
+      const { error } = await sb.from('kitty_spends').upsert(d.upSpends.map(x => ({
+        id: x.id, spent_on: x.iso, what: x.what, category: x.cat, paid_by: x.from, amount_p: x.amount
+      })));
+      if (error) throw error;
+    }
+    if (d.moneySettings) {
+      const { error } = await sb.from('money_settings').upsert({
+        id: 1, price_p: d.moneySettings.settings.price, pitch_p: d.moneySettings.settings.pitch,
+        admin_pct: d.moneySettings.settings.adminPct, opening: d.moneySettings.opening
+      });
+      if (error) throw error;
+    }
+    setBaseline({ ...baseline, money: snap.money });
+    if (!moneyDb) { moneyDb = true; renderMoneyNotice(); }
+    setSyncStatus('Saved to database.');
+  } catch (e) {
+    console.error('Money sync failed', e);
+    // A missing table shows up as "relation does not exist" or a schema cache miss
+    const missing = e && (e.code === '42P01' || e.code === 'PGRST205' || /does not exist|schema cache/i.test(e.message || ''));
+    if (missing) { moneyDb = false; renderMoneyNotice(); setSyncStatus('Saved. Money is kept on this device until the money tables are added to the database.', true); }
+    else setSyncStatus('Money save failed - check your connection. It is still safe on this device.', true);
   }
 }
 
@@ -527,6 +761,7 @@ function goTab(t) {
   document.querySelector(`.nb[onclick="goTab('${t}')"]`).classList.add('active');
   document.getElementById('page-' + t).classList.add('active');
   if (t === 'history') renderHistory();
+  if (t === 'money') renderMoney();
 }
 
 function togglePref() {
@@ -709,7 +944,9 @@ function applyImport(text) {
   if (!d || !Array.isArray(d.players) || !Array.isArray(d.games)) { setMsg('imp-msg', 'Data format not recognised.', false); return; }
   if (!confirm(`Replace data${sb ? ' in the shared database' : ' on this device'} with ${d.players.length} players and ${d.games.length} games?\n\nYour current data will be backed up first.`)) return;
   try { localStorage.setItem('fbv3_backup', getRawData()); } catch (e) {}
+  const keptMoney = S.money;
   S = cleanState(d);
+  if (!d.money) S.money = keptMoney;   // older exports have no money section
   try { localStorage.setItem('fbv3', JSON.stringify(S)); } catch (e) {}
   // An import replaces everything, so compare against what the database holds right now,
   // including rows this device has never seen
@@ -789,13 +1026,15 @@ function confirmGame() {
   const day = currentDay;
   const date = new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
   const playingIds = builtPlaying.map(p => p.id), reserveIds = builtReserves.map(p => p.id);
-  S.games.push({ id: Date.now(), date, day, iso: isoToday(), playingIds: [...playingIds], reserveIds: [...reserveIds] });
+  const gameId = Date.now(), org = document.getElementById('org-select').value;
+  S.games.push({ id: gameId, date, day, iso: isoToday(), playingIds: [...playingIds], reserveIds: [...reserveIds] });
+  S.money.games.push(newGameMoney(gameId, org));
   confirmedGameIdx = S.games.length - 1;
   S.players.forEach(p => { if (playingIds.includes(p.id)) { p.played++; p.lastPlayed = date; } if (reserveIds.includes(p.id)) p.reserved++; });
   S.reserveNext = reserveIds;
   save();
   document.getElementById('done-banner').innerHTML = `<i class="ti ti-check"></i> Game saved — ${date}`;
-  document.getElementById('done-summary').innerHTML = `<p style="font-size:13px;color:var(--text-secondary)">${day === 'mon' ? 'Monday' : 'Thursday'} · ${playingIds.length} playing · ${reserveIds.length} reserve${reserveIds.length !== 1 ? 's' : ''}</p>${reserveIds.length ? `<p style="font-size:12px;color:var(--text-secondary);margin-top:6px"><i class="ti ti-info-circle"></i> ${reserveIds.length} player(s) guaranteed next game.</p>` : ''}`;
+  document.getElementById('done-summary').innerHTML = `<p style="font-size:13px;color:var(--text-secondary)">${day === 'mon' ? 'Monday' : 'Thursday'} · ${playingIds.length} playing · ${reserveIds.length} reserve${reserveIds.length !== 1 ? 's' : ''}</p>${reserveIds.length ? `<p style="font-size:12px;color:var(--text-secondary);margin-top:6px"><i class="ti ti-info-circle"></i> ${reserveIds.length} player(s) guaranteed next game.</p>` : ''}<p style="font-size:12px;color:var(--text-secondary);margin-top:6px"><i class="ti ti-coin-pound"></i> ${esc(org)} is collecting ${gbp(S.money.settings.price)} each. Tick who has paid on the Money tab.</p>`;
   renderPostGame();
   document.getElementById('step-squad').style.display = 'none';
   document.getElementById('step-done').style.display = 'block';
@@ -910,6 +1149,7 @@ function toggleManual() {
   document.getElementById('mg-date').value = isoToday();
   mgDateChanged();
   document.getElementById('mg-carry').checked = true;
+  document.getElementById('mg-org').value = '';
   document.getElementById('mg-err').textContent = '';
   const pl = document.getElementById('mg-players');
   if (!S.players.length) pl.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Add players in Setup first.</p>';
@@ -950,6 +1190,8 @@ function saveManualGame() {
   if (S.games.some(g => gameTime(g) === t) && !confirm(`There is already a game on ${date}. Add another one?`)) return;
 
   const game = { id: Date.now(), date, day, iso, manual: true, playingIds, reserveIds };
+  const org = document.getElementById('mg-org').value;
+  if (org) S.money.games.push(newGameMoney(game.id, org));
   // Insert in date order (after any games on the same date)
   let at = S.games.length;
   for (let i = 0; i < S.games.length; i++) { const gt = gameTime(S.games[i]); if (!isNaN(gt) && gt > t) { at = i; break; } }
@@ -976,6 +1218,7 @@ function deleteGame(gIdx) {
   });
   const wasLatest = gIdx === S.games.length - 1;
   S.games.splice(gIdx, 1);
+  S.money.games = S.money.games.filter(m => m.gameId !== g.id);
   if (confirmedGameIdx === gIdx) confirmedGameIdx = null;
   else if (confirmedGameIdx !== null && gIdx < confirmedGameIdx) confirmedGameIdx--;
   if (wasLatest) { const prev = S.games[S.games.length - 1]; S.reserveNext = prev ? [...prev.reserveIds] : []; }
@@ -1059,6 +1302,182 @@ function toggleLog(gIdx) {
   chev.style.transform = isOpen ? '' : 'rotate(180deg)';
 }
 
+
+/* ---- MONEY ---- */
+const gbp = p => (p < 0 ? '−' : '') + '£' + (Math.abs(p) / 100).toFixed(2);
+const whoBadge = n => `<span class="who w-${esc(n)}">${esc(n)}</span>`;
+const poundsToPence = v => { const n = parseFloat(v); return Number.isFinite(n) ? Math.round(n * 100) : null; };
+let moneyOpenGame = null;
+
+function newGameMoney(gameId, org) {
+  const st = S.money.settings;
+  return { gameId, org: ORGANISERS.includes(org) ? org : ORGANISERS[0], price: st.price, pitch: st.pitch, adminPct: st.adminPct, paidIds: [] };
+}
+// The split for one game, from what was actually paid. Price, pitch and admin
+// share are stored on the game, so changing the rules later doesn't rewrite history.
+function gameSplit(g, m) {
+  const paid = g.playingIds.filter(id => m.paidIds.includes(id)).length;
+  const collected = paid * m.price, over = collected - m.pitch;
+  const admin = over > 0 ? Math.round(over * m.adminPct / 100) : 0;
+  const unpaid = g.playingIds.length - paid;
+  return { paid, unpaid, collected, over, admin, toKitty: over - admin, owed: unpaid * m.price };
+}
+// Tracked games only: each money record paired with its game
+function trackedGames() {
+  return S.money.games.map(m => ({ m, g: S.games.find(x => x.id === m.gameId) })).filter(x => x.g);
+}
+function moneyHoldings() {
+  const h = {};
+  ORGANISERS.forEach(o => { h[o] = { kitty: S.money.opening[o], admin: 0, games: 0, spent: 0 }; });
+  trackedGames().forEach(({ g, m }) => { const s = gameSplit(g, m); h[m.org].kitty += s.toKitty; h[m.org].admin += s.admin; h[m.org].games++; });
+  S.money.spends.forEach(x => { h[x.from].kitty -= x.amount; h[x.from].spent += x.amount; });
+  return h;
+}
+
+function renderMoneyNotice() {
+  const el = document.getElementById('money-notice'); if (!el) return;
+  const show = sb && !moneyDb;
+  el.style.display = show ? 'block' : 'none';
+  if (show) el.textContent = 'Money is only saved on this device for now. To share it, run supabase/money.sql in the Supabase SQL Editor (see the README).';
+}
+
+function renderMoney() {
+  renderMoneyNotice();
+  const h = moneyHoldings(), tracked = trackedGames();
+  let kitty = 0, admin = 0, spent = 0, owed = 0, owedPeople = 0, owedGames = 0;
+  ORGANISERS.forEach(o => { kitty += h[o].kitty; admin += h[o].admin; spent += h[o].spent; });
+  tracked.forEach(({ g, m }) => { const s = gameSplit(g, m); owed += s.owed; owedPeople += s.unpaid; if (s.unpaid) owedGames++; });
+  const st = S.money.settings;
+
+  document.getElementById('money-tiles').innerHTML =
+    `<div class="stat kit"><div class="l">In the kitty</div><div class="n">${gbp(kitty)}</div><div class="s">Held between Neal, Kev and Gav. ${gbp(spent)} spent so far.</div></div>` +
+    `<div class="stat"><div class="l">Set aside for admin</div><div class="n">${gbp(admin)}</div><div class="s">${st.adminPct}% of each game's surplus</div></div>` +
+    `<div class="stat owed"><div class="l">Still owed</div><div class="n">${gbp(owed)}</div><div class="s">${owedPeople ? `${owedPeople} payment${owedPeople === 1 ? '' : 's'} across ${owedGames} game${owedGames === 1 ? '' : 's'}. Joins the kitty when paid.` : 'Everyone has paid'}</div></div>`;
+  document.getElementById('money-holders').innerHTML = ORGANISERS.map(o => {
+    const x = h[o], short = x.kitty < 0;
+    return `<div class="holder${short ? ' short' : ''}"><div class="top">${whoBadge(o)}<span>${x.games} game${x.games === 1 ? '' : 's'}</span></div>` +
+      `<div class="k">${gbp(x.kitty)}</div><div class="s">${short ? `Has paid out ${gbp(-x.kitty)} more than they hold. ` : ''}Plus ${gbp(x.admin)} admin. Started with ${gbp(S.money.opening[o])}.</div></div>`;
+  }).join('');
+
+  // Settings inputs (don't overwrite a field while someone is typing in it)
+  const setVal = (id, v) => { const el = document.getElementById(id); if (el && document.activeElement !== el) el.value = v; };
+  setVal('m-price', (st.price / 100).toFixed(2)); setVal('m-pitch', (st.pitch / 100).toFixed(2)); setVal('m-admin', st.adminPct);
+  ORGANISERS.forEach(o => setVal('m-open-' + o, (S.money.opening[o] / 100).toFixed(2)));
+  const full = 12 * st.price - st.pitch, fullAdmin = full > 0 ? Math.round(full * st.adminPct / 100) : 0;
+  const breakEven = st.price > 0 ? Math.ceil(st.pitch / st.price) : null;
+  document.getElementById('m-rule-hint').textContent =
+    `A full game of 12 collects ${gbp(12 * st.price)}: ${gbp(full)} over the pitch, ${gbp(fullAdmin)} to admin and ${gbp(full - fullAdmin)} to the kitty.` +
+    (breakEven ? ` The pitch is covered from ${breakEven} players.` : '') + ' Changes apply to games booked from now on.';
+
+  // Games, newest first
+  const gamesEl = document.getElementById('money-games');
+  if (!S.games.length) { gamesEl.innerHTML = '<p style="color:var(--text-muted);font-size:13px">No games yet.</p>'; }
+  else gamesEl.innerHTML = [...S.games].reverse().map(g => {
+    const m = S.money.games.find(x => x.gameId === g.id);
+    const head = `<span class="when"><span class="d">${esc(g.date)}</span> <span class="badge ${g.day === 'mon' ? 'b-mon' : g.day === 'thu' ? 'b-thu' : 'b-both'}">${dayLabel(g.day)}</span>`;
+    if (!m) {
+      return `<div class="mgame"><div class="mgame-row" style="cursor:default">${head}<span class="m">${g.playingIds.length} played · money not tracked</span></span>` +
+        `<button class="btn xs" onclick="moneyTrack(${g.id})">Track money</button></div></div>`;
+    }
+    const s = gameSplit(g, m), open = moneyOpenGame === g.id;
+    const res = `<span class="res ${s.toKitty >= 0 ? 'up' : 'down'}">${s.toKitty >= 0 ? '+' : ''}${gbp(s.toKitty)}</span>`;
+    const owe = s.unpaid ? `<span class="badge b-res">${s.unpaid} owe</span>` : '';
+    let body = '';
+    if (open) {
+      const pays = g.playingIds.map(pid => {
+        const p = S.players.find(x => x.id === pid), paid = m.paidIds.includes(pid);
+        return `<label class="pay${paid ? '' : ' unpaid'}"><input type="checkbox" ${paid ? 'checked' : ''} onchange="moneyTogglePaid(${g.id},${pid},this.checked)"><span>${esc(p ? p.name : '?')}${paid ? '' : ' · owes ' + gbp(m.price)}</span></label>`;
+      }).join('') || '<p class="hint">No players in this game.</p>';
+      body = `<div class="mgame-body"><div>
+          <label for="morg-${g.id}" style="margin-top:0">Organised by</label>
+          <select id="morg-${g.id}" style="max-width:160px;margin-bottom:10px" onchange="moneySetOrg(${g.id},this.value)">${ORGANISERS.map(o => `<option${o === m.org ? ' selected' : ''}>${o}</option>`).join('')}</select>
+          <div class="sh" style="margin-top:4px">Paid</div>${pays}
+          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+            ${s.unpaid ? `<button class="btn xs" onclick="moneyAllPaid(${g.id})">Mark all paid</button>` : ''}
+            <button class="btn xs dghost" onclick="moneyUntrack(${g.id})">Stop tracking money</button>
+          </div>
+        </div><div>
+          <div class="sh" style="margin-top:0">Split</div>
+          <table class="split"><tbody>
+            <tr><td class="q">Collected (${s.paid} × ${gbp(m.price)})</td><td>${gbp(s.collected)}</td></tr>
+            <tr><td class="q">Pitch</td><td>−${gbp(m.pitch)}</td></tr>
+            <tr><td class="q">${s.over >= 0 ? 'Surplus' : 'Shortfall'}</td><td>${gbp(s.over)}</td></tr>
+            <tr><td class="q">Admin (${m.adminPct}% of surplus)</td><td>${s.admin ? '−' + gbp(s.admin) : gbp(0)}</td></tr>
+            <tr><td>${s.toKitty >= 0 ? 'To the kitty' : 'From the kitty'}</td><td>${gbp(s.toKitty)}</td></tr>
+          </tbody></table>
+          <p class="hint" style="margin-top:8px">${esc(m.org)} collects the money and pays the pitch, so ${s.toKitty >= 0 ? `the ${gbp(s.toKitty)} for the kitty and ${gbp(s.admin)} admin stay with ${esc(m.org)}` : `${esc(m.org)} covers the ${gbp(-s.toKitty)} shortfall from the kitty money they hold`}.</p>
+        </div></div>`;
+    }
+    return `<div class="mgame"><button class="mgame-row" onclick="moneyToggleGame(${g.id})" aria-expanded="${open}">${head}<span class="m">${g.playingIds.length} played · ${s.paid} paid · ${gbp(s.collected)} collected</span></span>` +
+      `${whoBadge(m.org)}${owe}${res}<i class="ti ti-chevron-down" style="color:var(--text-muted);${open ? 'transform:rotate(180deg)' : ''}"></i></button>${body}</div>`;
+  }).join('');
+
+  // Ledger: starting balances, tracked games and spends, with a running balance
+  const rows = ORGANISERS.map(o => ({ iso: '', what: 'Starting balance', sub: 'Held before the app', org: o, amt: S.money.opening[o], order: 0 }));
+  tracked.forEach(({ g, m }) => { const s = gameSplit(g, m); rows.push({ iso: g.iso || '', date: g.date, what: `${dayLabel(g.day)} game`, sub: `${s.paid} paid, ${gbp(s.admin)} to admin`, org: m.org, amt: s.toKitty, order: 1 }); });
+  S.money.spends.forEach(x => rows.push({ iso: x.iso, what: x.what, sub: x.cat, org: x.from, amt: -x.amount, order: 2, spendId: x.id }));
+  rows.sort((a, b) => a.iso.localeCompare(b.iso) || a.order - b.order);
+  let bal = 0; rows.forEach(r => { bal += r.amt; r.bal = bal; });
+  document.getElementById('money-ledger').innerHTML = rows.reverse().map(r => {
+    const when = r.date || (r.iso ? fmtGameDate(isoToDate(r.iso)) : '—');
+    const del = r.spendId ? ` <button class="btn xs dghost" style="padding:0 4px" title="Delete this spend" onclick="moneyDeleteSpend(${r.spendId})"><i class="ti ti-x"></i></button>` : '';
+    return `<tr><td style="white-space:nowrap">${esc(when)}</td><td>${esc(r.what)}${del}<small>${esc(r.sub)}</small></td><td>${whoBadge(r.org)}</td>` +
+      `<td class="r in">${r.amt > 0 ? gbp(r.amt) : ''}</td><td class="r out">${r.amt < 0 ? gbp(-r.amt) : ''}</td><td class="r bal">${gbp(r.bal)}</td></tr>`;
+  }).join('');
+}
+
+function moneyToggleGame(gameId) { moneyOpenGame = moneyOpenGame === gameId ? null : gameId; renderMoney(); }
+function moneyRecord(gameId) { return S.money.games.find(x => x.gameId === gameId); }
+function moneySetOrg(gameId, org) { const m = moneyRecord(gameId); if (!m || !ORGANISERS.includes(org)) return; m.org = org; save(); renderMoney(); }
+function moneyTogglePaid(gameId, playerId, paid) {
+  const m = moneyRecord(gameId); if (!m) return;
+  m.paidIds = m.paidIds.filter(id => id !== playerId);
+  if (paid) m.paidIds.push(playerId);
+  save(); renderMoney();
+}
+function moneyAllPaid(gameId) {
+  const m = moneyRecord(gameId), g = S.games.find(x => x.id === gameId); if (!m || !g) return;
+  m.paidIds = [...new Set([...m.paidIds, ...g.playingIds])];
+  save(); renderMoney();
+}
+function moneyTrack(gameId) {
+  if (moneyRecord(gameId)) return;
+  let org = ORGANISERS[0]; try { org = localStorage.getItem('fbv3_org') || org; } catch (e) {}
+  S.money.games.push(newGameMoney(gameId, org));
+  moneyOpenGame = gameId; save(); renderMoney();
+}
+function moneyUntrack(gameId) {
+  if (!confirm('Stop tracking money for this game? Its payments are removed from the kitty.')) return;
+  S.money.games = S.money.games.filter(x => x.gameId !== gameId);
+  moneyOpenGame = null; save(); renderMoney();
+}
+function moneySettingsChanged() {
+  const st = S.money.settings;
+  const price = poundsToPence(document.getElementById('m-price').value), pitch = poundsToPence(document.getElementById('m-pitch').value);
+  const pct = parseFloat(document.getElementById('m-admin').value);
+  if (price !== null && price >= 0) st.price = price;
+  if (pitch !== null && pitch >= 0) st.pitch = pitch;
+  if (Number.isFinite(pct) && pct >= 0 && pct <= 100) st.adminPct = pct;
+  ORGANISERS.forEach(o => { const v = poundsToPence(document.getElementById('m-open-' + o).value); if (v !== null) S.money.opening[o] = v; });
+  save(); renderMoney();
+}
+function moneyAddSpend() {
+  const what = document.getElementById('sp-what').value.trim();
+  const amount = poundsToPence(document.getElementById('sp-amt').value);
+  const err = document.getElementById('sp-err');
+  if (!what) { err.textContent = 'Say what the money was spent on.'; return; }
+  if (!(amount > 0)) { err.textContent = 'Enter an amount above £0.'; return; }
+  err.textContent = '';
+  S.money.spends.push({ id: Date.now(), iso: isoToday(), what, cat: document.getElementById('sp-cat').value, from: document.getElementById('sp-from').value, amount });
+  document.getElementById('sp-what').value = ''; document.getElementById('sp-amt').value = '';
+  save(); renderMoney();
+}
+function moneyDeleteSpend(id) {
+  const x = S.money.spends.find(y => y.id === id); if (!x) return;
+  if (!confirm(`Delete "${x.what}" (${gbp(x.amount)})?`)) return;
+  S.money.spends = S.money.spends.filter(y => y.id !== id);
+  save(); renderMoney();
+}
 
 /* ---- WHATSAPP MESSAGE ---- */
 const WA_KEY = 'fbv3_whatsapp';   // separate key: never touches the main fbv3 data
@@ -1221,6 +1640,7 @@ renderHistory = function () {
   _waRenderHistory();
 };
 
+try { const o = localStorage.getItem('fbv3_org'); if (ORGANISERS.includes(o)) document.getElementById('org-select').value = o; } catch (e) {}
 loadState();
 </script>
 </body>
