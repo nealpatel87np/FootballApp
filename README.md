@@ -57,8 +57,16 @@ The **Money** tab tracks payments, the pitch cost and the kitty.
 
 **Setup (once):** run `supabase/money.sql` in the Supabase SQL Editor to create the money tables. Until then, money is saved only on the device where it was entered, and the Money tab shows a notice.
 
+### Front page and log in
+The page opens on a front page showing the next game (date, time, venue, organiser and squad) and the kitty, with two buttons:
+
+- **View** opens the app read-only: History and Money only, with no buttons to change anything.
+- **Log in** asks for the organiser password and opens the full app. The device stays logged in until someone presses **Log out**; until then the button says **Continue as organiser**.
+
+The password is checked inside the page, so this stops accidental changes but isn't real security: the site's code and database key are public.
+
 ### Access
-There is no sign-in: anyone who can open the page can view and change the data. If saving stops working because the database has stricter rules, run `supabase/policies.sql` in the Supabase SQL Editor to open the tables back up.
+Behind the front page there is no database sign-in: the database itself still accepts changes from anyone with the link. If saving stops working because the database has stricter rules, run `supabase/policies.sql` in the Supabase SQL Editor to open the tables back up.
 
 ### How saving works
 Each save sends only the players and games that changed since the last successful save. A device with an out-of-date copy can't delete rows it never saw. If two organisers edit the same player or game, the later save wins for that row.
