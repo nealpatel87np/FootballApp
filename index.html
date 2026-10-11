@@ -159,16 +159,57 @@
   @media (max-width: 520px) { .spend-form { grid-template-columns: 1fr 1fr; } .spend-form .wide { grid-column: 1 / -1; } }
   .spend-form label, .money-grid label { margin-top: 0; }
   input[type=number] { width: 100%; padding: 8px 10px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); font-size: 14px; background: var(--surface-2); color: var(--text-primary); margin-top: 4px; }
+  /* Front page and access modes */
+  #front { display: none; }
+  body.on-front #front { display: block; }
+  body.on-front .nav, body.on-front .page, body.on-front #modebar { display: none !important; }
+  #modebar { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; border-radius: var(--radius); padding: 8px 12px; font-size: 13px; margin-bottom: 14px; }
+  body.mode-view #modebar { background: var(--surface-1); color: var(--text-secondary); }
+  body.mode-edit #modebar { background: var(--bg-success); color: var(--text-success); }
+  /* View only: hide everything that changes data */
+  body.mode-view .edit-only, body.mode-view .mv, body.mode-view .log-add-row, body.mode-view #mg-toggle, body.mode-view #manual-game,
+  body.mode-view #wa-card, body.mode-view .log-date-row, body.mode-view button[onclick^="deleteGame"], body.mode-view button[onclick^="waToggleLog"],
+  body.mode-view button[onclick^="moneyDeleteSpend"], body.mode-view button[onclick^="moneyTrack"], body.mode-view button[onclick^="moneyAllPaid"],
+  body.mode-view button[onclick^="moneyUntrack"] { display: none !important; }
+  .front-when { font-size: 22px; font-weight: 500; text-wrap: balance; }
+  .front-facts { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 6px; color: var(--text-secondary); font-size: 13px; align-items: center; }
+  .front-squad { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 12px; margin-top: 14px; font-size: 13px; }
+  @media (max-width: 480px) { .front-squad { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .front-squad span { display: flex; gap: 6px; align-items: baseline; min-width: 0; }
+  .front-squad em { font-style: normal; color: var(--text-muted); font-size: 11px; width: 16px; text-align: right; flex-shrink: 0; }
+  .front-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+  .front-actions .btn { justify-content: center; padding: 12px 16px; font-size: 15px; font-weight: 500; }
+  #front-login { margin-top: 12px; }
+  #front-login .pwrow { display: flex; gap: 8px; }
+  #front-login input { flex: 1; min-width: 0; margin: 0; }
+  input[type=password] { width: 100%; padding: 8px 10px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); font-size: 14px; background: var(--surface-2); color: var(--text-primary); }
 </style>
 </head>
-<body>
+<body class="on-front">
 <div class="app">
   <h2><i class="ti ti-ball-football" style="margin-right:8px;font-size:20px"></i>Football organisation</h2>
   <div id="sync-status" style="font-size:11px;color:var(--text-muted);margin:-8px 0 14px 2px"></div>
 
+  <!-- FRONT PAGE -->
+  <div id="front">
+    <div class="card" id="front-game"></div>
+    <div class="card"><div class="money-tiles" id="front-kitty"></div></div>
+    <div class="front-actions">
+      <button class="btn" onclick="enterView()">View</button>
+      <button class="btn primary" id="front-login-btn" onclick="frontLoginClicked()">Log in</button>
+    </div>
+    <form id="front-login" style="display:none" onsubmit="event.preventDefault(); frontLogin()">
+      <label for="front-pw">Organiser password</label>
+      <div class="pwrow"><input type="password" id="front-pw" autocomplete="current-password"><button class="btn primary" type="submit">Log in</button></div>
+      <div id="front-err" class="err"></div>
+    </form>
+  </div>
+
+  <div id="modebar"><span id="modebar-text"></span><span style="display:flex;gap:6px"><button class="btn xs" onclick="goFront()">Home</button><button class="btn xs" id="logout-btn" onclick="logOut()">Log out</button></span></div>
+
   <div class="nav">
-    <button class="nb active" onclick="goTab('setup')">Setup</button>
-    <button class="nb" onclick="goTab('game')">Run game</button>
+    <button class="nb active edit-only" onclick="goTab('setup')">Setup</button>
+    <button class="nb edit-only" onclick="goTab('game')">Run game</button>
     <button class="nb" onclick="goTab('history')">History</button>
     <button class="nb" onclick="goTab('money')">Money</button>
   </div>
@@ -371,7 +412,7 @@
       <div class="money-tiles" id="money-tiles"></div>
       <div class="holders" id="money-holders" style="margin-top:10px"></div>
     </div>
-    <div class="card">
+    <div class="card edit-only">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
         <h3 style="margin:0">How each game is split</h3>
         <button class="btn xs" id="m-split-toggle" onclick="moneyToggleSplit()" aria-expanded="false" aria-controls="m-split-box">Show</button>
@@ -409,13 +450,13 @@
         </table>
       </div>
       <div id="money-ledger-more"></div>
-      <div class="spend-form">
+      <div class="spend-form edit-only">
         <div class="wide"><label for="sp-what">Spend from the kitty</label><input type="text" id="sp-what" placeholder="e.g. Curry after Thursday"></div>
         <div><label for="sp-cat">Type</label><select id="sp-cat"><option>Dinner</option><option>Drinks</option><option>Football</option><option>Other</option></select></div>
         <div><label for="sp-from">Paid by</label><select id="sp-from"><option>Neal</option><option>Kev</option><option>Gav</option></select></div>
         <div><label for="sp-amt">Amount (£)</label><input type="number" id="sp-amt" step="0.01" min="0" placeholder="0.00"></div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
+      <div class="edit-only" style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
         <button class="btn primary sm" onclick="moneyAddSpend()"><i class="ti ti-plus"></i> Add spend</button>
         <span id="sp-err" class="err" style="margin:0"></span>
       </div>
@@ -602,6 +643,7 @@ function applyDiff(target, d) {
 
 function rerenderAll() {
   renderPlayers(); exportSummary();
+  if (document.body.classList.contains('on-front')) renderFront();
   if (document.getElementById('page-history').classList.contains('active')) renderHistory();
   if (document.getElementById('page-money').classList.contains('active')) renderMoney();
 }
@@ -670,6 +712,7 @@ async function loadState() {
 
 let syncChain = Promise.resolve();
 function save() {
+  if (appMode === 'view') return;   // view only: nothing is changed or saved
   try { localStorage.setItem('fbv3', JSON.stringify(S)); } catch (e) {}
   if (!sb) return;
   // Chain each sync after the previous one so saves from quick successive
@@ -765,6 +808,7 @@ async function syncToSupabase() {
 let currentDay = null, builtPlaying = [], builtReserves = [], confirmedGameIdx = null;
 
 function goTab(t) {
+  if (appMode === 'view' && (t === 'setup' || t === 'game')) t = 'history';
   document.querySelectorAll('.nb').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelector(`.nb[onclick="goTab('${t}')"]`).classList.add('active');
@@ -1311,7 +1355,7 @@ function renderLogEntry(gIdx) {
       <i class="ti ti-chevron-down" id="log-chevron-${gIdx}" style="color:var(--text-muted);transition:transform .2s;${wasOpen ? 'transform:rotate(180deg)' : ''}"></i>
     </div>
     <div class="log-body${wasOpen ? ' open' : ''}" id="log-body-${gIdx}">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <div class="log-date-row" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
         <label for="log-date-${gIdx}" style="margin:0">Game date</label>
         <input type="date" id="log-date-${gIdx}" value="${esc(g.iso || '')}" style="width:auto;margin:0" onchange="logSetDate(${gIdx}, this.value)">
       </div>
@@ -1465,11 +1509,11 @@ function renderMoney() {
     if (open) {
       const pays = g.playingIds.map(pid => {
         const p = S.players.find(x => x.id === pid), paid = m.paidIds.includes(pid);
-        return `<label class="pay${paid ? '' : ' unpaid'}"><input type="checkbox" ${paid ? 'checked' : ''} onchange="moneyTogglePaid(${g.id},${pid},this.checked)"><span>${esc(p ? p.name : '?')}${paid ? '' : ' · owes ' + gbp(m.price)}</span></label>`;
+        return `<label class="pay${paid ? '' : ' unpaid'}"><input type="checkbox" ${paid ? 'checked' : ''} ${appMode === 'view' ? 'disabled' : ''} onchange="moneyTogglePaid(${g.id},${pid},this.checked)"><span>${esc(p ? p.name : '?')}${paid ? '' : ' · owes ' + gbp(m.price)}</span></label>`;
       }).join('') || '<p class="hint">No players in this game.</p>';
       body = `<div class="mgame-body"><div>
           <label for="morg-${g.id}" style="margin-top:0">Organised by</label>
-          <select id="morg-${g.id}" style="max-width:160px;margin-bottom:10px" onchange="moneySetOrg(${g.id},this.value)">${ORGANISERS.map(o => `<option${o === m.org ? ' selected' : ''}>${o}</option>`).join('')}</select>
+          <select id="morg-${g.id}" style="max-width:160px;margin-bottom:10px" ${appMode === 'view' ? 'disabled' : ''} onchange="moneySetOrg(${g.id},this.value)">${ORGANISERS.map(o => `<option${o === m.org ? ' selected' : ''}>${o}</option>`).join('')}</select>
           <div class="sh" style="margin-top:4px">Paid</div>${pays}
           <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
             ${s.unpaid ? `<button class="btn xs" onclick="moneyAllPaid(${g.id})">Mark all paid</button>` : ''}
@@ -1560,6 +1604,86 @@ function moneyDeleteSpend(id) {
   if (!confirm(`Delete "${x.what}" (${gbp(x.amount)})?`)) return;
   S.money.spends = S.money.spends.filter(y => y.id !== id);
   save(); renderMoney();
+}
+
+/* ---- FRONT PAGE AND ACCESS ----
+   View: read-only app. Log in: full app, behind the organiser password.
+   This only stops accidental changes. The page's code and database key are
+   public, so it isn't protection against someone determined. */
+const ORGANISER_PASS_SHA256 = '1414c1fd5e48a46f2f7c7a99bc9fa13da297ab4499899b66d813acc57944ac15';
+let appMode = null;   // null on the front page, then 'view' or 'edit'
+const isLoggedIn = () => { try { return localStorage.getItem('fbv3_organiser') === '1'; } catch (e) { return false; } };
+
+function renderFront() {
+  // Next game: the earliest game today or later; otherwise the most recent one
+  const today = isoToday();
+  const upcoming = S.games.filter(g => g.iso && g.iso >= today);
+  const g = upcoming[0] || S.games[S.games.length - 1];
+  const el = document.getElementById('front-game');
+  if (!g) el.innerHTML = '<div class="sh" style="margin-top:0">Next game</div><p class="hint">No game booked yet.</p>';
+  else {
+    const nm = id => { const p = S.players.find(x => x.id === id); return p ? p.name : '?'; };
+    const m = S.money.games.find(x => x.gameId === g.id);
+    const wa = WA[g.day] || WA.mon;
+    el.innerHTML = `<div class="sh" style="margin-top:0">${upcoming.length ? 'Next game' : 'Last game'}</div>
+      <div class="front-when">${esc(g.iso ? isoToDate(g.iso).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) : g.date)}</div>
+      <div class="front-facts"><span>⏰ ${esc(wa.time)}</span><span>📍 ${esc(wa.venue)}</span>${m ? `<span>Organised by ${whoBadge(m.org)}</span>` : ''}</div>
+      <div class="front-squad">${g.playingIds.map((id, i) => `<span><em>${i + 1}</em>${esc(nm(id))}</span>`).join('')}</div>
+      ${g.reserveIds.length ? `<p class="hint" style="margin-top:10px">Reserves: ${g.reserveIds.map(id => esc(nm(id))).join(', ')}</p>` : ''}`;
+  }
+  const t = moneyTotals();
+  document.getElementById('front-kitty').innerHTML =
+    `<div class="stat kit"><div class="l">In the kitty</div><div class="n">${gbp(t.kitty)}</div></div>` +
+    `<div class="stat owed"><div class="l">Still owed</div><div class="n">${gbp(t.owed)}</div><div class="s">${t.owedPeople ? `${t.owedPeople} payment${t.owedPeople === 1 ? '' : 's'} across ${t.owedGames} game${t.owedGames === 1 ? '' : 's'}` : 'Everyone has paid'}</div></div>`;
+  document.getElementById('front-login-btn').textContent = isLoggedIn() ? 'Continue as organiser' : 'Log in';
+}
+function moneyTotals() {
+  const h = moneyHoldings();
+  let kitty = 0, owed = 0, owedPeople = 0, owedGames = 0;
+  ORGANISERS.forEach(o => { kitty += h[o].kitty; });
+  trackedGames().forEach(({ g, m }) => { const s = gameSplit(g, m); owed += s.owed; owedPeople += s.unpaid; if (s.unpaid) owedGames++; });
+  return { kitty, owed, owedPeople, owedGames };
+}
+
+function enterApp(mode) {
+  appMode = mode;
+  document.body.classList.remove('on-front', 'mode-view', 'mode-edit');
+  document.body.classList.add('mode-' + mode);
+  document.getElementById('modebar-text').textContent = mode === 'edit' ? 'Logged in as an organiser.' : 'View only. Log in on the home page to make changes.';
+  document.getElementById('logout-btn').style.display = mode === 'edit' ? '' : 'none';
+  goTab(mode === 'edit' ? 'setup' : 'history');
+  rerenderAll();
+}
+function enterView() { enterApp('view'); }
+function frontLoginClicked() {
+  if (isLoggedIn()) { enterApp('edit'); return; }
+  const f = document.getElementById('front-login');
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+  if (f.style.display === 'block') document.getElementById('front-pw').focus();
+}
+async function frontLogin() {
+  const pw = document.getElementById('front-pw').value;
+  let hash = '';
+  try {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+    hash = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch (e) {}
+  if (hash !== ORGANISER_PASS_SHA256) { document.getElementById('front-err').textContent = "That password isn't right. Ask Neal, Kev or Gav."; return; }
+  document.getElementById('front-err').textContent = '';
+  document.getElementById('front-pw').value = '';
+  document.getElementById('front-login').style.display = 'none';
+  try { localStorage.setItem('fbv3_organiser', '1'); } catch (e) {}
+  enterApp('edit');
+}
+function goFront() {
+  appMode = null;
+  document.body.classList.remove('mode-view', 'mode-edit');
+  document.body.classList.add('on-front');
+  renderFront();
+}
+function logOut() {
+  try { localStorage.removeItem('fbv3_organiser'); } catch (e) {}
+  goFront();
 }
 
 /* ---- WHATSAPP MESSAGE ---- */
