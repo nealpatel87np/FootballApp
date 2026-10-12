@@ -57,6 +57,24 @@ The **Money** tab tracks payments, the pitch cost and the kitty.
 
 **Setup (once):** run `supabase/money.sql` in the Supabase SQL Editor to create the money tables. Until then, money is saved only on the device where it was entered, and the Money tab shows a notice.
 
+### Teams
+Teams are picked on the **Teams** tab, separately from the squad, so you can wait until closer to kick-off.
+
+- **Run game** still picks and confirms the squad. Once it's confirmed, **Go to Teams** takes you to that game.
+- On **Teams**, choose the game. If someone drops out, press ✕ to move them to the reserves and **+ In** to bring a reserve in.
+- **Generate teams** splits the squad into Team 1 and Team 2 (5v5 for 10, 6v6 for 12, 6v5 for 11). It puts a keeper on each team, spreads defenders and strikers evenly, follows the team rules and balances the ratings. It then picks at random from the most even splits, so you won't always get the same teams. A coin flip decides who wears the bibs.
+- **Reshuffle** gives a different balanced split, and **Flip for bibs again** redoes just the coin flip. To swap two players by hand, tap one and then one on the other team.
+- The **Teams message** uses the group's format, with the date, time and venue at the top. **Copy for WhatsApp** copies it and **Open WhatsApp** opens WhatsApp with it filled in.
+- Until you press **Confirm teams**, the teams are a draft. The draft is saved and the other organisers can see it on the Teams tab, but it isn't on the front page. Once confirmed, the teams show on the front page and in History. **Change teams** turns them back into a draft.
+
+### Ratings
+The **Ratings** tab is where organisers set each player's position (Defender, Striker or Anywhere), a rating from 1 to 5, and whether they'll go in goal. New players start as Anywhere with 3 stars. **Team rules** keep two players apart or always put them on the same team. Ratings only change when an organiser changes them. The tab isn't shown in View mode, but like the rest of the data, the ratings aren't truly private.
+
+### Scores
+After a game, open it in the History game log and enter the score under the teams. The game log then shows the score, or **Score needed** for a played game with no score yet. The winning team is marked **Won**. The **Win / loss record** card lists each player's played, won, drawn and lost, and their win percentage. The **Game log (CSV)** export includes both teams, who wore the bibs and the score, ready for further analysis.
+
+**Setup (once):** run `supabase/teams.sql` in the Supabase SQL Editor to create the tables for ratings, team rules, and each game's teams and score. Until then, these are saved only on the device where they were entered, and the Teams and Ratings tabs show a notice.
+
 ### Front page and log in
 The page opens on a front page showing the next game (date, time, venue, organiser and squad) and the kitty, with two buttons:
 
@@ -73,7 +91,7 @@ Each save sends only the players and games that changed since the last successfu
 
 ## Notes
 This is a basic example for learning. For a real app, you would usually add:
-- team selection logic
+
 - match history
 - login/admin users
 - a proper production database like PostgreSQL or MySQL
