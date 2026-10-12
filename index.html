@@ -183,6 +183,84 @@
   #front-login .pwrow { display: flex; gap: 8px; }
   #front-login input { flex: 1; min-width: 0; margin: 0; }
   input[type=password] { width: 100%; padding: 8px 10px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); font-size: 14px; background: var(--surface-2); color: var(--text-primary); }
+  /* Teams and ratings */
+  :root { --bib: #e8a317; --bib-bg: #fdf3dc; --bib-text: #7a5208; --plain: #6b6a65; --plain-bg: #f1f1ee; }
+  @media (prefers-color-scheme: dark) { :root { --bib-bg: #4a3405; --bib-text: #f5cf7a; --plain: #b5b4ae; --plain-bg: #34342f; } }
+  .b-def { background: var(--bg-accent); color: var(--text-accent); }
+  .b-att { background: var(--bg-danger); color: var(--text-danger); }
+  .b-any { background: var(--surface-1); color: var(--text-secondary); border: 0.5px solid var(--border-strong); }
+  .b-gk { background: var(--bg-pro); color: var(--text-pro); }
+  .tgame-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .tgame-when { font-size: 18px; font-weight: 500; }
+  .tstatus { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+  .tstatus::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .st-none { background: var(--surface-1); color: var(--text-secondary); }
+  .st-draft { background: var(--bg-warning); color: var(--text-warning); }
+  .st-done { background: var(--bg-success); color: var(--text-success); }
+  .tchips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tchip { display: inline-flex; align-items: center; gap: 2px; padding: 4px 4px 4px 10px; border-radius: 20px; background: var(--surface-1); font-size: 13px; border: 0.5px solid var(--border); min-height: 30px; }
+  .tchip button { border: none; background: none; color: var(--text-danger); cursor: pointer; font-size: 12px; padding: 3px 7px; border-radius: 20px; font-family: inherit; }
+  .tchip.res { background: transparent; border-style: dashed; }
+  .tchip.res button { color: var(--text-success); }
+  .tcoin { display: flex; align-items: center; gap: 10px; background: var(--bib-bg); color: var(--bib-text); border-radius: var(--radius); padding: 8px 12px; font-size: 13px; margin-bottom: 12px; }
+  .tcoin .c { width: 26px; height: 26px; border-radius: 50%; background: var(--bib); color: #1a1a18; display: grid; place-items: center; font-weight: 600; font-size: 12px; flex-shrink: 0; }
+  .tbalance { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; }
+  .ttotal { font-size: 24px; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .tpill { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 20px; font-weight: 500; }
+  .tpill.good { background: var(--bg-success); color: var(--text-success); }
+  .tpill.ok { background: var(--bg-warning); color: var(--text-warning); }
+  .tpill.bad { background: var(--bg-danger); color: var(--text-danger); }
+  .tbar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 12px; background: var(--surface-1); }
+  .trules { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+  .trule { display: flex; gap: 8px; align-items: baseline; font-size: 13px; color: var(--text-secondary); }
+  .trule .tick { color: var(--text-success); font-weight: 600; width: 14px; flex-shrink: 0; }
+  .trule .cross { color: var(--text-danger); font-weight: 600; width: 14px; flex-shrink: 0; }
+  .tteams { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin-bottom: 8px; }
+  .tteam { border-radius: 12px; padding: 12px; min-width: 0; border: 0.5px solid var(--border); background: var(--plain-bg); }
+  .tteam.bibs { background: var(--bib-bg); }
+  .tteam-h { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-weight: 500; flex-wrap: wrap; }
+  .tteam.bibs .tteam-h { color: var(--bib-text); }
+  .tdot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; background: var(--plain); display: inline-block; }
+  .tteam.bibs .tdot { background: var(--bib); }
+  .ttot { margin-left: auto; font-variant-numeric: tabular-nums; font-size: 12px; font-weight: 400; }
+  .tmix { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+  .tpl { display: flex; align-items: center; gap: 5px; width: 100%; padding: 7px 8px; border-radius: var(--radius); border: 1px solid transparent; background: var(--surface-2); color: var(--text-primary); font: inherit; text-align: left; cursor: pointer; margin-top: 4px; min-width: 0; }
+  .tpl:hover:not([disabled]) { border-color: var(--border-strong); }
+  .tpl.sel { border-color: var(--fill-accent); background: var(--bg-accent); }
+  .tpl[disabled] { cursor: default; }
+  .tpl .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tpl .badge { font-size: 10px; padding: 1px 6px; }
+  .tstars { letter-spacing: -1px; color: var(--bib); font-size: 11px; white-space: nowrap; }
+  .tstars .off { color: var(--border-strong); }
+  .tactions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tactions > .btn { flex: 1; min-width: 140px; justify-content: center; }
+  .twon { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; background: var(--bg-success); color: var(--text-success); padding: 1px 7px; border-radius: 20px; }
+  .tscore { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; padding: 10px 12px; background: var(--surface-1); border-radius: var(--radius); margin-bottom: 12px; }
+  .tscore .side { display: flex; align-items: center; gap: 6px; font-weight: 500; min-width: 0; }
+  .tscore .side.r { justify-content: flex-end; }
+  .tscore .nums { display: flex; align-items: center; gap: 6px; }
+  .tscore input { width: 54px; text-align: center; font-size: 18px; font-weight: 500; padding: 6px; margin: 0; font-variant-numeric: tabular-nums; }
+  .tscore .big { font-size: 22px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .rt-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .rt-filters .btn.on { background: var(--bg-accent); color: var(--text-accent); border-color: var(--fill-accent); }
+  .rt-row { display: grid; grid-template-columns: minmax(90px, 1fr) auto auto auto; gap: 8px 12px; align-items: center; padding: 8px 0; border-bottom: 0.5px solid var(--border); }
+  .rt-row:last-child { border-bottom: none; }
+  .rt-row select { width: auto; margin: 0; padding: 5px 8px; font-size: 13px; }
+  .rt-steps { display: flex; gap: 3px; }
+  .rt-step { width: 28px; height: 28px; border-radius: 50%; border: 0.5px solid var(--border-strong); background: var(--surface-2); color: var(--text-secondary); font: 500 12px system-ui, sans-serif; cursor: pointer; }
+  .rt-step.on { background: var(--bib); border-color: var(--bib); color: #1a1a18; }
+  .trule-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--surface-1); border-radius: var(--radius); margin-bottom: 6px; font-size: 13px; flex-wrap: wrap; }
+  .rule-form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 0.5px solid var(--border); }
+  .rule-form .wide { grid-column: 1 / -1; }
+  .rule-form label { margin-top: 0; }
+  @media (max-width: 480px) {
+    .tteams { grid-template-columns: 1fr; }
+    .ttotal { font-size: 20px; }
+    .rt-row { grid-template-columns: 1fr auto; }
+    .rt-row .rt-steps { grid-column: 1 / -1; }
+    .rule-form { grid-template-columns: 1fr 1fr; }
+    .rule-form > div:first-child { grid-column: 1 / -1; }
+  }
 </style>
 </head>
 <body class="on-front">
@@ -210,6 +288,8 @@
   <div class="nav">
     <button class="nb active edit-only" onclick="goTab('setup')">Setup</button>
     <button class="nb edit-only" onclick="goTab('game')">Run game</button>
+    <button class="nb edit-only" onclick="goTab('teams')">Teams</button>
+    <button class="nb edit-only" onclick="goTab('ratings')">Ratings</button>
     <button class="nb" onclick="goTab('history')">History</button>
     <button class="nb" onclick="goTab('money')">Money</button>
   </div>
@@ -352,7 +432,44 @@
         <div class="rh"><i class="ti ti-clock"></i> Reserves</div>
         <div id="post-reserve"></div>
       </div>
+      <div class="card">
+        <h3 style="margin-bottom:4px">Teams</h3>
+        <p class="hint">Pick the teams closer to kick-off, once you know who's actually coming.</p>
+        <button class="btn sm" onclick="teamsOpenGame(S.games[confirmedGameIdx] && S.games[confirmedGameIdx].id)"><i class="ti ti-users-group"></i> Go to Teams</button>
+      </div>
       <div style="margin-top:4px"><button class="btn primary" onclick="resetGame()">Run another game</button></div>
+    </div>
+  </div>
+
+  <!-- TEAMS -->
+  <div id="page-teams" class="page">
+    <div class="notice teams-notice" style="display:none"></div>
+    <div id="teams-body"></div>
+  </div>
+
+  <!-- RATINGS -->
+  <div id="page-ratings" class="page">
+    <div class="notice teams-notice" style="display:none"></div>
+    <div class="card">
+      <h3 style="margin-bottom:4px">Positions and ratings</h3>
+      <p class="hint">The team picker uses these to balance the teams. 1 star is learning, 5 is the best on the pitch. Tick Keeper for anyone happy to go in goal. Players start as Anywhere with 3 stars. This page is only shown to organisers.</p>
+      <div class="rt-filters" id="rt-filters"></div>
+      <div id="rating-list"></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:4px">Team rules</h3>
+      <p class="hint">The team picker follows these whenever both players are in the squad.</p>
+      <div id="rule-list"></div>
+      <div class="rule-form">
+        <div><label for="rule-kind">Rule</label><select id="rule-kind"><option value="apart">Keep apart</option><option value="together">Same team</option></select></div>
+        <div><label for="rule-a">Player</label><select id="rule-a"></select></div>
+        <div><label for="rule-b">And</label><select id="rule-b"></select></div>
+        <div class="wide"><label for="rule-note">Why (optional)</label><input type="text" id="rule-note" placeholder="e.g. Share a lift"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
+        <button class="btn sm primary" onclick="ruleAdd()"><i class="ti ti-plus"></i> Add rule</button>
+        <span id="rule-err" class="err" style="margin:0"></span>
+      </div>
     </div>
   </div>
 
@@ -361,6 +478,11 @@
   <div id="page-history" class="page">
     <div id="hist-stats" class="g2" style="margin-bottom:12px"></div>
     <div class="card"><h3>Player stats</h3><div id="hist-players"><p style="color:var(--text-muted);font-size:13px">No data yet.</p></div></div>
+    <div class="card">
+      <h3 style="margin-bottom:4px">Win / loss record</h3>
+      <p class="hint">From every game with teams and a score. Ratings never change automatically.</p>
+      <div id="hist-record"></div>
+    </div>
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px">
         <h3 style="margin:0">Game log</h3>
@@ -479,8 +601,9 @@ const sb = (typeof supabase !== 'undefined' && !SUPABASE_URL.includes('YOUR-PROJ
   ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
 
-let S = { players: [], games: [], reserveNext: [], money: null };   // replaced by cleanState() below
+let S = { players: [], games: [], reserveNext: [], money: null, teams: null };   // replaced by cleanState() below
 let moneyDb = true;   // false when the money tables haven't been added to the database yet
+let teamsDb = true;   // false when the teams tables haven't been added to the database yet
 
 /* ---- SAFE TEXT AND CLEAN RECORDS ---- */
 // Escape text from storage, the database or an import before it goes into HTML
@@ -547,13 +670,39 @@ function cleanMoney(m) {
     spends: (Array.isArray(m && m.spends) ? m.spends : []).map((x, i) => cleanSpend(x, base + i))
   };
 }
+// Teams: each player's position and rating, rules for the team picker, and
+// each game's teams (a shared draft until confirmed) and score
+const POSITIONS = ['def', 'att', 'any'];
+const toScore = v => { const n = Number(v); return v !== null && v !== undefined && v !== '' && Number.isInteger(n) && n >= 0 ? n : null; };
+function cleanRating(r) {
+  const n = Math.round(Number(r.rating));
+  return { playerId: toId(r.playerId), pos: POSITIONS.includes(r.pos) ? r.pos : 'any', rating: n >= 1 && n <= 5 ? n : 3, gk: !!r.gk };
+}
+function cleanRule(x, fallbackId) {
+  return { id: toId(x.id) ?? fallbackId, kind: x.kind === 'together' ? 'together' : 'apart', a: toId(x.a), b: toId(x.b), note: String(x.note ?? '') };
+}
+function cleanGameTeams(t) {
+  return {
+    gameId: toId(t.gameId), t1: toIds(t.t1), t2: toIds(t.t2), bibs: Number(t.bibs) === 2 ? 2 : 1,
+    status: t.status === 'confirmed' ? 'confirmed' : 'draft', score1: toScore(t.score1), score2: toScore(t.score2)
+  };
+}
+function cleanTeams(t) {
+  const base = Date.now();
+  return {
+    ratings: (Array.isArray(t && t.ratings) ? t.ratings : []).map(cleanRating).filter(r => r.playerId !== null),
+    rules: (Array.isArray(t && t.rules) ? t.rules : []).map((x, i) => cleanRule(x, base + i)).filter(x => x.a !== null && x.b !== null),
+    games: (Array.isArray(t && t.games) ? t.games : []).map(cleanGameTeams).filter(x => x.gameId !== null)
+  };
+}
 function cleanState(d) {
   const base = Date.now();   // ids for older records saved before ids existed
   return {
     players: (Array.isArray(d && d.players) ? d.players : []).map((p, i) => cleanPlayer(p, base + i)),
     games: (Array.isArray(d && d.games) ? d.games : []).map((g, i) => cleanGame(g, base + 1000 + i)),
     reserveNext: toIds(d && d.reserveNext),
-    money: cleanMoney(d && d.money)
+    money: cleanMoney(d && d.money),
+    teams: cleanTeams(d && d.teams)
   };
 }
 S = cleanState(null);
@@ -613,7 +762,21 @@ function diffState(base, cur) {
     delGameMoney: base.money.games.filter(m => !cm.has(m.gameId)).map(m => m.gameId),
     upSpends: cur.money.spends.filter(x => bs.get(x.id) !== cs.get(x.id)),
     delSpends: base.money.spends.filter(x => !cs.has(x.id)).map(x => x.id),
-    moneySettings: bset !== cset ? cleanMoneySettings(cur.money) : null
+    moneySettings: bset !== cset ? cleanMoneySettings(cur.money) : null,
+    ...teamsDiff(base.teams, cur.teams, key)
+  };
+}
+function teamsDiff(base, cur, key) {
+  const br = key(base.ratings, cleanRating, 'playerId'), cr = key(cur.ratings, cleanRating, 'playerId');
+  const bu = key(base.rules, cleanRule), cu = key(cur.rules, cleanRule);
+  const bt = key(base.games, cleanGameTeams, 'gameId'), ct = key(cur.games, cleanGameTeams, 'gameId');
+  return {
+    upRatings: cur.ratings.filter(r => br.get(r.playerId) !== cr.get(r.playerId)),
+    delRatings: base.ratings.filter(r => !cr.has(r.playerId)).map(r => r.playerId),
+    upRules: cur.rules.filter(x => bu.get(x.id) !== cu.get(x.id)),
+    delRules: base.rules.filter(x => !cu.has(x.id)).map(x => x.id),
+    upGameTeams: cur.games.filter(t => bt.get(t.gameId) !== ct.get(t.gameId)),
+    delGameTeams: base.games.filter(t => !ct.has(t.gameId)).map(t => t.gameId)
   };
 }
 function coreDiffEmpty(d) {
@@ -622,7 +785,10 @@ function coreDiffEmpty(d) {
 function moneyDiffEmpty(d) {
   return !d.upGameMoney.length && !d.delGameMoney.length && !d.upSpends.length && !d.delSpends.length && d.moneySettings === null;
 }
-function diffEmpty(d) { return coreDiffEmpty(d) && moneyDiffEmpty(d); }
+function teamsDiffEmpty(d) {
+  return !d.upRatings.length && !d.delRatings.length && !d.upRules.length && !d.delRules.length && !d.upGameTeams.length && !d.delGameTeams.length;
+}
+function diffEmpty(d) { return coreDiffEmpty(d) && moneyDiffEmpty(d) && teamsDiffEmpty(d); }
 function applyDiff(target, d) {
   const merge = (list, del, up, k = 'id') => {
     const out = list.filter(x => !del.includes(x[k]));
@@ -637,6 +803,11 @@ function applyDiff(target, d) {
       ...(d.moneySettings || { settings: target.money.settings, opening: target.money.opening }),
       games: merge(target.money.games, d.delGameMoney, d.upGameMoney, 'gameId'),
       spends: merge(target.money.spends, d.delSpends, d.upSpends)
+    },
+    teams: {
+      ratings: merge(target.teams.ratings, d.delRatings, d.upRatings, 'playerId'),
+      rules: merge(target.teams.rules, d.delRules, d.upRules),
+      games: merge(target.teams.games, d.delGameTeams, d.upGameTeams, 'gameId')
     }
   };
 }
@@ -646,6 +817,8 @@ function rerenderAll() {
   if (document.body.classList.contains('on-front')) renderFront();
   if (document.getElementById('page-history').classList.contains('active')) renderHistory();
   if (document.getElementById('page-money').classList.contains('active')) renderMoney();
+  if (document.getElementById('page-teams').classList.contains('active')) renderTeamsPage();
+  if (document.getElementById('page-ratings').classList.contains('active')) renderRatings();
 }
 
 // Everything currently in the database
@@ -664,7 +837,22 @@ async function fetchDb() {
   // Money lives in its own tables. If they haven't been created yet the rest still loads.
   try { db.money = await fetchMoney(); moneyDb = true; }
   catch (e) { console.warn('Money tables not available yet', e); moneyDb = false; }
+  try { db.teams = await fetchTeams(); teamsDb = true; }
+  catch (e) { console.warn('Teams tables not available yet', e); teamsDb = false; }
   return db;
+}
+async function fetchTeams() {
+  const [{ data: pr, error: e1 }, { data: tr, error: e2 }, { data: gt, error: e3 }] = await Promise.all([
+    sb.from('player_ratings').select('*'),
+    sb.from('team_rules').select('*').order('id', { ascending: true }),
+    sb.from('game_teams').select('*')
+  ]);
+  if (e1) throw e1; if (e2) throw e2; if (e3) throw e3;
+  return cleanTeams({
+    ratings: (pr || []).map(r => ({ playerId: r.player_id, pos: r.position, rating: r.rating, gk: r.keeper })),
+    rules: (tr || []).map(r => ({ id: r.id, kind: r.kind, a: r.player_a, b: r.player_b, note: r.note })),
+    games: (gt || []).map(r => ({ gameId: r.game_id, t1: r.team1_ids, t2: r.team2_ids, bibs: r.bibs, status: r.status, score1: r.score1, score2: r.score2 }))
+  });
 }
 async function fetchMoney() {
   const [{ data: gm, error: e1 }, { data: sp, error: e2 }, { data: ms, error: e3 }] = await Promise.all([
@@ -689,7 +877,7 @@ async function loadState() {
 
   setSyncStatus('Loading from database…');
   const synced = loadSynced();
-  const localMoney = S.money;
+  const localMoney = S.money, localTeams = S.teams;
   try {
     const db = await fetchDb();
     // Changes made on this device that never reached the database are kept and sent again
@@ -698,6 +886,7 @@ async function loadState() {
     S = pending && !diffEmpty(pending) ? applyDiff(db, pending) : db;
     // No money tables yet: keep this device's money and keep trying to send it
     if (!moneyDb) S.money = localMoney;
+    if (!teamsDb) S.teams = localTeams;
     try { localStorage.setItem('fbv3', JSON.stringify(S)); } catch (e) {}
     if (!diffEmpty(diffState(baseline, S))) syncChain = syncChain.then(syncToSupabase);
     else setSyncStatus('Up to date.');
@@ -764,8 +953,8 @@ async function syncToSupabase() {
     else setSyncStatus('Save failed - check your connection. Your data is still safe on this device.', true);
     return;
   }
-  if (moneyDiffEmpty(d)) { setSyncStatus('Saved to database.'); return; }
-  try {
+  let status = 'Saved to database.', statusErr = false;
+  if (!moneyDiffEmpty(d)) try {
     if (d.delGameMoney.length) {
       const { error } = await sb.from('game_money').delete().in('game_id', d.delGameMoney);
       if (error) throw error;
@@ -795,26 +984,49 @@ async function syncToSupabase() {
     }
     setBaseline({ ...baseline, money: snap.money });
     if (!moneyDb) { moneyDb = true; renderMoneyNotice(); }
-    setSyncStatus('Saved to database.');
   } catch (e) {
     console.error('Money sync failed', e);
-    // A missing table shows up as "relation does not exist" or a schema cache miss
-    const missing = e && (e.code === '42P01' || e.code === 'PGRST205' || /does not exist|schema cache/i.test(e.message || ''));
-    if (missing) { moneyDb = false; renderMoneyNotice(); setSyncStatus('Saved. Money is kept on this device until the money tables are added to the database.', true); }
-    else setSyncStatus('Money save failed - check your connection. It is still safe on this device.', true);
+    statusErr = true;
+    if (tableMissing(e)) { moneyDb = false; renderMoneyNotice(); status = 'Saved. Money is kept on this device until the money tables are added to the database.'; }
+    else status = 'Money save failed - check your connection. It is still safe on this device.';
   }
+  if (!teamsDiffEmpty(d)) try {
+    const run = async q => { const { error } = await q; if (error) throw error; };
+    if (d.delRatings.length) await run(sb.from('player_ratings').delete().in('player_id', d.delRatings));
+    if (d.upRatings.length) await run(sb.from('player_ratings').upsert(d.upRatings.map(r => ({ player_id: r.playerId, position: r.pos, rating: r.rating, keeper: r.gk }))));
+    if (d.delRules.length) await run(sb.from('team_rules').delete().in('id', d.delRules));
+    if (d.upRules.length) await run(sb.from('team_rules').upsert(d.upRules.map(x => ({ id: x.id, kind: x.kind, player_a: x.a, player_b: x.b, note: x.note }))));
+    if (d.delGameTeams.length) await run(sb.from('game_teams').delete().in('game_id', d.delGameTeams));
+    if (d.upGameTeams.length) await run(sb.from('game_teams').upsert(d.upGameTeams.map(t => ({
+      game_id: t.gameId, team1_ids: t.t1, team2_ids: t.t2, bibs: t.bibs, status: t.status, score1: t.score1, score2: t.score2
+    }))));
+    setBaseline({ ...baseline, teams: snap.teams });
+    if (!teamsDb) { teamsDb = true; renderTeamsNotice(); }
+  } catch (e) {
+    console.error('Teams sync failed', e);
+    statusErr = true;
+    if (tableMissing(e)) { teamsDb = false; renderTeamsNotice(); status = 'Saved. Teams, ratings and scores are kept on this device until the teams tables are added to the database.'; }
+    else status = 'Teams save failed - check your connection. They are still safe on this device.';
+  }
+  setSyncStatus(status, statusErr);
+}
+// A missing table shows up as "relation does not exist" or a schema cache miss
+function tableMissing(e) {
+  return !!(e && (e.code === '42P01' || e.code === 'PGRST205' || /does not exist|schema cache/i.test(e.message || '')));
 }
 
 let currentDay = null, builtPlaying = [], builtReserves = [], confirmedGameIdx = null;
 
 function goTab(t) {
-  if (appMode === 'view' && (t === 'setup' || t === 'game')) t = 'history';
+  if (appMode === 'view' && ['setup', 'game', 'teams', 'ratings'].includes(t)) t = 'history';
   document.querySelectorAll('.nb').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelector(`.nb[onclick="goTab('${t}')"]`).classList.add('active');
   document.getElementById('page-' + t).classList.add('active');
   if (t === 'history') renderHistory();
   if (t === 'money') renderMoney();
+  if (t === 'teams') renderTeamsPage();
+  if (t === 'ratings') renderRatings();
 }
 
 function togglePref() {
@@ -844,6 +1056,8 @@ function removePlayer(id) {
   if (!confirm('Remove this player?')) return;
   S.players = S.players.filter(p => p.id !== id);
   S.reserveNext = S.reserveNext.filter(i => i !== id);
+  S.teams.ratings = S.teams.ratings.filter(r => r.playerId !== id);
+  S.teams.rules = S.teams.rules.filter(x => x.a !== id && x.b !== id);
   save(); renderPlayers();
 }
 
@@ -965,12 +1179,17 @@ function exportText() {
 function exportLogCSV() {
   const nm = id => { const p = S.players.find(x => x.id === id); return p ? p.name : '(removed player)'; };
   const q = v => '"' + String(v).replace(/"/g, '""') + '"';
-  const rows = [['Game #', 'Date', 'Day', 'Playing count', 'Reserve count', 'Playing', 'Reserves']];
-  S.games.forEach((g, i) => rows.push([
-    i + 1, g.date, dayLabel(g.day),
-    g.playingIds.length, g.reserveIds.length,
-    g.playingIds.map(nm).join('; '), g.reserveIds.map(nm).join('; ')
-  ]));
+  const rows = [['Game #', 'Date', 'Day', 'Playing count', 'Reserve count', 'Playing', 'Reserves', 'Team 1', 'Team 2', 'Bibs', 'Team 1 score', 'Team 2 score']];
+  S.games.forEach((g, i) => {
+    const t = gameTeams(g.id), ok = t && t.status === 'confirmed';
+    rows.push([
+      i + 1, g.date, dayLabel(g.day),
+      g.playingIds.length, g.reserveIds.length,
+      g.playingIds.map(nm).join('; '), g.reserveIds.map(nm).join('; '),
+      ok ? t.t1.map(nm).join('; ') : '', ok ? t.t2.map(nm).join('; ') : '', ok ? 'Team ' + t.bibs : '',
+      ok && t.score1 !== null ? t.score1 : '', ok && t.score2 !== null ? t.score2 : ''
+    ]);
+  });
   const csv = '\ufeff' + rows.map(r => r.map(q).join(',')).join('\r\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
@@ -997,9 +1216,10 @@ function applyImport(text) {
   if (!d || !Array.isArray(d.players) || !Array.isArray(d.games)) { setMsg('imp-msg', 'Data format not recognised.', false); return; }
   if (!confirm(`Replace data${sb ? ' in the shared database' : ' on this device'} with ${d.players.length} players and ${d.games.length} games?\n\nYour current data will be backed up first.`)) return;
   try { localStorage.setItem('fbv3_backup', getRawData()); } catch (e) {}
-  const keptMoney = S.money;
+  const keptMoney = S.money, keptTeams = S.teams;
   S = cleanState(d);
   if (!d.money) S.money = keptMoney;   // older exports have no money section
+  if (!d.teams) S.teams = keptTeams;   // or teams section
   try { localStorage.setItem('fbv3', JSON.stringify(S)); } catch (e) {}
   // An import replaces everything, so compare against what the database holds right now,
   // including rows this device has never seen
@@ -1281,6 +1501,7 @@ function deleteGame(gIdx) {
   const wasLatest = gIdx === S.games.length - 1;
   S.games.splice(gIdx, 1);
   S.money.games = S.money.games.filter(m => m.gameId !== g.id);
+  S.teams.games = S.teams.games.filter(t => t.gameId !== g.id);
   if (confirmedGameIdx === gIdx) confirmedGameIdx = null;
   else if (confirmedGameIdx !== null && gIdx < confirmedGameIdx) confirmedGameIdx--;
   if (wasLatest) { const prev = S.games[S.games.length - 1]; S.reserveNext = prev ? [...prev.reserveIds] : []; }
@@ -1305,12 +1526,13 @@ function renderHistory() {
     }).join('');
   }
   const ld = document.getElementById('hist-log');
-  if (!gs.length) { ld.innerHTML = '<p style="color:var(--text-muted);font-size:13px">No games yet.</p>'; return; }
+  if (!gs.length) { ld.innerHTML = '<p style="color:var(--text-muted);font-size:13px">No games yet.</p>'; renderRecord(); return; }
   // Newest 5 games, unless someone asked to see older ones
   const firstShown = histShowAll ? 0 : Math.max(0, gs.length - RECENT_GAMES);
   ld.innerHTML = gs.map((g, i) => i >= firstShown ? `<div class="log-entry" id="log-entry-${i}"></div>` : '').reverse().join('') +
     (gs.length > RECENT_GAMES ? `<button class="btn sm" style="margin-top:4px" onclick="histShowAll = !histShowAll; renderHistory()">${histShowAll ? 'Show only the latest 5' : `Show older games (${firstShown})`}</button>` : '');
   gs.forEach((g, i) => { if (i >= firstShown) renderLogEntry(i); });
+  renderRecord();
 }
 
 function renderLogEntry(gIdx) {
@@ -1350,7 +1572,7 @@ function renderLogEntry(gIdx) {
     <div class="log-header" onclick="toggleLog(${gIdx})">
       <div>
         <div class="log-title">${esc(g.date)} — ${dayLabel(g.day)} ${g.manual ? '<span class="badge b-pref" style="font-size:10px;margin-left:4px">Manual</span>' : ''}${isLatest ? '<span class="badge b-guar" style="font-size:10px;margin-left:4px">Latest</span>' : ''}</div>
-        <div class="log-meta">${g.playingIds.length} playing · ${g.reserveIds.length} reserve${g.reserveIds.length !== 1 ? 's' : ''}</div>
+        <div class="log-meta">${g.playingIds.length} playing · ${g.reserveIds.length} reserve${g.reserveIds.length !== 1 ? 's' : ''}${logTeamsMeta(g)}</div>
       </div>
       <i class="ti ti-chevron-down" id="log-chevron-${gIdx}" style="color:var(--text-muted);transition:transform .2s;${wasOpen ? 'transform:rotate(180deg)' : ''}"></i>
     </div>
@@ -1359,6 +1581,7 @@ function renderLogEntry(gIdx) {
         <label for="log-date-${gIdx}" style="margin:0">Game date</label>
         <input type="date" id="log-date-${gIdx}" value="${esc(g.iso || '')}" style="width:auto;margin:0" onchange="logSetDate(${gIdx}, this.value)">
       </div>
+      ${logTeamsBlock(g, gIdx)}
       <div style="font-size:12px;font-weight:500;color:var(--text-success);margin-bottom:6px">Playing</div>
       ${playingRows}
       ${reserveRows}
@@ -1628,7 +1851,7 @@ function renderFront() {
     el.innerHTML = `<div class="sh" style="margin-top:0">${upcoming.length ? 'Next game' : 'Last game'}</div>
       <div class="front-when">${esc(g.iso ? isoToDate(g.iso).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) : g.date)}</div>
       <div class="front-facts"><span>⏰ ${esc(wa.time)}</span><span>📍 ${esc(wa.venue)}</span>${m ? `<span>Organised by ${whoBadge(m.org)}</span>` : ''}</div>
-      <div class="front-squad">${g.playingIds.map((id, i) => `<span><em>${i + 1}</em>${esc(nm(id))}</span>`).join('')}</div>
+      ${frontTeams(g) || `<div class="front-squad">${g.playingIds.map((id, i) => `<span><em>${i + 1}</em>${esc(nm(id))}</span>`).join('')}</div>`}
       ${g.reserveIds.length ? `<p class="hint" style="margin-top:10px">Reserves: ${g.reserveIds.map(id => esc(nm(id))).join(', ')}</p>` : ''}`;
   }
   const t = moneyTotals();
@@ -1684,6 +1907,365 @@ function goFront() {
 function logOut() {
   try { localStorage.removeItem('fbv3_organiser'); } catch (e) {}
   goFront();
+}
+
+/* ---- TEAMS ----
+   Positions and ratings live on the Ratings tab. Teams are picked on the Teams
+   tab, closer to the game: a draft is saved and shared with the other organisers,
+   and only shows on the front page once it's confirmed. The score is added in History. */
+const POS_SHORT = { def: 'DEF', att: 'ATT', any: 'ANY' };
+const POS_ORDER = { def: 0, any: 1, att: 2 };
+let teamsGameId = null, teamsSel = null, teamsNote = '', rtFilter = 'all';
+const pName = id => { const p = S.players.find(x => x.id === id); return p ? p.name : '?'; };
+function ratingOf(id) { return S.teams.ratings.find(r => r.playerId === id) || { playerId: id, pos: 'any', rating: 3, gk: false }; }
+function gameTeams(gameId) { return S.teams.games.find(t => t.gameId === gameId) || null; }
+function renderTeamsNotice() {
+  const show = !!sb && !teamsDb;
+  document.querySelectorAll('.teams-notice').forEach(el => {
+    el.style.display = show ? 'block' : 'none';
+    if (show) el.textContent = 'Teams, ratings and scores are only saved on this device for now. To share them with the other organisers, run supabase/teams.sql in the Supabase SQL Editor (see the README).';
+  });
+}
+// Keepers first, then defenders, anywhere, strikers; alphabetical within each (so the order doesn't give away ratings)
+function teamOrder(ids) {
+  return [...ids].sort((x, y) => {
+    const a = ratingOf(x), b = ratingOf(y);
+    return (b.gk - a.gk) || (POS_ORDER[a.pos] - POS_ORDER[b.pos]) || pName(x).localeCompare(pName(y));
+  });
+}
+const teamSum = ids => ids.reduce((s, id) => s + ratingOf(id).rating, 0);
+const teamCount = (ids, f) => ids.filter(id => f(ratingOf(id))).length;
+const sameSet = (a, b) => a.length === b.length && a.every(id => b.includes(id));
+
+/* The picker: every way to split the squad in two (sizes differ by at most one),
+   minus splits that break a rule (keepers on both teams, keep apart, same team),
+   scored on the rating gap plus uneven defenders and strikers. One of the
+   best-scoring splits is chosen at random, never the same as the current teams.
+   Then a coin decides which side is Team 1, and another who wears the bibs. */
+function teamRulesFor(squad) {
+  const inSq = new Set(squad);
+  return {
+    rules: S.teams.rules.filter(x => inSq.has(x.a) && inSq.has(x.b)),
+    keepers: teamCount(squad, r => r.gk) >= 2
+  };
+}
+function pickTeams(squad, avoid) {
+  const n = squad.length, half = Math.floor(n / 2), R = teamRulesFor(squad);
+  const rt = new Map(squad.map(id => [id, ratingOf(id)]));
+  const total = squad.reduce((s, id) => s + rt.get(id).rating, 0);
+  const cnt = f => squad.filter(id => f(rt.get(id))).length;
+  const defs = cnt(r => r.pos === 'def'), atts = cnt(r => r.pos === 'att'), gks = cnt(r => r.gk);
+  const key = a => { const s = new Set(a); return [a.slice().sort((x, y) => x - y).join(), squad.filter(id => !s.has(id)).sort((x, y) => x - y).join()].sort().join('|'); };
+  const avoidKey = avoid ? [avoid.t1.slice().sort((x, y) => x - y).join(), avoid.t2.slice().sort((x, y) => x - y).join()].sort().join('|') : '';
+  const score = a => {
+    const s = new Set(a);
+    let sum = 0, d = 0, at = 0, g = 0;
+    a.forEach(id => { const r = rt.get(id); sum += r.rating; if (r.pos === 'def') d++; if (r.pos === 'att') at++; if (r.gk) g++; });
+    const broken = (R.keepers && (g === 0 || g === gks)) || R.rules.some(x => (x.kind === 'apart') === (s.has(x.a) === s.has(x.b)));
+    const gap = (here, all) => Math.max(0, Math.abs(2 * here - all) - 1);
+    return { broken, cost: Math.abs(2 * sum - total) + 2 * gap(d, defs) + 2 * gap(at, atts) };
+  };
+  // Every split for normal squads; a large random sample for very big ones
+  const splits = [];
+  if (n <= 20) {
+    const rec = (start, chosen) => {
+      if (chosen.length === half) { splits.push(chosen.slice()); return; }
+      for (let i = start; i <= n - (half - chosen.length); i++) { chosen.push(squad[i]); rec(i + 1, chosen); chosen.pop(); }
+    };
+    rec(0, []);
+  } else {
+    for (let k = 0; k < 20000; k++) splits.push(squad.slice().sort(() => Math.random() - 0.5).slice(0, half));
+  }
+  let scored = splits.map(a => ({ a, ...score(a) }));
+  if (scored.some(x => !x.broken)) scored = scored.filter(x => !x.broken);   // if the rules can't all be met, balance only
+  const best = Math.min(...scored.map(x => x.cost));
+  let pool = scored.filter(x => x.cost <= best && key(x.a) !== avoidKey);
+  if (!pool.length) pool = scored.filter(x => x.cost <= best + 1 && key(x.a) !== avoidKey);
+  if (!pool.length) pool = scored;
+  const a = pool[Math.floor(Math.random() * pool.length)].a, inA = new Set(a), b = squad.filter(id => !inA.has(id));
+  const flip = Math.random() < 0.5;
+  return { t1: flip ? a : b, t2: flip ? b : a, bibs: Math.random() < 0.5 ? 1 : 2 };
+}
+
+/* ---- TEAMS TAB ---- */
+function teamsGameList() {
+  const today = isoToday();
+  const upcoming = S.games.filter(g => g.iso && g.iso >= today);
+  const past = S.games.filter(g => !(g.iso && g.iso >= today)).slice(-2).reverse();
+  return [...upcoming, ...past];
+}
+function teamsOpenGame(gameId) { teamsGameId = gameId || null; teamsSel = null; teamsNote = ''; goTab('teams'); }
+function teamsCurrentGame() {
+  const list = teamsGameList();
+  let g = list.find(x => x.id === teamsGameId);
+  if (!g) {
+    const today = isoToday();
+    g = list.find(x => x.iso && x.iso >= today && !(gameTeams(x.id) && gameTeams(x.id).status === 'confirmed'))
+      || list.find(x => x.iso && x.iso >= today) || list[0];
+    teamsGameId = g ? g.id : null;
+  }
+  return g || null;
+}
+function teamsStatusChip(t) {
+  return !t ? '<span class="tstatus st-none">Teams not picked</span>'
+    : t.status === 'draft' ? '<span class="tstatus st-draft">Draft — not confirmed</span>'
+    : '<span class="tstatus st-done">Teams confirmed</span>';
+}
+function renderTeamsPage() {
+  renderTeamsNotice();
+  const el = document.getElementById('teams-body');
+  const g = teamsCurrentGame();
+  if (!g) { el.innerHTML = '<div class="card"><p class="hint" style="margin:0">No games yet. Pick a squad on Run game first, then come back here to pick the teams.</p></div>'; return; }
+  const gIdx = S.games.indexOf(g), t = gameTeams(g.id), locked = !!t && t.status === 'confirmed';
+  const m = S.money.games.find(x => x.gameId === g.id), wa = WA[g.day] || WA.mon;
+  const when = g.iso ? isoToDate(g.iso).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) : g.date;
+  let html = `<div class="card">
+      <label for="teams-game" style="margin-top:0">Game</label>
+      <select id="teams-game" onchange="teamsGameId = +this.value; teamsSel = null; teamsNote = ''; renderTeamsPage()">${teamsGameList().map(x => {
+        const xt = gameTeams(x.id);
+        return `<option value="${x.id}"${x.id === g.id ? ' selected' : ''}>${esc(x.date)} — ${dayLabel(x.day)}${xt ? (xt.status === 'confirmed' ? ' · teams confirmed' : ' · draft teams') : ' · no teams yet'}</option>`;
+      }).join('')}</select>
+      <div class="tgame-head"><div><div class="tgame-when">${esc(when)}</div><div class="hint" style="margin:2px 0 0">⏰ ${esc(wa.time)} · 📍 ${esc(wa.venue)}${m ? ` · Organised by ${esc(m.org)}` : ''}</div></div>${teamsStatusChip(t)}</div>
+    </div>`;
+
+  // Squad: drop-outs and reserves can be changed until the teams are confirmed
+  html += `<div class="card"><h3 style="margin-bottom:4px">Squad · ${g.playingIds.length} playing</h3>
+    ${locked ? '' : '<p class="hint">Someone dropped out? Move them to the reserves and bring someone in before you generate.</p>'}
+    <div class="tchips">${g.playingIds.map(id => `<span class="tchip">${esc(pName(id))}${locked ? '' : `<button onclick="teamsMoveOut(${id})" aria-label="Move ${esc(pName(id))} to reserves" title="Move to reserves">✕</button>`}</span>`).join('') || '<span class="hint">No players.</span>'}</div>
+    ${g.reserveIds.length ? `<div class="sh">Reserves</div><div class="tchips">${g.reserveIds.map(id => `<span class="tchip res">${esc(pName(id))}${locked ? '' : `<button onclick="teamsMoveIn(${id})" aria-label="Bring in ${esc(pName(id))}">+ In</button>`}</span>`).join('')}</div>` : ''}
+  </div>`;
+
+  if (!t) {
+    html += `<div class="card"><p class="hint">${teamsNote ? esc(teamsNote) + ' ' : ''}Split the squad into two even teams. Defenders, strikers and keepers are shared out, ratings are balanced, and a coin flip decides who wears the bibs.</p>
+      <button class="btn primary" style="width:100%;justify-content:center;padding:12px" onclick="teamsGenerate()" ${g.playingIds.length < 2 ? 'disabled' : ''}><i class="ti ti-arrows-shuffle"></i> Generate teams</button></div>`;
+    el.innerHTML = html; return;
+  }
+
+  const squad = [...t.t1, ...t.t2], s1 = teamSum(t.t1), s2 = teamSum(t.t2), d = Math.abs(s1 - s2);
+  const stale = !sameSet(squad, g.playingIds);
+  if (stale) html += `<div class="notice">The squad has changed since these teams were made. ${locked ? 'Press Change teams, then Reshuffle.' : 'Press Reshuffle to pick teams from the current squad.'}</div>`;
+  const R = teamRulesFor(squad), in1 = id => t.t1.includes(id);
+  const line = (good, text) => `<div class="trule"><span class="${good ? 'tick' : 'cross'}">${good ? '✓' : '!'}</span><span>${text}</span></div>`;
+  const dd = [teamCount(t.t1, r => r.pos === 'def'), teamCount(t.t2, r => r.pos === 'def')];
+  const aa = [teamCount(t.t1, r => r.pos === 'att'), teamCount(t.t2, r => r.pos === 'att')];
+  let rules = line(Math.abs(dd[0] - dd[1]) <= 1, `Defenders split ${dd[0]}–${dd[1]}`) + line(Math.abs(aa[0] - aa[1]) <= 1, `Strikers split ${aa[0]}–${aa[1]}`);
+  if (R.keepers) rules += line(teamCount(t.t1, r => r.gk) > 0 && teamCount(t.t2, r => r.gk) > 0, `A keeper on each team (${esc(squad.filter(id => ratingOf(id).gk).map(pName).join(', '))})`);
+  R.rules.forEach(x => {
+    const ok = x.kind === 'apart' ? in1(x.a) !== in1(x.b) : in1(x.a) === in1(x.b);
+    rules += line(ok, `${esc(pName(x.a))} and ${esc(pName(x.b))} ${x.kind === 'apart' ? 'on different teams' : 'together'}`);
+  });
+  const pill = d <= 1 ? 'good' : d <= 3 ? 'ok' : 'bad';
+  html += `<div class="card">
+    <div class="tcoin"><span class="c">B</span><span>Coin flip: <strong>Team ${t.bibs}</strong> wear the bibs</span></div>
+    <div class="tbalance">
+      <div><div class="sh" style="margin:0">Team 1</div><div class="ttotal">${s1}</div></div>
+      <div style="text-align:center"><span class="tpill ${pill}">${d === 0 ? 'Even' : d <= 1 ? 'Close' : d <= 3 ? 'Slightly uneven' : 'Uneven'}</span><div class="hint" style="margin:4px 0 0">${d === 0 ? 'Same rating total' : `${d} point${d > 1 ? 's' : ''} apart`}</div></div>
+      <div style="text-align:right"><div class="sh" style="margin:0">Team 2</div><div class="ttotal">${s2}</div></div>
+    </div>
+    <div class="tbar" aria-hidden="true"><div style="width:${s1 + s2 ? s1 / (s1 + s2) * 100 : 50}%;background:var(${t.bibs === 1 ? '--bib' : '--plain'})"></div><div style="width:${s1 + s2 ? s2 / (s1 + s2) * 100 : 50}%;background:var(${t.bibs === 2 ? '--bib' : '--plain'})"></div></div>
+    <div class="trules">${rules}</div>
+  </div>`;
+  const col = n => {
+    const list = t['t' + n], bib = t.bibs === n;
+    return `<div class="tteam${bib ? ' bibs' : ''}"><div class="tteam-h"><span class="tdot"></span>Team ${n}${bib ? ' · bibs' : ''}<span class="ttot">${teamSum(list)} pts</span></div>
+      <div class="tmix">${teamCount(list, r => r.pos === 'def')} DEF · ${teamCount(list, r => r.pos === 'att')} ATT · ${teamCount(list, r => r.pos === 'any')} ANY</div>
+      ${teamOrder(list).map(id => { const r = ratingOf(id); return `<button class="tpl${teamsSel === id ? ' sel' : ''}" ${locked ? 'disabled' : `onclick="teamsTap(${id})"`} aria-pressed="${teamsSel === id}"><span class="nm">${esc(pName(id))}</span>${r.gk ? '<span class="badge b-gk">GK</span>' : ''}<span class="badge b-${r.pos}">${POS_SHORT[r.pos]}</span>${starsHtml(r.rating)}</button>`; }).join('')}</div>`;
+  };
+  html += `<div class="tteams">${col(1)}${col(2)}</div>
+    <p class="hint">${locked ? 'These teams are confirmed and show on the front page.' : teamsSel ? `Now tap a player on the other team to swap with ${esc(pName(teamsSel))}.` : 'Tap a player, then a player on the other team, to swap them.'}</p>
+    ${locked ? '' : `<div class="tactions" style="margin-bottom:12px"><button class="btn" onclick="teamsGenerate()"><i class="ti ti-refresh"></i> Reshuffle</button><button class="btn" onclick="teamsFlip()"><i class="ti ti-coin"></i> Flip for bibs again</button></div>`}
+    <div class="card">
+      <h3 style="margin-bottom:0"><i class="ti ti-brand-whatsapp" style="color:#25a244"></i> Teams message</h3>
+      <textarea id="teams-wa" rows="18" readonly style="width:100%;margin-top:10px;padding:10px;border:0.5px solid var(--border-strong);border-radius:var(--radius);background:var(--surface-1);color:var(--text-primary);font-size:13px;font-family:inherit;line-height:1.45">${esc(teamsText(g, t))}</textarea>
+      <div class="tactions" style="margin-top:8px"><button class="btn primary" onclick="teamsCopy()"><i class="ti ti-copy"></i> Copy for WhatsApp</button><button class="btn" onclick="teamsOpenWa()"><i class="ti ti-brand-whatsapp"></i> Open WhatsApp</button></div>
+      <div id="teams-wa-msg" class="hint" style="margin:6px 0 0"></div>
+    </div>
+    ${locked
+      ? `<div class="ok"><i class="ti ti-check"></i> Teams confirmed. They show on the front page, and you can add the score in History after the game.</div><button class="btn" onclick="teamsUnconfirm()"><i class="ti ti-edit"></i> Change teams</button>`
+      : `<p class="hint">The draft is saved and the other organisers can see it here, but it isn't on the front page until you confirm.</p>
+         <div class="tactions"><button class="btn primary" style="padding:12px" onclick="teamsConfirm()"><i class="ti ti-check"></i> Confirm teams</button><button class="btn dghost" onclick="teamsDiscard()">Discard draft</button></div>`}`;
+  el.innerHTML = html;
+}
+const starsHtml = r => `<span class="tstars" aria-label="${r} out of 5">${'★'.repeat(r)}<span class="off">${'★'.repeat(5 - r)}</span></span>`;
+
+function teamsGame() { return S.games.find(x => x.id === teamsGameId) || null; }
+function teamsSetRecord(g, teams) {
+  const old = gameTeams(g.id);
+  S.teams.games = S.teams.games.filter(x => x.gameId !== g.id);
+  if (teams) S.teams.games.push({ gameId: g.id, t1: teams.t1, t2: teams.t2, bibs: teams.bibs, status: teams.status || 'draft', score1: old ? old.score1 : null, score2: old ? old.score2 : null });
+}
+function teamsGenerate() {
+  const g = teamsGame(); if (!g || g.playingIds.length < 2) return;
+  const t = gameTeams(g.id);
+  if (t && t.status === 'confirmed') return;
+  teamsSetRecord(g, pickTeams([...g.playingIds], t));
+  teamsSel = null; teamsNote = ''; save(); renderTeamsPage();
+}
+function teamsFlip() {
+  const g = teamsGame(), t = g && gameTeams(g.id); if (!t || t.status === 'confirmed') return;
+  t.bibs = Math.random() < 0.5 ? 1 : 2; save(); renderTeamsPage();
+}
+function teamsTap(id) {
+  const g = teamsGame(), t = g && gameTeams(g.id); if (!t || t.status === 'confirmed') return;
+  if (teamsSel === null || teamsSel === id || t.t1.includes(teamsSel) === t.t1.includes(id)) { teamsSel = teamsSel === id ? null : id; renderTeamsPage(); return; }
+  const [x, y] = t.t1.includes(teamsSel) ? [teamsSel, id] : [id, teamsSel];   // x leaves Team 1, y leaves Team 2
+  t.t1 = t.t1.map(v => v === x ? y : v); t.t2 = t.t2.map(v => v === y ? x : v);
+  teamsSel = null; save(); renderTeamsPage();
+}
+function teamsConfirm() {
+  const g = teamsGame(), t = g && gameTeams(g.id); if (!t) return;
+  if (!sameSet([...t.t1, ...t.t2], g.playingIds) && !confirm('The squad has changed since these teams were made. Confirm them anyway?')) return;
+  t.status = 'confirmed'; teamsSel = null; save(); renderTeamsPage();
+}
+function teamsUnconfirm() { const g = teamsGame(), t = g && gameTeams(g.id); if (!t) return; t.status = 'draft'; save(); renderTeamsPage(); }
+function teamsDiscard() {
+  const g = teamsGame(); if (!g) return;
+  if (!confirm('Discard these draft teams?')) return;
+  teamsSetRecord(g, null); teamsSel = null; save(); renderTeamsPage();
+}
+// Squad changes on the Teams tab use the same moves as History, then clear a draft that no longer fits
+function teamsSquadChanged(g) {
+  const t = gameTeams(g.id);
+  if (t && t.status === 'draft' && !sameSet([...t.t1, ...t.t2], g.playingIds)) {
+    teamsSetRecord(g, null); teamsNote = 'The squad changed, so the draft teams were cleared.'; save();
+  }
+  teamsSel = null; renderTeamsPage();
+}
+function teamsMoveOut(id) { const g = teamsGame(); if (!g) return; postMoveToReserve(id, S.games.indexOf(g)); teamsSquadChanged(g); }
+function teamsMoveIn(id) { const g = teamsGame(); if (!g) return; postMoveToPlaying(id, S.games.indexOf(g)); teamsSquadChanged(g); }
+
+// WhatsApp message in the group's usual format, with the game details at the top
+function teamsText(g, t) {
+  const iso = waGameIso(g), wa = WA[g.day] || WA.mon;
+  const wd = iso ? isoToDate(iso).toLocaleDateString('en-GB', { weekday: 'long' }) : dayLabel(g.day);
+  const head = n => `*Team ${n}*${t.bibs === n ? ' (bibs)' : ''}`;
+  return [`⚽️ ${wd.toUpperCase()} FOOTBALL ⚽️`, '',
+    `📅 ${iso ? waPrettyDate(iso) : g.date}`, `⏰ ${wa.time}`, `📍 ${wa.venue}`, '',
+    'Teams for today', '',
+    head(1), '', ...teamOrder(t.t1).map(pName), '', '', 'Vs', '',
+    head(2), '', ...teamOrder(t.t2).map(pName), '',
+    `See you later. Please be on time for ${wa.time} kick off`].join('\n');
+}
+function teamsCopy() {
+  const ta = document.getElementById('teams-wa'); if (!ta) return;
+  const done = () => setMsg('teams-wa-msg', 'Copied. Paste it into the WhatsApp group.', true);
+  const fallback = () => {
+    ta.focus(); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+    setMsg('teams-wa-msg', ok ? 'Copied. Paste it into the WhatsApp group.' : 'Text selected. Copy it manually.', true);
+  };
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(ta.value).then(done).catch(fallback);
+  else fallback();
+}
+function teamsOpenWa() { const ta = document.getElementById('teams-wa'); if (ta) window.open('https://wa.me/?text=' + encodeURIComponent(ta.value), '_blank'); }
+
+/* ---- RATINGS TAB ---- */
+function renderRatings() {
+  renderTeamsNotice();
+  const filters = [['all', 'All'], ['def', 'Defenders'], ['att', 'Strikers'], ['any', 'Anywhere'], ['gk', 'Keepers']];
+  document.getElementById('rt-filters').innerHTML = filters.map(([k, l]) => `<button class="btn xs${rtFilter === k ? ' on' : ''}" onclick="rtFilter='${k}'; renderRatings()">${l}</button>`).join('');
+  const match = { all: () => true, def: r => r.pos === 'def', att: r => r.pos === 'att', any: r => r.pos === 'any', gk: r => r.gk }[rtFilter];
+  const list = [...S.players].sort((a, b) => a.name.localeCompare(b.name)).filter(p => match(ratingOf(p.id)));
+  document.getElementById('rating-list').innerHTML = !S.players.length ? '<p class="hint" style="margin:0">Add players in Setup first.</p>'
+    : list.map(p => {
+      const r = ratingOf(p.id);
+      return `<div class="rt-row"><span class="name">${esc(p.name)}</span>
+        <select id="rt-pos-${p.id}" aria-label="Position for ${esc(p.name)}" onchange="ratingSet(${p.id}, { pos: this.value })">
+          <option value="any"${r.pos === 'any' ? ' selected' : ''}>Anywhere</option><option value="def"${r.pos === 'def' ? ' selected' : ''}>Defender</option><option value="att"${r.pos === 'att' ? ' selected' : ''}>Striker</option></select>
+        <label class="chklbl" style="margin:0"><input type="checkbox" id="rt-gk-${p.id}"${r.gk ? ' checked' : ''} onchange="ratingSet(${p.id}, { gk: this.checked })"> <span>Keeper</span></label>
+        <span class="rt-steps" role="group" aria-label="Rating for ${esc(p.name)}">${[1, 2, 3, 4, 5].map(n => `<button class="rt-step${r.rating >= n ? ' on' : ''}" onclick="ratingSet(${p.id}, { rating: ${n} })" aria-label="${n} star${n > 1 ? 's' : ''}" aria-pressed="${r.rating === n}">${n}</button>`).join('')}</span>
+      </div>`;
+    }).join('') || '<p class="hint" style="margin:8px 0 0">No players match.</p>';
+  // Rules
+  document.getElementById('rule-list').innerHTML = S.teams.rules.map(x => `<div class="trule-row"><span class="badge ${x.kind === 'apart' ? 'b-att' : 'b-def'}">${x.kind === 'apart' ? 'Keep apart' : 'Same team'}</span><span>${esc(pName(x.a))} &amp; ${esc(pName(x.b))}</span>${x.note ? `<span class="sub">${esc(x.note)}</span>` : ''}<button class="btn xs dghost" style="margin-left:auto" onclick="ruleDelete(${x.id})" title="Delete rule"><i class="ti ti-x"></i></button></div>`).join('')
+    || '<p class="hint" style="margin:0 0 6px">No rules yet.</p>';
+  const opts = '<option value="">Choose…</option>' + [...S.players].sort((a, b) => a.name.localeCompare(b.name)).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
+  ['rule-a', 'rule-b'].forEach(id => { const el = document.getElementById(id), v = el.value; el.innerHTML = opts; el.value = v; });
+}
+function ratingSet(playerId, change) {
+  let r = S.teams.ratings.find(x => x.playerId === playerId);
+  if (!r) { r = { playerId, pos: 'any', rating: 3, gk: false }; S.teams.ratings.push(r); }
+  Object.assign(r, change);
+  save(); renderRatings();
+}
+function ruleAdd() {
+  const kind = document.getElementById('rule-kind').value, a = +document.getElementById('rule-a').value, b = +document.getElementById('rule-b').value;
+  const err = document.getElementById('rule-err');
+  if (!a || !b) { err.textContent = 'Choose two players.'; return; }
+  if (a === b) { err.textContent = 'Choose two different players.'; return; }
+  if (S.teams.rules.some(x => (x.a === a && x.b === b) || (x.a === b && x.b === a))) { err.textContent = 'Those two already have a rule. Delete it first to change it.'; return; }
+  err.textContent = '';
+  S.teams.rules.push({ id: Date.now(), kind: kind === 'together' ? 'together' : 'apart', a, b, note: document.getElementById('rule-note').value.trim() });
+  ['rule-a', 'rule-b', 'rule-note'].forEach(id => { document.getElementById(id).value = ''; });
+  save(); renderRatings();
+}
+function ruleDelete(id) { S.teams.rules = S.teams.rules.filter(x => x.id !== id); save(); renderRatings(); }
+
+/* ---- TEAMS AND SCORES IN HISTORY AND ON THE FRONT PAGE ---- */
+const hasScore = t => t && t.score1 !== null && t.score2 !== null;
+function teamColumns(t) {
+  const won = n => hasScore(t) && (n === 1 ? t.score1 > t.score2 : t.score2 > t.score1) ? ' <span class="twon">Won</span>' : '';
+  const col = n => `<div class="tteam${t.bibs === n ? ' bibs' : ''}" style="padding:10px"><div class="tteam-h"><span class="tdot"></span>Team ${n}${t.bibs === n ? ' · bibs' : ''}${won(n)}</div><div style="font-size:13px;line-height:1.7">${teamOrder(t['t' + n]).map(id => esc(pName(id))).join('<br>')}</div></div>`;
+  return `<div class="tteams" style="margin:0">${col(1)}${col(2)}</div>`;
+}
+function frontTeams(g) {
+  const t = gameTeams(g.id);
+  return t && t.status === 'confirmed' ? `<div style="margin-top:14px">${teamColumns(t)}</div>` : '';
+}
+function logTeamsMeta(g) {
+  const t = gameTeams(g.id);
+  if (!t) return '';
+  if (t.status === 'draft') return ' · Draft teams';
+  if (hasScore(t)) return ` · <strong style="color:var(--text-primary)">Score ${t.score1}–${t.score2}</strong>`;
+  return g.iso && g.iso > isoToday() ? ' · Teams picked' : ' · <span style="color:var(--text-warning)">Score needed</span>';
+}
+function logTeamsBlock(g, gIdx) {
+  const t = gameTeams(g.id), edit = appMode === 'edit';
+  if (!t || t.status !== 'confirmed') {
+    const recent = g.iso ? g.iso >= isoToday() : false;
+    return edit && (recent || gIdx === S.games.length - 1)
+      ? `<div style="margin-bottom:12px"><button class="btn sm" onclick="teamsOpenGame(${g.id})"><i class="ti ti-users-group"></i> ${t ? 'Finish the draft teams' : 'Pick teams'}</button></div>` : '';
+  }
+  const dot = n => `<span class="tdot" style="background:var(${t.bibs === n ? '--bib' : '--plain'})"></span>`;
+  let score;
+  if (edit && !(g.iso && g.iso > isoToday())) {
+    score = `<div class="tscore">
+      <div class="side">${dot(1)}Team 1</div>
+      <div class="nums"><input type="number" min="0" step="1" inputmode="numeric" id="score1-${g.id}" value="${t.score1 ?? ''}" placeholder="0" aria-label="Team 1 goals"><span>–</span><input type="number" min="0" step="1" inputmode="numeric" id="score2-${g.id}" value="${t.score2 ?? ''}" placeholder="0" aria-label="Team 2 goals"></div>
+      <div class="side r">Team 2${dot(2)}</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin:-4px 0 12px;flex-wrap:wrap"><button class="btn sm primary" onclick="scoreSave(${g.id})"><i class="ti ti-check"></i> Save score</button>${hasScore(t) ? `<button class="btn sm dghost" onclick="scoreClear(${g.id})">Clear score</button>` : ''}<span id="score-msg-${g.id}" class="err" style="margin:0"></span></div>`;
+  } else {
+    score = hasScore(t) ? `<div class="tscore"><div class="side">${dot(1)}Team 1</div><div class="nums big">${t.score1} – ${t.score2}</div><div class="side r">Team 2${dot(2)}</div></div>`
+      : `<p class="hint">${g.iso && g.iso > isoToday() ? 'The score can be added after the game.' : 'No score recorded.'}</p>`;
+  }
+  return `<div style="margin-bottom:12px">${score}${teamColumns(t)}${edit ? `<div style="margin-top:8px"><button class="btn sm" onclick="teamsOpenGame(${g.id})"><i class="ti ti-users-group"></i> Teams and WhatsApp</button></div>` : ''}</div>`;
+}
+function scoreSave(gameId) {
+  const t = gameTeams(gameId), a = toScore(document.getElementById('score1-' + gameId).value), b = toScore(document.getElementById('score2-' + gameId).value);
+  if (!t) return;
+  if (a === null || b === null) { setMsg('score-msg-' + gameId, 'Enter both scores as whole numbers.', false); return; }
+  t.score1 = a; t.score2 = b; save();
+  const gIdx = S.games.findIndex(x => x.id === gameId); renderLogEntry(gIdx); renderRecord();
+}
+function scoreClear(gameId) {
+  const t = gameTeams(gameId); if (!t) return;
+  t.score1 = null; t.score2 = null; save();
+  const gIdx = S.games.findIndex(x => x.id === gameId); renderLogEntry(gIdx); renderRecord();
+}
+// Played, won, drawn and lost for each player, from confirmed teams with a score
+function renderRecord() {
+  const el = document.getElementById('hist-record'); if (!el) return;
+  const rec = new Map();
+  S.teams.games.filter(t => t.status === 'confirmed' && hasScore(t) && S.games.some(g => g.id === t.gameId)).forEach(t => [1, 2].forEach(n => t['t' + n].forEach(id => {
+    const r = rec.get(id) || { p: 0, w: 0, d: 0, l: 0 }, us = n === 1 ? t.score1 : t.score2, them = n === 1 ? t.score2 : t.score1;
+    r.p++; if (us > them) r.w++; else if (us < them) r.l++; else r.d++;
+    rec.set(id, r);
+  })));
+  if (!rec.size) { el.innerHTML = '<p class="hint" style="margin:0">No scores yet. Confirm teams, then add the score to the game in the log below after it\'s played.</p>'; return; }
+  const rows = [...rec.entries()].sort(([a, x], [b, y]) => (y.w / y.p - x.w / x.p) || (y.p - x.p) || pName(a).localeCompare(pName(b)));
+  el.innerHTML = `<div class="tablewrap"><table class="ledger" style="min-width:0"><thead><tr><th>Player</th><th class="r">P</th><th class="r">W</th><th class="r">D</th><th class="r">L</th><th class="r">Win %</th></tr></thead><tbody>${rows.map(([id, r]) =>
+    `<tr><td>${esc(pName(id))}</td><td class="r">${r.p}</td><td class="r">${r.w}</td><td class="r">${r.d}</td><td class="r">${r.l}</td><td class="r">${Math.round(r.w / r.p * 100)}%</td></tr>`).join('')}</tbody></table></div>`;
 }
 
 /* ---- WHATSAPP MESSAGE ---- */
