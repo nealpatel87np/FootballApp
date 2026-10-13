@@ -368,7 +368,7 @@
     <div id="step-day">
       <div class="card">
         <h3>Which day are you running?</h3>
-        <label for="org-select">Who's organising? They collect the money and pay for the pitch.</label>
+        <label for="org-select">Who's organising? When you track this game's money, they collect it and pay for the pitch.</label>
         <select id="org-select" style="max-width:220px" onchange="try { localStorage.setItem('fbv3_org', this.value); } catch (e) {}">
           <option>Neal</option><option>Kev</option><option>Gav</option>
         </select>
@@ -1310,13 +1310,13 @@ function confirmGame() {
   const gameId = Date.now(), org = document.getElementById('org-select').value;
   S.games.push({ id: gameId, date, day, iso, playingIds: [...playingIds], reserveIds: [...reserveIds] });
   sortGames(S.games);
-  S.money.games.push(newGameMoney(gameId, org));
+  // Money isn't tracked until someone presses Track money on the Money tab
   confirmedGameIdx = S.games.findIndex(g => g.id === gameId);
   S.players.forEach(p => { if (playingIds.includes(p.id)) { p.played++; p.lastPlayed = date; } if (reserveIds.includes(p.id)) p.reserved++; });
   S.reserveNext = reserveIds;
   save();
   document.getElementById('done-banner').innerHTML = `<i class="ti ti-check"></i> Game saved — ${date}`;
-  document.getElementById('done-summary').innerHTML = `<p style="font-size:13px;color:var(--text-secondary)">${day === 'mon' ? 'Monday' : 'Thursday'} · ${playingIds.length} playing · ${reserveIds.length} reserve${reserveIds.length !== 1 ? 's' : ''}</p>${reserveIds.length ? `<p style="font-size:12px;color:var(--text-secondary);margin-top:6px"><i class="ti ti-info-circle"></i> ${reserveIds.length} player(s) guaranteed next game.</p>` : ''}<p style="font-size:12px;color:var(--text-secondary);margin-top:6px"><i class="ti ti-coin-pound"></i> ${esc(org)} is collecting ${gbp(S.money.settings.price)} each. Tick who has paid on the Money tab.</p>`;
+  document.getElementById('done-summary').innerHTML = `<p style="font-size:13px;color:var(--text-secondary)">${day === 'mon' ? 'Monday' : 'Thursday'} · ${playingIds.length} playing · ${reserveIds.length} reserve${reserveIds.length !== 1 ? 's' : ''}</p>${reserveIds.length ? `<p style="font-size:12px;color:var(--text-secondary);margin-top:6px"><i class="ti ti-info-circle"></i> ${reserveIds.length} player(s) guaranteed next game.</p>` : ''}<p style="font-size:12px;color:var(--text-secondary);margin-top:6px"><i class="ti ti-coin-pound"></i> Money isn't tracked for this game yet. When you're ready, press <strong>Track money</strong> on it in the Money tab${org ? ` (${esc(org)} will be set as the organiser)` : ''}.</p>`;
   renderPostGame();
   document.getElementById('step-squad').style.display = 'none';
   document.getElementById('step-done').style.display = 'block';
@@ -2144,7 +2144,7 @@ function teamsText(g, t) {
     'Teams for today', '',
     head(1), '', ...teamOrder(t.t1).map(pName), '', '', 'Vs', '',
     head(2), '', ...teamOrder(t.t2).map(pName), '',
-    `See you later. Please be on time for ${wa.time} kick off`].join('\n');
+    `See you later. Please be on time for the ${wa.time} kick-off`].join('\n');
 }
 function teamsCopy() {
   const ta = document.getElementById('teams-wa'); if (!ta) return;
@@ -2308,10 +2308,8 @@ function waText() {
   const day = waDay || currentDay || 'mon';
   const { playing, reserves } = waNames();
   const n = playing.length;
-  let count = `We have ${n}.`;
-  if (reserves.length) count += ` ${reserves.length} reserve${reserves.length === 1 ? '' : 's'}`;
-  else if (n < 12) count += ` Need ${12 - n} more`;
-  else count += ' No reserves';
+  const count = reserves.length ? `We have ${n} and ${reserves.length} reserve${reserves.length === 1 ? '' : 's'}`
+    : n < 12 ? `We have ${n} and need ${12 - n} more` : `We have ${n} and no reserves`;
   const lines = [
     `⚽️ ${waTitleDay(day)} FOOTBALL ⚽️`, '',
     `📅 ${waPrettyDate(document.getElementById('wa-date').value)}`,
@@ -2320,7 +2318,7 @@ function waText() {
     count, '',
     ...playing
   ];
-  if (reserves.length) lines.push('', '*Reserves*', '', ...reserves);
+  if (reserves.length) lines.push('', reserves.length === 1 ? '*Reserve*' : '*Reserves*', '', ...reserves);
   if (document.getElementById('wa-booked').checked) lines.push('', '*Pitch has been booked*');
   return lines.join('\n');
 }
