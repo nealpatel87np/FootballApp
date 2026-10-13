@@ -49,11 +49,11 @@ The page can write the weekly WhatsApp message for you.
 The **Money** tab tracks payments, the pitch cost and the kitty.
 
 - Each player pays £8.50 and the pitch costs £80. Anything collected over the pitch cost is the surplus: 10% of it goes to admin and the rest to the kitty. If too few pay to cover the pitch, the shortfall comes out of the kitty. These amounts can be changed on the Money tab, and changes apply to games booked after that.
-- The money is held by Neal, Kev or Gav. Choose who's organising on **Run game** before picking the day; that person collects the money and pays for the pitch. On the Money tab you can change a game's organiser, tick who has paid, or mark everyone as paid.
+- The money is held by Neal, Kev or Gav. A new game's money isn't tracked until you're ready: on the Money tab, press **Track money** on the game. The organiser chosen on **Run game** is used by default; that person collects the money and pays for the pitch, and the price and pitch cost are taken from the settings at that moment. Once a game is tracked you can change its organiser, tick who has paid, or mark everyone as paid.
 - The kitty is one total, and the Money tab also shows how much of it each organiser holds. Next to it, **Still owed** shows money players haven't paid yet and what the kitty will be once it's collected, and each organiser's card shows what's still owed to them. The 10% admin share is taken off each game but not displayed. The **How each game is split** settings are hidden until you press **Show**. Enter what each of them held before the app under **Starting balances**. These are hidden until you press **Show starting balances**, and each device remembers whether they're shown.
 - Record kitty spends (dinner, drinks, football) with who paid them. The **Kitty ledger** lists every pound in and out with a running balance.
 - To keep the page short, the Games list shows the latest 5 games plus any older game where money is still owed, and the Kitty ledger shows the latest 15 rows. Use **Show older games** or **Show full ledger** to see the rest. Totals always include everything. The History game log also shows the latest 5 games with a **Show older games** button.
-- Games from before this feature aren't counted unless you press **Track money** on them. Games added by hand can be tracked by choosing an organiser in the add-game form.
+- A game only counts towards the kitty and **Still owed** once its money is tracked. Games added by hand can be tracked straight away by choosing an organiser in the add-game form.
 
 **Setup (once):** run `supabase/money.sql` in the Supabase SQL Editor to create the money tables. Until then, money is saved only on the device where it was entered, and the Money tab shows a notice.
 
