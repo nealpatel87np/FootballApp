@@ -201,6 +201,13 @@
   .tchip { display: inline-flex; align-items: center; gap: 2px; padding: 4px 4px 4px 10px; border-radius: 20px; background: var(--surface-1); font-size: 13px; border: 0.5px solid var(--border); min-height: 30px; }
   .tchip button { border: none; background: none; color: var(--text-danger); cursor: pointer; font-size: 12px; padding: 3px 7px; border-radius: 20px; font-family: inherit; }
   .tchip.res { background: transparent; border-style: dashed; }
+  .tchip .lt { color: var(--text-muted); opacity: .55; padding: 3px 5px; }
+  .tchip .lt.on { opacity: 1; }
+  .tchip.late { background: var(--bg-warning); color: var(--text-warning); }
+  .b-late { background: var(--bg-warning); color: var(--text-warning); }
+  .mv.late { color: var(--text-warning); border-color: var(--border-strong); }
+  .mv.late.on { background: var(--bg-warning); border-color: var(--text-warning); font-weight: 500; }
+  body.mode-edit .late-view { display: none; }
   .tchip.res button { color: var(--text-success); }
   .tcoin { display: flex; align-items: center; gap: 10px; background: var(--bib-bg); color: var(--bib-text); border-radius: var(--radius); padding: 8px 12px; font-size: 13px; margin-bottom: 12px; }
   .tcoin .c { width: 26px; height: 26px; border-radius: 50%; background: var(--bib); color: #1a1a18; display: grid; place-items: center; font-weight: 600; font-size: 12px; flex-shrink: 0; }
@@ -647,6 +654,7 @@ let S = { players: [], games: [], reserveNext: [], money: null, teams: null };  
 let moneyDb = true;   // false when the money tables haven't been added to the database yet
 let teamsDb = true;   // false when the teams tables haven't been added to the database yet
 let skillsDb = true;  // false when the skills table hasn't been added to the database yet
+let lateDb = true;    // false when the late arrivals table hasn't been added to the database yet
 
 /* ---- SAFE TEXT AND CLEAN RECORDS ---- */
 // Escape text from storage, the database or an import before it goes into HTML
@@ -732,6 +740,8 @@ function cleanSkill(x) {
     pos: ['auto', ...POSITIONS].includes(x.pos) ? x.pos : 'auto', keeper: !!x.keeper
   };
 }
+// Who arrived late to each game
+function cleanLate(x) { return { gameId: toId(x.gameId), ids: toIds(x.ids) }; }
 function cleanGameTeams(t) {
   return {
     gameId: toId(t.gameId), t1: toIds(t.t1), t2: toIds(t.t2), bibs: Number(t.bibs) === 2 ? 2 : 1,
@@ -744,7 +754,8 @@ function cleanTeams(t) {
     ratings: (Array.isArray(t && t.ratings) ? t.ratings : []).map(cleanRating).filter(r => r.playerId !== null),
     rules: (Array.isArray(t && t.rules) ? t.rules : []).map((x, i) => cleanRule(x, base + i)).filter(x => x.a !== null && x.b !== null),
     games: (Array.isArray(t && t.games) ? t.games : []).map(cleanGameTeams).filter(x => x.gameId !== null),
-    skills: (Array.isArray(t && t.skills) ? t.skills : []).map(cleanSkill).filter(x => x.playerId !== null)
+    skills: (Array.isArray(t && t.skills) ? t.skills : []).map(cleanSkill).filter(x => x.playerId !== null),
+    late: (Array.isArray(t && t.late) ? t.late : []).map(cleanLate).filter(x => x.gameId !== null)
   };
 }
 function cleanState(d) {
@@ -816,8 +827,13 @@ function diffState(base, cur) {
     delSpends: base.money.spends.filter(x => !cs.has(x.id)).map(x => x.id),
     moneySettings: bset !== cset ? cleanMoneySettings(cur.money) : null,
     ...teamsDiff(base.teams, cur.teams, key),
-    ...skillsDiff(base.teams.skills, cur.teams.skills, key)
+    ...skillsDiff(base.teams.skills, cur.teams.skills, key),
+    ...lateDiff(base.teams.late, cur.teams.late, key)
   };
+}
+function lateDiff(base, cur, key) {
+  const b = key(base, cleanLate, 'gameId'), c = key(cur, cleanLate, 'gameId');
+  return { upLate: cur.filter(x => b.get(x.gameId) !== c.get(x.gameId)), delLate: base.filter(x => !c.has(x.gameId)).map(x => x.gameId) };
 }
 function skillsDiff(base, cur, key) {
   const b = key(base, cleanSkill, 'playerId'), c = key(cur, cleanSkill, 'playerId');
@@ -846,7 +862,8 @@ function teamsDiffEmpty(d) {
   return !d.upRatings.length && !d.delRatings.length && !d.upRules.length && !d.delRules.length && !d.upGameTeams.length && !d.delGameTeams.length;
 }
 function skillsDiffEmpty(d) { return !d.upSkills.length && !d.delSkills.length; }
-function diffEmpty(d) { return coreDiffEmpty(d) && moneyDiffEmpty(d) && teamsDiffEmpty(d) && skillsDiffEmpty(d); }
+function lateDiffEmpty(d) { return !d.upLate.length && !d.delLate.length; }
+function diffEmpty(d) { return coreDiffEmpty(d) && moneyDiffEmpty(d) && teamsDiffEmpty(d) && skillsDiffEmpty(d) && lateDiffEmpty(d); }
 function applyDiff(target, d) {
   const merge = (list, del, up, k = 'id') => {
     const out = list.filter(x => !del.includes(x[k]));
@@ -866,7 +883,8 @@ function applyDiff(target, d) {
       ratings: merge(target.teams.ratings, d.delRatings, d.upRatings, 'playerId'),
       rules: merge(target.teams.rules, d.delRules, d.upRules),
       games: merge(target.teams.games, d.delGameTeams, d.upGameTeams, 'gameId'),
-      skills: merge(target.teams.skills, d.delSkills, d.upSkills, 'playerId')
+      skills: merge(target.teams.skills, d.delSkills, d.upSkills, 'playerId'),
+      late: merge(target.teams.late, d.delLate, d.upLate, 'gameId')
     }
   };
 }
@@ -904,6 +922,12 @@ async function fetchDb() {
     db.teams.skills = cleanTeams({ skills: (data || []).map(r => ({ playerId: r.player_id, att: r.attack, def: r.defence, fit: r.fitness, gk: r.goalkeeping, pos: r.position, keeper: r.keeper })) }).skills;
     skillsDb = true;
   } catch (e) { console.warn('Skills table not available yet', e); skillsDb = false; }
+  try {
+    const { data, error } = await sb.from('game_late').select('*');
+    if (error) throw error;
+    db.teams.late = cleanTeams({ late: (data || []).map(r => ({ gameId: r.game_id, ids: r.player_ids })) }).late;
+    lateDb = true;
+  } catch (e) { console.warn('Late arrivals table not available yet', e); lateDb = false; }
   return db;
 }
 async function fetchTeams() {
@@ -953,6 +977,7 @@ async function loadState() {
     if (!moneyDb) S.money = localMoney;
     if (!teamsDb) S.teams = localTeams;
     else if (!skillsDb) S.teams.skills = localTeams.skills;
+    if (teamsDb && !lateDb) S.teams.late = localTeams.late;
     try { localStorage.setItem('fbv3', JSON.stringify(S)); } catch (e) {}
     if (!diffEmpty(diffState(baseline, S))) syncChain = syncChain.then(syncToSupabase);
     else setSyncStatus('Up to date.');
@@ -1066,7 +1091,7 @@ async function syncToSupabase() {
     if (d.upGameTeams.length) await run(sb.from('game_teams').upsert(d.upGameTeams.map(t => ({
       game_id: t.gameId, team1_ids: t.t1, team2_ids: t.t2, bibs: t.bibs, status: t.status, score1: t.score1, score2: t.score2
     }))));
-    setBaseline({ ...baseline, teams: { ...snap.teams, skills: baseline.teams.skills } });
+    setBaseline({ ...baseline, teams: { ...snap.teams, skills: baseline.teams.skills, late: baseline.teams.late } });
     if (!teamsDb) { teamsDb = true; renderTeamsNotice(); }
   } catch (e) {
     console.error('Teams sync failed', e);
@@ -1089,6 +1114,17 @@ async function syncToSupabase() {
     statusErr = true;
     if (tableMissing(e)) { skillsDb = false; renderTeamsNotice(); status = 'Saved. Skill ratings are kept on this device until the skills table is added to the database.'; }
     else status = 'Skill ratings save failed - check your connection. They are still safe on this device.';
+  }
+  if (!lateDiffEmpty(d)) try {
+    if (d.delLate.length) { const { error } = await sb.from('game_late').delete().in('game_id', d.delLate); if (error) throw error; }
+    if (d.upLate.length) { const { error } = await sb.from('game_late').upsert(d.upLate.map(x => ({ game_id: x.gameId, player_ids: x.ids }))); if (error) throw error; }
+    setBaseline({ ...baseline, teams: { ...baseline.teams, late: snap.teams.late } });
+    if (!lateDb) { lateDb = true; renderTeamsNotice(); }
+  } catch (e) {
+    console.error('Late arrivals sync failed', e);
+    statusErr = true;
+    if (tableMissing(e)) { lateDb = false; renderTeamsNotice(); status = 'Saved. Late arrivals are kept on this device until the late arrivals table is added to the database.'; }
+    else status = 'Late arrivals save failed - check your connection. They are still safe on this device.';
   }
   setSyncStatus(status, statusErr);
 }
@@ -1325,8 +1361,8 @@ function startGame(day) {
   else n.style.display = 'none';
   const gs = eligible.filter(p => guarIds.includes(p.id)), os = eligible.filter(p => !guarIds.includes(p.id));
   let html = '';
-  if (gs.length) { html += `<div class="sh">Guaranteed spot</div>`; html += gs.map(p => `<div class="chkrow"><input type="checkbox" id="av-${p.id}" value="${p.id}" checked><label for="av-${p.id}">${esc(p.name)}${rNext.includes(p.id) ? ' <span class="badge b-guar" style="font-size:10px">→Next</span>' : ''}</label></div>`).join(''); }
-  if (os.length) { if (gs.length) html += `<div class="sh">Other eligible players</div>`; html += os.map(p => `<div class="chkrow"><input type="checkbox" id="av-${p.id}" value="${p.id}" ${rNext.includes(p.id) ? 'checked' : ''}><label for="av-${p.id}">${esc(p.name)}${rNext.includes(p.id) ? ' <span class="badge b-guar" style="font-size:10px">→Next</span>' : ''}</label></div>`).join(''); }
+  if (gs.length) { html += `<div class="sh">Guaranteed spot</div>`; html += gs.map(p => `<div class="chkrow"><input type="checkbox" id="av-${p.id}" value="${p.id}" checked><label for="av-${p.id}">${esc(p.name)}${rNext.includes(p.id) ? ' <span class="badge b-guar" style="font-size:10px">→Next</span>' : ''}${latePenalty(p.id) ? ' <span class="badge b-late" style="font-size:10px">Late last time</span>' : ''}</label></div>`).join(''); }
+  if (os.length) { if (gs.length) html += `<div class="sh">Other eligible players</div>`; html += os.map(p => `<div class="chkrow"><input type="checkbox" id="av-${p.id}" value="${p.id}" ${rNext.includes(p.id) ? 'checked' : ''}><label for="av-${p.id}">${esc(p.name)}${rNext.includes(p.id) ? ' <span class="badge b-guar" style="font-size:10px">→Next</span>' : ''}${latePenalty(p.id) ? ' <span class="badge b-late" style="font-size:10px">Late last time</span>' : ''}</label></div>`).join(''); }
   if (!eligible.length) html = '<p style="color:var(--text-muted);font-size:13px">No eligible players for this day.</p>';
   document.getElementById('avail-list').innerHTML = html;
   document.getElementById('step-day').style.display = 'none';
@@ -1346,6 +1382,7 @@ function buildSquad() {
   available.sort((a, b) => {
     const ag = (day === 'mon' ? a.guarMon : a.guarThu) ? 0 : 1, bg = (day === 'mon' ? b.guarMon : b.guarThu) ? 0 : 1; if (ag !== bg) return ag - bg;
     const ar = rNext.includes(a.id) ? 0 : 1, br = rNext.includes(b.id) ? 0 : 1; if (ar !== br) return ar - br;
+    const al = latePenalty(a.id) ? 1 : 0, bl = latePenalty(b.id) ? 1 : 0; if (al !== bl) return al - bl;   // late last time: picked last
     const ap = a.avail !== 'both' ? 0 : (a.pref === day ? 1 : 2), bp = b.avail !== 'both' ? 0 : (b.pref === day ? 1 : 2); if (ap !== bp) return ap - bp;
     return b.reserved - a.reserved;
   });
@@ -1354,6 +1391,11 @@ function buildSquad() {
   const rn = document.getElementById('rn-notice');
   if (rnP.length) { rn.style.display = 'block'; rn.textContent = `Reserve guarantee honoured: ${rnP.map(id => { const p = S.players.find(x => x.id === id); return p ? p.name : ''; }).filter(Boolean).join(', ')} carried over.`; }
   else rn.style.display = 'none';
+  const lateNames = available.filter(p => latePenalty(p.id) && !(day === 'mon' ? p.guarMon : p.guarThu) && !rNext.includes(p.id)).map(p => p.name);
+  if (lateNames.length) {
+    rn.style.display = 'block';
+    rn.innerHTML = (rnP.length ? esc(rn.textContent) + '<br>' : '') + `⏰ <strong>${lateNames.map(esc).join(', ')}</strong> ${lateNames.length === 1 ? 'was' : 'were'} late last time, so ${lateNames.length === 1 ? 'is' : 'are'} picked after everyone else.`;
+  }
   renderSquad();
   document.getElementById('step-avail').style.display = 'none';
   document.getElementById('step-squad').style.display = 'block';
@@ -1367,12 +1409,13 @@ function renderSquad() {
     if (day === 'mon' ? p.guarMon : p.guarThu) tags.push(`<span class="badge b-guar">Guar</span>`);
     if (rNext.includes(p.id)) tags.push(`<span class="badge b-guar">→Next</span>`);
     if (p.avail !== 'both') tags.push(`<span class="badge ${p.avail === 'mon' ? 'b-mon' : 'b-thu'}">${p.avail === 'mon' ? 'Mon' : 'Thu'} Only</span>`);
+    if (latePenalty(p.id)) tags.push(`<span class="badge b-late">Late last time</span>`);
     return `<div class="row"><span class="num">${i + 1}</span><span class="name">${esc(p.name)}</span>${tags.join('')}<button class="mv tor" onclick="moveToReserve(${p.id})"><i class="ti ti-arrow-down"></i> Reserve</button></div>`;
   }).join('');
   const rb = document.getElementById('res-box');
   if (!builtReserves.length) { rb.style.display = 'none'; return; }
   rb.style.display = 'block';
-  document.getElementById('squad-reserve').innerHTML = builtReserves.map(p => `<div class="row"><span class="name">${esc(p.name)} <span class="sub">${p.reserved} times reserved</span></span><button class="mv top" onclick="moveToPlaying(${p.id})"><i class="ti ti-arrow-up"></i> Add to squad</button></div>`).join('');
+  document.getElementById('squad-reserve').innerHTML = builtReserves.map(p => `<div class="row"><span class="name">${esc(p.name)} <span class="sub">${p.reserved} times reserved</span></span>${latePenalty(p.id) ? '<span class="badge b-late">Late last time</span>' : ''}<button class="mv top" onclick="moveToPlaying(${p.id})"><i class="ti ti-arrow-up"></i> Add to squad</button></div>`).join('');
 }
 
 function moveToReserve(id) { const idx = builtPlaying.findIndex(p => p.id === id); if (idx === -1) return; const [p] = builtPlaying.splice(idx, 1); builtReserves.unshift(p); renderSquad(); }
@@ -1585,6 +1628,7 @@ function deleteGame(gIdx) {
   S.games.splice(gIdx, 1);
   S.money.games = S.money.games.filter(m => m.gameId !== g.id);
   S.teams.games = S.teams.games.filter(t => t.gameId !== g.id);
+  S.teams.late = S.teams.late.filter(x => x.gameId !== g.id);
   if (confirmedGameIdx === gIdx) confirmedGameIdx = null;
   else if (confirmedGameIdx !== null && gIdx < confirmedGameIdx) confirmedGameIdx--;
   if (wasLatest) { const prev = S.games[S.games.length - 1]; S.reserveNext = prev ? [...prev.reserveIds] : []; }
@@ -1634,7 +1678,8 @@ function renderLogEntry(gIdx) {
 
   const playingRows = g.playingIds.map((id, i) => {
     const p = S.players.find(x => x.id === id); const name = p ? p.name : '?';
-    return `<div class="row"><span class="num">${i + 1}</span><span class="name">${esc(name)}</span><button class="mv tor" onclick="postMoveToReserve(${id},${gIdx})"><i class="ti ti-arrow-down"></i> Reserve</button><button class="mv del" onclick="postRemove(${id},${gIdx})"><i class="ti ti-trash"></i> Remove</button></div>`;
+    const late = lateIdsOf(g.id).includes(id);
+    return `<div class="row"><span class="num">${i + 1}</span><span class="name">${esc(name)}</span>${late ? '<span class="badge b-late late-view">Late</span>' : ''}<button class="mv late${late ? ' on' : ''}" onclick="toggleLate(${g.id},${id})" aria-pressed="${late}" title="Arrived late">⏰ Late</button><button class="mv tor" onclick="postMoveToReserve(${id},${gIdx})"><i class="ti ti-arrow-down"></i> Reserve</button><button class="mv del" onclick="postRemove(${id},${gIdx})"><i class="ti ti-trash"></i> Remove</button></div>`;
   }).join('') || '<p style="font-size:13px;color:var(--text-muted)">No players.</p>';
 
   const reserveRows = g.reserveIds.length ? `<div style="margin-top:10px"><div style="font-size:12px;font-weight:500;color:var(--text-danger);margin-bottom:6px">Reserves</div>${g.reserveIds.map(id => { const p = S.players.find(x => x.id === id); const name = p ? p.name : '?'; return `<div class="row"><span class="name">${esc(name)}</span><button class="mv top" onclick="postMoveToPlaying(${id},${gIdx})"><i class="ti ti-arrow-up"></i> Add to squad</button><button class="mv del" onclick="postRemove(${id},${gIdx})"><i class="ti ti-trash"></i> Remove</button></div>`; }).join('')}</div>` : '';
@@ -1655,7 +1700,7 @@ function renderLogEntry(gIdx) {
     <div class="log-header" onclick="toggleLog(${gIdx})">
       <div>
         <div class="log-title">${esc(g.date)} — ${dayLabel(g.day)} ${g.manual ? '<span class="badge b-pref" style="font-size:10px;margin-left:4px">Manual</span>' : ''}${isLatest ? '<span class="badge b-guar" style="font-size:10px;margin-left:4px">Latest</span>' : ''}</div>
-        <div class="log-meta">${g.playingIds.length} playing · ${g.reserveIds.length} reserve${g.reserveIds.length !== 1 ? 's' : ''}${logTeamsMeta(g)}</div>
+        <div class="log-meta">${g.playingIds.length} playing · ${g.reserveIds.length} reserve${g.reserveIds.length !== 1 ? 's' : ''}${logTeamsMeta(g)}${lateIdsOf(g.id).length ? ` · ${lateIdsOf(g.id).length} late` : ''}</div>
       </div>
       <i class="ti ti-chevron-down" id="log-chevron-${gIdx}" style="color:var(--text-muted);transition:transform .2s;${wasOpen ? 'transform:rotate(180deg)' : ''}"></i>
     </div>
@@ -1666,6 +1711,7 @@ function renderLogEntry(gIdx) {
       </div>
       ${logTeamsBlock(g, gIdx)}
       <div style="font-size:12px;font-weight:500;color:var(--text-success);margin-bottom:6px">Playing</div>
+      <p class="hint edit-only" style="margin:-2px 0 6px">Tap ⏰ Late for anyone who arrived late. They're picked after everyone else who isn't guaranteed for their next game.</p>
       ${playingRows}
       ${reserveRows}
       ${addRow}
@@ -2013,9 +2059,29 @@ function skillOf(id) {
 const posOf = x => x.pos !== 'auto' ? x.pos : x.def - x.att >= 2 ? 'def' : x.att - x.def >= 2 ? 'att' : 'any';
 const overallOf = x => (x.att + x.def + x.fit) / 3;
 function gameTeams(gameId) { return S.teams.games.find(t => t.gameId === gameId) || null; }
+/* Late arrivals. A player marked late is picked after everyone else who isn't
+   guaranteed (or carried over from the reserves) for the next game they're
+   available for. Once a later game includes them, as playing or reserve, it's cleared. */
+function lateIdsOf(gameId) { const x = S.teams.late.find(y => y.gameId === gameId); return x ? x.ids : []; }
+function latePenalty(playerId) {
+  let last = -1;
+  S.games.forEach((g, i) => { if (lateIdsOf(g.id).includes(playerId)) last = i; });
+  return last !== -1 && !S.games.slice(last + 1).some(g => g.playingIds.includes(playerId) || g.reserveIds.includes(playerId));
+}
+function toggleLate(gameId, playerId) {
+  let x = S.teams.late.find(y => y.gameId === gameId);
+  if (!x) { x = { gameId, ids: [] }; S.teams.late.push(x); }
+  x.ids = x.ids.includes(playerId) ? x.ids.filter(id => id !== playerId) : [...x.ids, playerId];
+  if (!x.ids.length) S.teams.late = S.teams.late.filter(y => y !== x);
+  save();
+  const gIdx = S.games.findIndex(g => g.id === gameId);
+  if (document.getElementById('log-entry-' + gIdx)) renderLogEntry(gIdx);
+  if (document.getElementById('page-teams').classList.contains('active')) renderTeamsPage();
+}
 function renderTeamsNotice() {
   const msg = !sb ? '' : !teamsDb ? 'Teams, ratings and scores are only saved on this device for now. To share them with the other organisers, run supabase/teams.sql and supabase/skills.sql in the Supabase SQL Editor (see the README).'
-    : !skillsDb ? 'Skill ratings are only saved on this device for now. To share them with the other organisers, run supabase/skills.sql in the Supabase SQL Editor (see the README).' : '';
+    : !skillsDb ? 'Skill ratings are only saved on this device for now. To share them with the other organisers, run supabase/skills.sql in the Supabase SQL Editor (see the README).'
+    : !lateDb ? 'Late arrivals are only saved on this device for now. To share them with the other organisers, run supabase/late.sql in the Supabase SQL Editor (see the README).' : '';
   document.querySelectorAll('.teams-notice').forEach(el => { el.style.display = msg ? 'block' : 'none'; el.textContent = msg; });
 }
 // Regular keepers first, then defenders, anywhere, strikers; alphabetical within each (so the order doesn't give away ratings)
@@ -2129,7 +2195,8 @@ function renderTeamsPage() {
   // Squad: drop-outs and reserves can be changed until the teams are confirmed
   html += `<div class="card"><h3 style="margin-bottom:4px">Squad · ${g.playingIds.length} playing</h3>
     ${locked ? '' : '<p class="hint">Someone dropped out? Move them to the reserves and bring someone in before you generate.</p>'}
-    <div class="tchips">${g.playingIds.map(id => `<span class="tchip">${esc(pName(id))}${locked ? '' : `<button onclick="teamsMoveOut(${id})" aria-label="Move ${esc(pName(id))} to reserves" title="Move to reserves">✕</button>`}</span>`).join('') || '<span class="hint">No players.</span>'}</div>
+    <div class="tchips">${g.playingIds.map(id => { const late = lateIdsOf(g.id).includes(id); return `<span class="tchip${late ? ' late' : ''}">${esc(pName(id))}<button class="lt${late ? ' on' : ''}" onclick="toggleLate(${g.id},${id})" aria-pressed="${late}" aria-label="${esc(pName(id))} arrived late" title="Arrived late">⏰</button>${locked ? '' : `<button onclick="teamsMoveOut(${id})" aria-label="Move ${esc(pName(id))} to reserves" title="Move to reserves">✕</button>`}</span>`; }).join('') || '<span class="hint">No players.</span>'}</div>
+    <p class="hint" style="margin:8px 0 0">Tap ⏰ for anyone who arrives late. They're picked after everyone else who isn't guaranteed for their next game.</p>
     ${g.reserveIds.length ? `<div class="sh">Reserves</div><div class="tchips">${g.reserveIds.map(id => `<span class="tchip res">${esc(pName(id))}${locked ? '' : `<button onclick="teamsMoveIn(${id})" aria-label="Bring in ${esc(pName(id))}">+ In</button>`}</span>`).join('')}</div>` : ''}
   </div>`;
 
