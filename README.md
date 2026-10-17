@@ -67,6 +67,13 @@ Teams are picked on the **Teams** tab, separately from the squad, so you can wai
 - The **Teams message** uses the group's format, with the date, time and venue at the top. **Copy for WhatsApp** copies it and **Open WhatsApp** opens WhatsApp with it filled in.
 - Until you press **Confirm teams**, the teams are a draft. The draft is saved and the other organisers can see it on the Teams tab, but it isn't on the front page. Once confirmed, the teams show on the front page and in History. **Change teams** turns them back into a draft.
 
+### Late arrivals
+Mark anyone who turned up late with the **⏰ Late** button next to their name in the History game log, or the ⏰ on their name on the Teams tab. The game log shows how many were late.
+
+The next time a squad is picked that they're available for, late players are picked after everyone else who isn't guaranteed. So if the game is full, they're the first to become reserves. Run game marks them **Late last time** and says who was moved down. Players on the guaranteed list, and last game's reserves who were promised a place, still get in. Once a later game includes them, as playing or reserve, the penalty is cleared.
+
+**Setup (once):** run `supabase/late.sql` in the Supabase SQL Editor. Until then, late arrivals are saved only on the device where they were marked.
+
 ### Ratings
 The **Ratings** tab is where organisers score each player from 1 to 10 on **Attack**, **Defence**, **Fitness** and **Goalkeeping**. Tap a player to change their scores. **Overall** is the average of Attack, Defence and Fitness. The position (Defender, Striker or Anywhere) is worked out from Attack and Defence unless you choose one. Everyone has a Goalkeeping score in case there aren't enough keepers; switch on **Regular keeper** for your keepers. Players who haven't been scored yet start from their old 1–5 star rating: each skill is the stars × 2, Goalkeeping starts at 7 for keepers and 5 for everyone else, and new players start at 6. **Team rules** keep two players apart or always put them on the same team. Ratings only change when an organiser changes them. The tab isn't shown in View mode, but like the rest of the data, the ratings aren't truly private.
 
