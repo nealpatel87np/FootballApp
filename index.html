@@ -241,6 +241,46 @@
   .tscore .nums { display: flex; align-items: center; gap: 6px; }
   .tscore input { width: 54px; text-align: center; font-size: 18px; font-weight: 500; padding: 6px; margin: 0; font-variant-numeric: tabular-nums; }
   .tscore .big { font-size: 22px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  :root { --sk-att: #d85a30; --sk-def: #378add; --sk-fit: #639922; --sk-gk: #7f77dd; }
+  @media (prefers-color-scheme: dark) { :root { --sk-att: #f0997b; --sk-def: #85b7eb; --sk-fit: #97c459; --sk-gk: #afa9ec; } }
+  .tovr { font-variant-numeric: tabular-nums; color: var(--text-secondary); font-size: 12px; }
+  .sk-bal { display: grid; gap: 12px; }
+  .sk-bal-row { display: grid; grid-template-columns: 5.6em minmax(0, 1fr) 4.6em; gap: 10px; align-items: center; font-size: 13px; }
+  .sk-bal-row .k { display: flex; align-items: center; gap: 6px; font-weight: 500; }
+  .sk-bal-row .tpill { text-align: center; white-space: nowrap; font-size: 11px; padding: 2px 6px; }
+  .sk-sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+  .sk-vs { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+  .sk-vs .l, .sk-vs .r { height: 12px; background: var(--surface-1); border-radius: 3px; position: relative; overflow: hidden; }
+  .sk-vs .l .f { position: absolute; right: 0; top: 0; bottom: 0; }
+  .sk-vs .r .f { position: absolute; left: 0; top: 0; bottom: 0; }
+  .sk-nums { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .sk-row { border-bottom: 0.5px solid var(--border); }
+  .sk-row:last-child { border-bottom: none; }
+  .sk-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; align-items: center; width: 100%; padding: 10px 0; border: none; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+  .sk-head .who { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+  .sk-head .nm { font-weight: 500; }
+  .sk-auto { font-size: 10px; color: var(--text-muted); }
+  .sk-ovr { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+  .sk-ovr small { display: block; font-size: 10px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+  .sk-bars { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .sk-mb { font-size: 11px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .sk-mb .track { display: block; height: 6px; border-radius: 3px; background: var(--surface-1); margin-top: 3px; overflow: hidden; }
+  .sk-mb .fill { display: block; height: 100%; border-radius: 3px; }
+  .sk-editor { background: var(--surface-1); border-radius: var(--radius); padding: 12px; margin: 0 0 10px; display: grid; gap: 10px; }
+  .sk-slider { display: grid; grid-template-columns: 7.5em minmax(0, 1fr) 2em; gap: 10px; align-items: center; font-size: 13px; margin: 0; color: var(--text-primary); }
+  .sk-slider small { display: block; font-size: 11px; color: var(--text-muted); }
+  .sk-slider input { width: 100%; }
+  .sk-slider output { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+  .sk-foot { display: flex; gap: 10px 14px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+  .sk-foot select { width: auto; margin: 0; padding: 5px 8px; font-size: 13px; }
+  .sk-switch { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; margin: 0; color: var(--text-primary); font-weight: 500; }
+  .sk-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .sk-switch .knob { width: 36px; height: 20px; border-radius: 10px; background: var(--border-strong); position: relative; flex-shrink: 0; transition: background .15s; }
+  .sk-switch .knob::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--surface-2); transition: transform .15s; }
+  .sk-switch input:checked + .knob { background: var(--sk-gk); }
+  .sk-switch input:checked + .knob::after { transform: translateX(16px); }
+  .sk-switch input:focus-visible + .knob { outline: 2px solid var(--fill-accent); outline-offset: 2px; }
+  .rt-filters { align-items: center; }
   .rt-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
   .rt-filters .btn.on { background: var(--bg-accent); color: var(--text-accent); border-color: var(--fill-accent); }
   .rt-row { display: grid; grid-template-columns: minmax(90px, 1fr) auto auto auto; gap: 8px 12px; align-items: center; padding: 8px 0; border-bottom: 0.5px solid var(--border); }
@@ -257,6 +297,8 @@
     .tteams { grid-template-columns: 1fr; }
     .ttotal { font-size: 20px; }
     .rt-row { grid-template-columns: 1fr auto; }
+    .sk-bars { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sk-bal-row { grid-template-columns: 4.8em minmax(0, 1fr) 4.4em; gap: 6px; }
     .rt-row .rt-steps { grid-column: 1 / -1; }
     .rule-form { grid-template-columns: 1fr 1fr; }
     .rule-form > div:first-child { grid-column: 1 / -1; }
@@ -451,8 +493,8 @@
   <div id="page-ratings" class="page">
     <div class="notice teams-notice" style="display:none"></div>
     <div class="card">
-      <h3 style="margin-bottom:4px">Positions and ratings</h3>
-      <p class="hint">The team picker uses these to balance the teams. 1 star is learning, 5 is the best on the pitch. Tick Keeper for anyone happy to go in goal. Players start as Anywhere with 3 stars. This page is only shown to organisers.</p>
+      <h3 style="margin-bottom:4px">Player skills</h3>
+      <p class="hint">Score each skill from 1 to 10; tap a player to change theirs. <strong>Overall</strong> is the average of Attack, Defence and Fitness. The position is worked out from Attack and Defence unless you choose one. Everyone has a Goalkeeping score in case there aren't enough keepers; switch on <strong>Regular keeper</strong> for your keepers. Players who haven't been scored yet start from their old star rating. This page is only shown to organisers.</p>
       <div class="rt-filters" id="rt-filters"></div>
       <div id="rating-list"></div>
     </div>
@@ -604,6 +646,7 @@ const sb = (typeof supabase !== 'undefined' && !SUPABASE_URL.includes('YOUR-PROJ
 let S = { players: [], games: [], reserveNext: [], money: null, teams: null };   // replaced by cleanState() below
 let moneyDb = true;   // false when the money tables haven't been added to the database yet
 let teamsDb = true;   // false when the teams tables haven't been added to the database yet
+let skillsDb = true;  // false when the skills table hasn't been added to the database yet
 
 /* ---- SAFE TEXT AND CLEAN RECORDS ---- */
 // Escape text from storage, the database or an import before it goes into HTML
@@ -681,6 +724,14 @@ function cleanRating(r) {
 function cleanRule(x, fallbackId) {
   return { id: toId(x.id) ?? fallbackId, kind: x.kind === 'together' ? 'together' : 'apart', a: toId(x.a), b: toId(x.b), note: String(x.note ?? '') };
 }
+// Skill ratings, 1 to 10. pos 'auto' means it's worked out from attack and defence.
+const toSkill = (v, dflt) => { const n = Math.round(Number(v)); return n >= 1 && n <= 10 ? n : dflt; };
+function cleanSkill(x) {
+  return {
+    playerId: toId(x.playerId), att: toSkill(x.att, 6), def: toSkill(x.def, 6), fit: toSkill(x.fit, 6), gk: toSkill(x.gk, 5),
+    pos: ['auto', ...POSITIONS].includes(x.pos) ? x.pos : 'auto', keeper: !!x.keeper
+  };
+}
 function cleanGameTeams(t) {
   return {
     gameId: toId(t.gameId), t1: toIds(t.t1), t2: toIds(t.t2), bibs: Number(t.bibs) === 2 ? 2 : 1,
@@ -692,7 +743,8 @@ function cleanTeams(t) {
   return {
     ratings: (Array.isArray(t && t.ratings) ? t.ratings : []).map(cleanRating).filter(r => r.playerId !== null),
     rules: (Array.isArray(t && t.rules) ? t.rules : []).map((x, i) => cleanRule(x, base + i)).filter(x => x.a !== null && x.b !== null),
-    games: (Array.isArray(t && t.games) ? t.games : []).map(cleanGameTeams).filter(x => x.gameId !== null)
+    games: (Array.isArray(t && t.games) ? t.games : []).map(cleanGameTeams).filter(x => x.gameId !== null),
+    skills: (Array.isArray(t && t.skills) ? t.skills : []).map(cleanSkill).filter(x => x.playerId !== null)
   };
 }
 function cleanState(d) {
@@ -763,8 +815,13 @@ function diffState(base, cur) {
     upSpends: cur.money.spends.filter(x => bs.get(x.id) !== cs.get(x.id)),
     delSpends: base.money.spends.filter(x => !cs.has(x.id)).map(x => x.id),
     moneySettings: bset !== cset ? cleanMoneySettings(cur.money) : null,
-    ...teamsDiff(base.teams, cur.teams, key)
+    ...teamsDiff(base.teams, cur.teams, key),
+    ...skillsDiff(base.teams.skills, cur.teams.skills, key)
   };
+}
+function skillsDiff(base, cur, key) {
+  const b = key(base, cleanSkill, 'playerId'), c = key(cur, cleanSkill, 'playerId');
+  return { upSkills: cur.filter(x => b.get(x.playerId) !== c.get(x.playerId)), delSkills: base.filter(x => !c.has(x.playerId)).map(x => x.playerId) };
 }
 function teamsDiff(base, cur, key) {
   const br = key(base.ratings, cleanRating, 'playerId'), cr = key(cur.ratings, cleanRating, 'playerId');
@@ -788,7 +845,8 @@ function moneyDiffEmpty(d) {
 function teamsDiffEmpty(d) {
   return !d.upRatings.length && !d.delRatings.length && !d.upRules.length && !d.delRules.length && !d.upGameTeams.length && !d.delGameTeams.length;
 }
-function diffEmpty(d) { return coreDiffEmpty(d) && moneyDiffEmpty(d) && teamsDiffEmpty(d); }
+function skillsDiffEmpty(d) { return !d.upSkills.length && !d.delSkills.length; }
+function diffEmpty(d) { return coreDiffEmpty(d) && moneyDiffEmpty(d) && teamsDiffEmpty(d) && skillsDiffEmpty(d); }
 function applyDiff(target, d) {
   const merge = (list, del, up, k = 'id') => {
     const out = list.filter(x => !del.includes(x[k]));
@@ -807,7 +865,8 @@ function applyDiff(target, d) {
     teams: {
       ratings: merge(target.teams.ratings, d.delRatings, d.upRatings, 'playerId'),
       rules: merge(target.teams.rules, d.delRules, d.upRules),
-      games: merge(target.teams.games, d.delGameTeams, d.upGameTeams, 'gameId')
+      games: merge(target.teams.games, d.delGameTeams, d.upGameTeams, 'gameId'),
+      skills: merge(target.teams.skills, d.delSkills, d.upSkills, 'playerId')
     }
   };
 }
@@ -839,6 +898,12 @@ async function fetchDb() {
   catch (e) { console.warn('Money tables not available yet', e); moneyDb = false; }
   try { db.teams = await fetchTeams(); teamsDb = true; }
   catch (e) { console.warn('Teams tables not available yet', e); teamsDb = false; }
+  try {
+    const { data, error } = await sb.from('player_skills').select('*');
+    if (error) throw error;
+    db.teams.skills = cleanTeams({ skills: (data || []).map(r => ({ playerId: r.player_id, att: r.attack, def: r.defence, fit: r.fitness, gk: r.goalkeeping, pos: r.position, keeper: r.keeper })) }).skills;
+    skillsDb = true;
+  } catch (e) { console.warn('Skills table not available yet', e); skillsDb = false; }
   return db;
 }
 async function fetchTeams() {
@@ -887,6 +952,7 @@ async function loadState() {
     // No money tables yet: keep this device's money and keep trying to send it
     if (!moneyDb) S.money = localMoney;
     if (!teamsDb) S.teams = localTeams;
+    else if (!skillsDb) S.teams.skills = localTeams.skills;
     try { localStorage.setItem('fbv3', JSON.stringify(S)); } catch (e) {}
     if (!diffEmpty(diffState(baseline, S))) syncChain = syncChain.then(syncToSupabase);
     else setSyncStatus('Up to date.');
@@ -1000,13 +1066,29 @@ async function syncToSupabase() {
     if (d.upGameTeams.length) await run(sb.from('game_teams').upsert(d.upGameTeams.map(t => ({
       game_id: t.gameId, team1_ids: t.t1, team2_ids: t.t2, bibs: t.bibs, status: t.status, score1: t.score1, score2: t.score2
     }))));
-    setBaseline({ ...baseline, teams: snap.teams });
+    setBaseline({ ...baseline, teams: { ...snap.teams, skills: baseline.teams.skills } });
     if (!teamsDb) { teamsDb = true; renderTeamsNotice(); }
   } catch (e) {
     console.error('Teams sync failed', e);
     statusErr = true;
     if (tableMissing(e)) { teamsDb = false; renderTeamsNotice(); status = 'Saved. Teams, ratings and scores are kept on this device until the teams tables are added to the database.'; }
     else status = 'Teams save failed - check your connection. They are still safe on this device.';
+  }
+  if (!skillsDiffEmpty(d)) try {
+    if (d.delSkills.length) { const { error } = await sb.from('player_skills').delete().in('player_id', d.delSkills); if (error) throw error; }
+    if (d.upSkills.length) {
+      const { error } = await sb.from('player_skills').upsert(d.upSkills.map(x => ({
+        player_id: x.playerId, attack: x.att, defence: x.def, fitness: x.fit, goalkeeping: x.gk, position: x.pos, keeper: x.keeper
+      })));
+      if (error) throw error;
+    }
+    setBaseline({ ...baseline, teams: { ...baseline.teams, skills: snap.teams.skills } });
+    if (!skillsDb) { skillsDb = true; renderTeamsNotice(); }
+  } catch (e) {
+    console.error('Skills sync failed', e);
+    statusErr = true;
+    if (tableMissing(e)) { skillsDb = false; renderTeamsNotice(); status = 'Saved. Skill ratings are kept on this device until the skills table is added to the database.'; }
+    else status = 'Skill ratings save failed - check your connection. They are still safe on this device.';
   }
   setSyncStatus(status, statusErr);
 }
@@ -1057,6 +1139,7 @@ function removePlayer(id) {
   S.players = S.players.filter(p => p.id !== id);
   S.reserveNext = S.reserveNext.filter(i => i !== id);
   S.teams.ratings = S.teams.ratings.filter(r => r.playerId !== id);
+  S.teams.skills = S.teams.skills.filter(x => x.playerId !== id);
   S.teams.rules = S.teams.rules.filter(x => x.a !== id && x.b !== id);
   save(); renderPlayers();
 }
@@ -1915,55 +1998,70 @@ function logOut() {
    and only shows on the front page once it's confirmed. The score is added in History. */
 const POS_SHORT = { def: 'DEF', att: 'ATT', any: 'ANY' };
 const POS_ORDER = { def: 0, any: 1, att: 2 };
-let teamsGameId = null, teamsSel = null, teamsNote = '', rtFilter = 'all';
+const SKILLS = [['att', 'Attack', 'Shooting, dribbling, getting forward'], ['def', 'Defence', 'Tackling, marking, positioning'],
+  ['fit', 'Fitness', 'Pace and running all game'], ['gk', 'Goalkeeping', 'How good they are in goal']];
+let teamsGameId = null, teamsSel = null, teamsNote = '', rtSort = 'name', rtOpen = null;
 const pName = id => { const p = S.players.find(x => x.id === id); return p ? p.name : '?'; };
-function ratingOf(id) { return S.teams.ratings.find(r => r.playerId === id) || { playerId: id, pos: 'any', rating: 3, gk: false }; }
+// A player's skills. Until someone rates them, they start from the old 1-5 stars
+// (stars x 2 for each skill; regular keepers start at 7 in goal, everyone else 5).
+function skillOf(id) {
+  const x = S.teams.skills.find(y => y.playerId === id); if (x) return x;
+  const r = S.teams.ratings.find(y => y.playerId === id), v = r ? r.rating * 2 : 6;
+  return { playerId: id, att: v, def: v, fit: v, gk: r && r.gk ? 7 : 5, pos: r && r.pos !== 'any' ? r.pos : 'auto', keeper: !!(r && r.gk) };
+}
+// Auto position: Defence 2 or more above Attack makes a Defender, the reverse a Striker
+const posOf = x => x.pos !== 'auto' ? x.pos : x.def - x.att >= 2 ? 'def' : x.att - x.def >= 2 ? 'att' : 'any';
+const overallOf = x => (x.att + x.def + x.fit) / 3;
 function gameTeams(gameId) { return S.teams.games.find(t => t.gameId === gameId) || null; }
 function renderTeamsNotice() {
-  const show = !!sb && !teamsDb;
-  document.querySelectorAll('.teams-notice').forEach(el => {
-    el.style.display = show ? 'block' : 'none';
-    if (show) el.textContent = 'Teams, ratings and scores are only saved on this device for now. To share them with the other organisers, run supabase/teams.sql in the Supabase SQL Editor (see the README).';
-  });
+  const msg = !sb ? '' : !teamsDb ? 'Teams, ratings and scores are only saved on this device for now. To share them with the other organisers, run supabase/teams.sql and supabase/skills.sql in the Supabase SQL Editor (see the README).'
+    : !skillsDb ? 'Skill ratings are only saved on this device for now. To share them with the other organisers, run supabase/skills.sql in the Supabase SQL Editor (see the README).' : '';
+  document.querySelectorAll('.teams-notice').forEach(el => { el.style.display = msg ? 'block' : 'none'; el.textContent = msg; });
 }
-// Keepers first, then defenders, anywhere, strikers; alphabetical within each (so the order doesn't give away ratings)
+// Regular keepers first, then defenders, anywhere, strikers; alphabetical within each (so the order doesn't give away ratings)
 function teamOrder(ids) {
   return [...ids].sort((x, y) => {
-    const a = ratingOf(x), b = ratingOf(y);
-    return (b.gk - a.gk) || (POS_ORDER[a.pos] - POS_ORDER[b.pos]) || pName(x).localeCompare(pName(y));
+    const a = skillOf(x), b = skillOf(y);
+    return (b.keeper - a.keeper) || (POS_ORDER[posOf(a)] - POS_ORDER[posOf(b)]) || pName(x).localeCompare(pName(y));
   });
 }
-const teamSum = ids => ids.reduce((s, id) => s + ratingOf(id).rating, 0);
-const teamCount = (ids, f) => ids.filter(id => f(ratingOf(id))).length;
+const skillSum = (ids, k) => ids.reduce((s, id) => s + skillOf(id)[k], 0);
+const teamCount = (ids, f) => ids.filter(id => f(skillOf(id))).length;
+// A team's keeper score: its best regular keeper, otherwise its best Goalkeeping score
+function keeperScore(ids, get = skillOf) {
+  const all = ids.map(get), reg = all.filter(x => x.keeper), pool = reg.length ? reg : all;
+  return pool.length ? Math.max(...pool.map(x => x.gk)) : 0;
+}
 const sameSet = (a, b) => a.length === b.length && a.every(id => b.includes(id));
 
 /* The picker: every way to split the squad in two (sizes differ by at most one),
-   minus splits that break a rule (keepers on both teams, keep apart, same team),
-   scored on the rating gap plus uneven defenders and strikers. One of the
-   best-scoring splits is chosen at random, never the same as the current teams.
-   Then a coin decides which side is Team 1, and another who wears the bibs. */
+   minus splits that break a rule (keep apart, same team, regular keepers not
+   shared out evenly), scored on the Attack, Defence and Fitness gaps plus the gap
+   between the two teams' keeper scores. With one regular keeper or none, the
+   keeper score comes from Goalkeeping, so both teams get the best keeper possible.
+   One of the best-scoring splits is chosen at random, never the same as the
+   current teams. Then a coin decides which side is Team 1, and another who wears the bibs. */
 function teamRulesFor(squad) {
   const inSq = new Set(squad);
   return {
     rules: S.teams.rules.filter(x => inSq.has(x.a) && inSq.has(x.b)),
-    keepers: teamCount(squad, r => r.gk) >= 2
+    keepers: teamCount(squad, x => x.keeper)
   };
 }
 function pickTeams(squad, avoid) {
   const n = squad.length, half = Math.floor(n / 2), R = teamRulesFor(squad);
-  const rt = new Map(squad.map(id => [id, ratingOf(id)]));
-  const total = squad.reduce((s, id) => s + rt.get(id).rating, 0);
-  const cnt = f => squad.filter(id => f(rt.get(id))).length;
-  const defs = cnt(r => r.pos === 'def'), atts = cnt(r => r.pos === 'att'), gks = cnt(r => r.gk);
+  const sk = new Map(squad.map(id => [id, skillOf(id)])), get = id => sk.get(id);
+  const total = k => squad.reduce((s, id) => s + sk.get(id)[k], 0);
+  const T = { att: total('att'), def: total('def'), fit: total('fit') };
   const key = a => { const s = new Set(a); return [a.slice().sort((x, y) => x - y).join(), squad.filter(id => !s.has(id)).sort((x, y) => x - y).join()].sort().join('|'); };
   const avoidKey = avoid ? [avoid.t1.slice().sort((x, y) => x - y).join(), avoid.t2.slice().sort((x, y) => x - y).join()].sort().join('|') : '';
   const score = a => {
-    const s = new Set(a);
-    let sum = 0, d = 0, at = 0, g = 0;
-    a.forEach(id => { const r = rt.get(id); sum += r.rating; if (r.pos === 'def') d++; if (r.pos === 'att') at++; if (r.gk) g++; });
-    const broken = (R.keepers && (g === 0 || g === gks)) || R.rules.some(x => (x.kind === 'apart') === (s.has(x.a) === s.has(x.b)));
-    const gap = (here, all) => Math.max(0, Math.abs(2 * here - all) - 1);
-    return { broken, cost: Math.abs(2 * sum - total) + 2 * gap(d, defs) + 2 * gap(at, atts) };
+    const s = new Set(a), b = squad.filter(id => !s.has(id));
+    let att = 0, def = 0, fit = 0, k = 0;
+    a.forEach(id => { const x = sk.get(id); att += x.att; def += x.def; fit += x.fit; if (x.keeper) k++; });
+    const broken = (R.keepers >= 2 && Math.abs(2 * k - R.keepers) > 1) || R.rules.some(x => (x.kind === 'apart') === (s.has(x.a) === s.has(x.b)));
+    const cost = Math.abs(2 * att - T.att) + Math.abs(2 * def - T.def) + Math.abs(2 * fit - T.fit) + 2 * Math.abs(keeperScore(a, get) - keeperScore(b, get));   // keepers count double
+    return { broken, cost };
   };
   // Every split for normal squads; a large random sample for very big ones
   const splits = [];
@@ -2036,40 +2134,41 @@ function renderTeamsPage() {
   </div>`;
 
   if (!t) {
-    html += `<div class="card"><p class="hint">${teamsNote ? esc(teamsNote) + ' ' : ''}Split the squad into two even teams. Defenders, strikers and keepers are shared out, ratings are balanced, and a coin flip decides who wears the bibs.</p>
+    html += `<div class="card"><p class="hint">${teamsNote ? esc(teamsNote) + ' ' : ''}Split the squad into two even teams. Attack, defence, fitness and the keepers are each balanced, and a coin flip decides who wears the bibs.</p>
       <button class="btn primary" style="width:100%;justify-content:center;padding:12px" onclick="teamsGenerate()" ${g.playingIds.length < 2 ? 'disabled' : ''}><i class="ti ti-arrows-shuffle"></i> Generate teams</button></div>`;
     el.innerHTML = html; return;
   }
 
-  const squad = [...t.t1, ...t.t2], s1 = teamSum(t.t1), s2 = teamSum(t.t2), d = Math.abs(s1 - s2);
+  const squad = [...t.t1, ...t.t2];
   const stale = !sameSet(squad, g.playingIds);
   if (stale) html += `<div class="notice">The squad has changed since these teams were made. ${locked ? 'Press Change teams, then Reshuffle.' : 'Press Reshuffle to pick teams from the current squad.'}</div>`;
   const R = teamRulesFor(squad), in1 = id => t.t1.includes(id);
   const line = (good, text) => `<div class="trule"><span class="${good ? 'tick' : 'cross'}">${good ? '✓' : '!'}</span><span>${text}</span></div>`;
-  const dd = [teamCount(t.t1, r => r.pos === 'def'), teamCount(t.t2, r => r.pos === 'def')];
-  const aa = [teamCount(t.t1, r => r.pos === 'att'), teamCount(t.t2, r => r.pos === 'att')];
-  let rules = line(Math.abs(dd[0] - dd[1]) <= 1, `Defenders split ${dd[0]}–${dd[1]}`) + line(Math.abs(aa[0] - aa[1]) <= 1, `Strikers split ${aa[0]}–${aa[1]}`);
-  if (R.keepers) rules += line(teamCount(t.t1, r => r.gk) > 0 && teamCount(t.t2, r => r.gk) > 0, `A keeper on each team (${esc(squad.filter(id => ratingOf(id).gk).map(pName).join(', '))})`);
+  const k1 = teamCount(t.t1, x => x.keeper), k2 = teamCount(t.t2, x => x.keeper);
+  let rules = R.keepers >= 2 ? line(Math.abs(k1 - k2) <= 1, `Regular keepers split ${k1}–${k2}`)
+    : line(true, `${R.keepers ? 'One regular keeper' : 'No regular keepers'} today, so Goalkeeping scores decide the keeper balance`);
   R.rules.forEach(x => {
     const ok = x.kind === 'apart' ? in1(x.a) !== in1(x.b) : in1(x.a) === in1(x.b);
     rules += line(ok, `${esc(pName(x.a))} and ${esc(pName(x.b))} ${x.kind === 'apart' ? 'on different teams' : 'together'}`);
   });
-  const pill = d <= 1 ? 'good' : d <= 3 ? 'ok' : 'bad';
+  const rows = [['att', 'Attack', skillSum(t.t1, 'att'), skillSum(t.t2, 'att')], ['def', 'Defence', skillSum(t.t1, 'def'), skillSum(t.t2, 'def')],
+    ['fit', 'Fitness', skillSum(t.t1, 'fit'), skillSum(t.t2, 'fit')], ['gk', 'Keeper', keeperScore(t.t1), keeperScore(t.t2)]];
   html += `<div class="card">
     <div class="tcoin"><span class="c">B</span><span>Coin flip: <strong>Team ${t.bibs}</strong> wear the bibs</span></div>
-    <div class="tbalance">
-      <div><div class="sh" style="margin:0">Team 1</div><div class="ttotal">${s1}</div></div>
-      <div style="text-align:center"><span class="tpill ${pill}">${d === 0 ? 'Even' : d <= 1 ? 'Close' : d <= 3 ? 'Slightly uneven' : 'Uneven'}</span><div class="hint" style="margin:4px 0 0">${d === 0 ? 'Same rating total' : `${d} point${d > 1 ? 's' : ''} apart`}</div></div>
-      <div style="text-align:right"><div class="sh" style="margin:0">Team 2</div><div class="ttotal">${s2}</div></div>
-    </div>
-    <div class="tbar" aria-hidden="true"><div style="width:${s1 + s2 ? s1 / (s1 + s2) * 100 : 50}%;background:var(${t.bibs === 1 ? '--bib' : '--plain'})"></div><div style="width:${s1 + s2 ? s2 / (s1 + s2) * 100 : 50}%;background:var(${t.bibs === 2 ? '--bib' : '--plain'})"></div></div>
+    <div class="sk-bal">${rows.map(([k, l, a, b]) => {
+      const d = Math.abs(a - b), max = k === 'gk' ? 10 : Math.max(a, b, 1) * 1.1, cls = d <= 1 ? 'good' : d <= 3 ? 'ok' : 'bad';
+      return `<div class="sk-bal-row"><span class="k"><i class="sk-sw" style="background:var(--sk-${k})"></i>${l}</span>
+        <div><div class="sk-vs"><div class="l"><div class="f" style="width:${a / max * 100}%;background:var(--sk-${k})"></div></div><div class="r"><div class="f" style="width:${b / max * 100}%;background:var(--sk-${k})"></div></div></div>
+        <div class="sk-nums"><span>Team 1: ${a}</span><span>Team 2: ${b}</span></div></div>
+        <span class="tpill ${cls}">${d === 0 ? 'Even' : d + ' apart'}</span></div>`;
+    }).join('')}</div>
     <div class="trules">${rules}</div>
   </div>`;
   const col = n => {
-    const list = t['t' + n], bib = t.bibs === n;
-    return `<div class="tteam${bib ? ' bibs' : ''}"><div class="tteam-h"><span class="tdot"></span>Team ${n}${bib ? ' · bibs' : ''}<span class="ttot">${teamSum(list)} pts</span></div>
-      <div class="tmix">${teamCount(list, r => r.pos === 'def')} DEF · ${teamCount(list, r => r.pos === 'att')} ATT · ${teamCount(list, r => r.pos === 'any')} ANY</div>
-      ${teamOrder(list).map(id => { const r = ratingOf(id); return `<button class="tpl${teamsSel === id ? ' sel' : ''}" ${locked ? 'disabled' : `onclick="teamsTap(${id})"`} aria-pressed="${teamsSel === id}"><span class="nm">${esc(pName(id))}</span>${r.gk ? '<span class="badge b-gk">GK</span>' : ''}<span class="badge b-${r.pos}">${POS_SHORT[r.pos]}</span>${starsHtml(r.rating)}</button>`; }).join('')}</div>`;
+    const list = t['t' + n], bib = t.bibs === n, avg = list.length ? list.reduce((s, id) => s + overallOf(skillOf(id)), 0) / list.length : 0;
+    return `<div class="tteam${bib ? ' bibs' : ''}"><div class="tteam-h"><span class="tdot"></span>Team ${n}${bib ? ' · bibs' : ''}<span class="ttot">avg ${avg.toFixed(1)}</span></div>
+      <div class="tmix">${teamCount(list, x => posOf(x) === 'def')} DEF · ${teamCount(list, x => posOf(x) === 'att')} ATT · ${teamCount(list, x => posOf(x) === 'any')} ANY</div>
+      ${teamOrder(list).map(id => { const x = skillOf(id), ps = posOf(x); return `<button class="tpl${teamsSel === id ? ' sel' : ''}" ${locked ? 'disabled' : `onclick="teamsTap(${id})"`} aria-pressed="${teamsSel === id}"><span class="nm">${esc(pName(id))}</span>${x.keeper ? '<span class="badge b-gk">GK</span>' : ''}<span class="badge b-${ps}">${POS_SHORT[ps]}</span><span class="tovr">${overallOf(x).toFixed(1)}</span></button>`; }).join('')}</div>`;
   };
   html += `<div class="tteams">${col(1)}${col(2)}</div>
     <p class="hint">${locked ? 'These teams are confirmed and show on the front page.' : teamsSel ? `Now tap a player on the other team to swap with ${esc(pName(teamsSel))}.` : 'Tap a player, then a player on the other team, to swap them.'}</p>
@@ -2086,7 +2185,6 @@ function renderTeamsPage() {
          <div class="tactions"><button class="btn primary" style="padding:12px" onclick="teamsConfirm()"><i class="ti ti-check"></i> Confirm teams</button><button class="btn dghost" onclick="teamsDiscard()">Discard draft</button></div>`}`;
   el.innerHTML = html;
 }
-const starsHtml = r => `<span class="tstars" aria-label="${r} out of 5">${'★'.repeat(r)}<span class="off">${'★'.repeat(5 - r)}</span></span>`;
 
 function teamsGame() { return S.games.find(x => x.id === teamsGameId) || null; }
 function teamsSetRecord(g, teams) {
@@ -2162,30 +2260,43 @@ function teamsOpenWa() { const ta = document.getElementById('teams-wa'); if (ta)
 /* ---- RATINGS TAB ---- */
 function renderRatings() {
   renderTeamsNotice();
-  const filters = [['all', 'All'], ['def', 'Defenders'], ['att', 'Strikers'], ['any', 'Anywhere'], ['gk', 'Keepers']];
-  document.getElementById('rt-filters').innerHTML = filters.map(([k, l]) => `<button class="btn xs${rtFilter === k ? ' on' : ''}" onclick="rtFilter='${k}'; renderRatings()">${l}</button>`).join('');
-  const match = { all: () => true, def: r => r.pos === 'def', att: r => r.pos === 'att', any: r => r.pos === 'any', gk: r => r.gk }[rtFilter];
-  const list = [...S.players].sort((a, b) => a.name.localeCompare(b.name)).filter(p => match(ratingOf(p.id)));
+  const sorts = [['name', 'Name'], ['ovr', 'Overall'], ['att', 'Attack'], ['def', 'Defence'], ['fit', 'Fitness'], ['gk', 'Goalkeeping']];
+  document.getElementById('rt-filters').innerHTML = '<span class="sub">Sort by</span>' + sorts.map(([k, l]) => `<button class="btn xs${rtSort === k ? ' on' : ''}" onclick="rtSort='${k}'; renderRatings()">${l}</button>`).join('');
+  const val = p => rtSort === 'ovr' ? overallOf(skillOf(p.id)) : skillOf(p.id)[rtSort];
+  const list = [...S.players].sort((a, b) => (rtSort === 'name' ? 0 : val(b) - val(a)) || a.name.localeCompare(b.name));
   document.getElementById('rating-list').innerHTML = !S.players.length ? '<p class="hint" style="margin:0">Add players in Setup first.</p>'
     : list.map(p => {
-      const r = ratingOf(p.id);
-      return `<div class="rt-row"><span class="name">${esc(p.name)}</span>
-        <select id="rt-pos-${p.id}" aria-label="Position for ${esc(p.name)}" onchange="ratingSet(${p.id}, { pos: this.value })">
-          <option value="any"${r.pos === 'any' ? ' selected' : ''}>Anywhere</option><option value="def"${r.pos === 'def' ? ' selected' : ''}>Defender</option><option value="att"${r.pos === 'att' ? ' selected' : ''}>Striker</option></select>
-        <label class="chklbl" style="margin:0"><input type="checkbox" id="rt-gk-${p.id}"${r.gk ? ' checked' : ''} onchange="ratingSet(${p.id}, { gk: this.checked })"> <span>Keeper</span></label>
-        <span class="rt-steps" role="group" aria-label="Rating for ${esc(p.name)}">${[1, 2, 3, 4, 5].map(n => `<button class="rt-step${r.rating >= n ? ' on' : ''}" onclick="ratingSet(${p.id}, { rating: ${n} })" aria-label="${n} star${n > 1 ? 's' : ''}" aria-pressed="${r.rating === n}">${n}</button>`).join('')}</span>
+      const x = skillOf(p.id), ps = posOf(x), open = rtOpen === p.id;
+      return `<div class="sk-row">
+        <button class="sk-head" onclick="rtOpen = rtOpen === ${p.id} ? null : ${p.id}; renderRatings()" aria-expanded="${open}">
+          <span class="who"><span class="nm">${esc(p.name)}</span><span class="badge b-${ps}">${POS_SHORT[ps]}</span>${x.pos === 'auto' ? '<span class="sk-auto">auto</span>' : ''}${x.keeper ? '<span class="badge b-gk">GK</span>' : ''}</span>
+          <span class="sk-ovr">${overallOf(x).toFixed(1)}<small>Overall</small></span>
+          <span class="sk-bars">${SKILLS.map(([k, l]) => `<span class="sk-mb">${k === 'gk' ? 'GK' : l.slice(0, 3)} <strong>${x[k]}</strong><span class="track"><span class="fill" style="width:${x[k] * 10}%;background:var(--sk-${k})"></span></span></span>`).join('')}</span>
+        </button>
+        ${open ? `<div class="sk-editor">
+          ${SKILLS.map(([k, l, d]) => `<label class="sk-slider" for="sk-${k}-${p.id}"><span>${l}<small>${d}</small></span><input type="range" min="1" max="10" step="1" id="sk-${k}-${p.id}" value="${x[k]}" style="accent-color:var(--sk-${k})" oninput="this.nextElementSibling.textContent = this.value" onchange="skillSet(${p.id}, { ${k}: +this.value })"><output>${x[k]}</output></label>`).join('')}
+          <div class="sk-foot">
+            <label for="sk-pos-${p.id}" style="margin:0">Position</label>
+            <select id="sk-pos-${p.id}" onchange="skillSet(${p.id}, { pos: this.value })">
+              <option value="auto"${x.pos === 'auto' ? ' selected' : ''}>Auto (${POS_SHORT[posOf({ ...x, pos: 'auto' })]})</option>
+              <option value="def"${x.pos === 'def' ? ' selected' : ''}>Defender</option><option value="att"${x.pos === 'att' ? ' selected' : ''}>Striker</option><option value="any"${x.pos === 'any' ? ' selected' : ''}>Anywhere</option>
+            </select>
+            <label class="sk-switch" for="sk-keeper-${p.id}"><input type="checkbox" role="switch" id="sk-keeper-${p.id}"${x.keeper ? ' checked' : ''} onchange="skillSet(${p.id}, { keeper: this.checked })"><span class="knob" aria-hidden="true"></span>Regular keeper</label>
+          </div>
+          <p class="hint" style="margin:0">${x.keeper ? 'Regular keepers are shared out evenly between the teams.' : 'Not a regular keeper. Their Goalkeeping score still counts when there are fewer than two keepers.'}</p>
+        </div>` : ''}
       </div>`;
-    }).join('') || '<p class="hint" style="margin:8px 0 0">No players match.</p>';
+    }).join('');
   // Rules
   document.getElementById('rule-list').innerHTML = S.teams.rules.map(x => `<div class="trule-row"><span class="badge ${x.kind === 'apart' ? 'b-att' : 'b-def'}">${x.kind === 'apart' ? 'Keep apart' : 'Same team'}</span><span>${esc(pName(x.a))} &amp; ${esc(pName(x.b))}</span>${x.note ? `<span class="sub">${esc(x.note)}</span>` : ''}<button class="btn xs dghost" style="margin-left:auto" onclick="ruleDelete(${x.id})" title="Delete rule"><i class="ti ti-x"></i></button></div>`).join('')
     || '<p class="hint" style="margin:0 0 6px">No rules yet.</p>';
   const opts = '<option value="">Choose…</option>' + [...S.players].sort((a, b) => a.name.localeCompare(b.name)).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
   ['rule-a', 'rule-b'].forEach(id => { const el = document.getElementById(id), v = el.value; el.innerHTML = opts; el.value = v; });
 }
-function ratingSet(playerId, change) {
-  let r = S.teams.ratings.find(x => x.playerId === playerId);
-  if (!r) { r = { playerId, pos: 'any', rating: 3, gk: false }; S.teams.ratings.push(r); }
-  Object.assign(r, change);
+function skillSet(playerId, change) {
+  let x = S.teams.skills.find(y => y.playerId === playerId);
+  if (!x) { x = { ...skillOf(playerId) }; S.teams.skills.push(x); }
+  Object.assign(x, change);
   save(); renderRatings();
 }
 function ruleAdd() {
