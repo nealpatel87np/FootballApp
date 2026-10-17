@@ -73,7 +73,7 @@
   .err { font-size: 12px; color: var(--text-danger); margin-top: 4px; min-height: 16px; }
   .notice { background: var(--bg-warning); color: var(--text-warning); border-radius: var(--radius); padding: 8px 12px; font-size: 13px; margin-bottom: 12px; }
   .ok { background: var(--bg-success); color: var(--text-success); border-radius: var(--radius); padding: 10px 14px; font-size: 14px; margin-bottom: 12px; }
-  .nav { display: flex; gap: 4px; margin-bottom: 1.5rem; border-bottom: 0.5px solid var(--border); }
+  .nav { display: flex; gap: 4px; margin-bottom: 1.5rem; border-bottom: 0.5px solid var(--border); overflow-x: auto; }
   .nb { padding: 8px 16px; font-size: 14px; cursor: pointer; border: none; background: none; color: var(--text-secondary); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .12s; }
   .nb.active { color: var(--text-accent); border-bottom-color: var(--fill-accent); }
   .pbox { background: var(--bg-success); border: 0.5px solid var(--border-success); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 12px; }
@@ -183,6 +183,31 @@
   #front-login .pwrow { display: flex; gap: 8px; }
   #front-login input { flex: 1; min-width: 0; margin: 0; }
   input[type=password] { width: 100%; padding: 8px 10px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); font-size: 14px; background: var(--surface-2); color: var(--text-primary); }
+  /* Who owes and credit */
+  .owe-shortcuts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .owe-short { text-align: left; border-radius: 12px; padding: 14px; border: 1.5px solid transparent; cursor: pointer; font: inherit; color: inherit; display: grid; gap: 2px; min-width: 0; }
+  .owe-short .l { font-size: 13px; font-weight: 500; }
+  .owe-short .n { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .owe-short .s { font-size: 12px; opacity: .85; }
+  .owe-short.owe { background: var(--bg-danger); color: var(--text-danger); }
+  .owe-short.cred { background: var(--bg-success); color: var(--text-success); }
+  .owe-short[aria-pressed="true"] { border-color: currentColor; }
+  .owe-short:focus-visible { outline: 2px solid var(--fill-accent); outline-offset: 2px; }
+  .owe-person { border-bottom: 0.5px solid var(--border); padding: 2px 0 8px; }
+  .owe-person:last-child { border-bottom: none; }
+  .owe-person .top { display: flex; align-items: center; gap: 8px; padding: 8px 0 4px; flex-wrap: wrap; }
+  .owe-person .nm { font-weight: 500; flex: 1; min-width: 90px; }
+  .owe-person .amt { font-weight: 600; color: var(--text-danger); font-variant-numeric: tabular-nums; }
+  .owe-game { display: flex; align-items: center; gap: 8px; padding: 5px 0 5px 12px; margin-left: 2px; font-size: 13px; color: var(--text-secondary); flex-wrap: wrap; border-left: 2px solid var(--border); }
+  .owe-game .d { flex: 1; min-width: 120px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .owe-game .v { color: var(--text-danger); font-variant-numeric: tabular-nums; }
+  .owe-clear { color: var(--text-success); border-color: var(--border-success); }
+  .owe-cred { font-weight: 600; color: var(--text-success); font-variant-numeric: tabular-nums; }
+  .owe-empty { text-align: center; padding: 14px 0 6px; color: var(--text-success); font-weight: 500; }
+  .owe-add { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto; gap: 8px; align-items: end; margin-top: 12px; padding-top: 12px; border-top: 0.5px solid var(--border); }
+  .owe-add label { margin-top: 0; }
+  @media (max-width: 480px) { .owe-add { grid-template-columns: 1fr 1fr; } .owe-add > div:first-child { grid-column: 1 / -1; } }
+  body.mode-view .owe-clear { display: none !important; }
   /* Teams and ratings */
   :root { --bib: #e8a317; --bib-bg: #fdf3dc; --bib-text: #7a5208; --plain: #6b6a65; --plain-bg: #f1f1ee; }
   @media (prefers-color-scheme: dark) { :root { --bib-bg: #4a3405; --bib-text: #f5cf7a; --plain: #b5b4ae; --plain-bg: #34342f; } }
@@ -578,6 +603,8 @@
   <!-- MONEY -->
   <div id="page-money" class="page">
     <div id="money-notice" class="notice" style="display:none"></div>
+    <div class="owe-shortcuts" id="owe-shortcuts"></div>
+    <div class="card" id="owe-panel"></div>
     <div class="card">
       <h3>Kitty</h3>
       <div class="money-tiles" id="money-tiles"></div>
@@ -654,6 +681,7 @@ let S = { players: [], games: [], reserveNext: [], money: null, teams: null };  
 let moneyDb = true;   // false when the money tables haven't been added to the database yet
 let teamsDb = true;   // false when the teams tables haven't been added to the database yet
 let skillsDb = true;  // false when the skills table hasn't been added to the database yet
+let creditDb = true;  // false when the credit table hasn't been added to the database yet
 let lateDb = true;    // false when the late arrivals table hasn't been added to the database yet
 
 /* ---- SAFE TEXT AND CLEAN RECORDS ---- */
@@ -713,12 +741,15 @@ function cleanMoneySettings(m) {
     opening: Object.fromEntries(ORGANISERS.map(n => [n, toPence(op[n])]))
   };
 }
+// Credit: money a player has paid ahead, in pence. Only players with credit have a row.
+function cleanCredit(x) { return { playerId: toId(x.playerId), amount: toPence(x.amount) }; }
 function cleanMoney(m) {
   const base = Date.now();
   return {
     ...cleanMoneySettings(m),
     games: (Array.isArray(m && m.games) ? m.games : []).map(cleanGameMoney).filter(x => x.gameId !== null),
-    spends: (Array.isArray(m && m.spends) ? m.spends : []).map((x, i) => cleanSpend(x, base + i))
+    spends: (Array.isArray(m && m.spends) ? m.spends : []).map((x, i) => cleanSpend(x, base + i)),
+    credit: (Array.isArray(m && m.credit) ? m.credit : []).map(cleanCredit).filter(x => x.playerId !== null && x.amount > 0)
   };
 }
 // Teams: each player's position and rating, rules for the team picker, and
@@ -828,8 +859,13 @@ function diffState(base, cur) {
     moneySettings: bset !== cset ? cleanMoneySettings(cur.money) : null,
     ...teamsDiff(base.teams, cur.teams, key),
     ...skillsDiff(base.teams.skills, cur.teams.skills, key),
-    ...lateDiff(base.teams.late, cur.teams.late, key)
+    ...lateDiff(base.teams.late, cur.teams.late, key),
+    ...creditDiff(base.money.credit, cur.money.credit, key)
   };
+}
+function creditDiff(base, cur, key) {
+  const b = key(base, cleanCredit, 'playerId'), c = key(cur, cleanCredit, 'playerId');
+  return { upCredit: cur.filter(x => b.get(x.playerId) !== c.get(x.playerId)), delCredit: base.filter(x => !c.has(x.playerId)).map(x => x.playerId) };
 }
 function lateDiff(base, cur, key) {
   const b = key(base, cleanLate, 'gameId'), c = key(cur, cleanLate, 'gameId');
@@ -863,7 +899,8 @@ function teamsDiffEmpty(d) {
 }
 function skillsDiffEmpty(d) { return !d.upSkills.length && !d.delSkills.length; }
 function lateDiffEmpty(d) { return !d.upLate.length && !d.delLate.length; }
-function diffEmpty(d) { return coreDiffEmpty(d) && moneyDiffEmpty(d) && teamsDiffEmpty(d) && skillsDiffEmpty(d) && lateDiffEmpty(d); }
+function creditDiffEmpty(d) { return !d.upCredit.length && !d.delCredit.length; }
+function diffEmpty(d) { return coreDiffEmpty(d) && moneyDiffEmpty(d) && teamsDiffEmpty(d) && skillsDiffEmpty(d) && lateDiffEmpty(d) && creditDiffEmpty(d); }
 function applyDiff(target, d) {
   const merge = (list, del, up, k = 'id') => {
     const out = list.filter(x => !del.includes(x[k]));
@@ -877,7 +914,8 @@ function applyDiff(target, d) {
     money: {
       ...(d.moneySettings || { settings: target.money.settings, opening: target.money.opening }),
       games: merge(target.money.games, d.delGameMoney, d.upGameMoney, 'gameId'),
-      spends: merge(target.money.spends, d.delSpends, d.upSpends)
+      spends: merge(target.money.spends, d.delSpends, d.upSpends),
+      credit: merge(target.money.credit, d.delCredit, d.upCredit, 'playerId')
     },
     teams: {
       ratings: merge(target.teams.ratings, d.delRatings, d.upRatings, 'playerId'),
@@ -912,7 +950,15 @@ async function fetchDb() {
     reserveNext: state && state.reserve_next
   });
   // Money lives in its own tables. If they haven't been created yet the rest still loads.
-  try { db.money = await fetchMoney(); moneyDb = true; }
+  try {
+    db.money = await fetchMoney(); moneyDb = true;
+    try {
+      const { data, error } = await sb.from('player_credit').select('*');
+      if (error) throw error;
+      db.money.credit = cleanMoney({ credit: (data || []).map(r => ({ playerId: r.player_id, amount: r.amount_p })) }).credit;
+      creditDb = true;
+    } catch (e) { console.warn('Credit table not available yet', e); creditDb = false; }
+  }
   catch (e) { console.warn('Money tables not available yet', e); moneyDb = false; }
   try { db.teams = await fetchTeams(); teamsDb = true; }
   catch (e) { console.warn('Teams tables not available yet', e); teamsDb = false; }
@@ -975,6 +1021,7 @@ async function loadState() {
     S = pending && !diffEmpty(pending) ? applyDiff(db, pending) : db;
     // No money tables yet: keep this device's money and keep trying to send it
     if (!moneyDb) S.money = localMoney;
+    else if (!creditDb) S.money.credit = localMoney.credit;
     if (!teamsDb) S.teams = localTeams;
     else if (!skillsDb) S.teams.skills = localTeams.skills;
     if (teamsDb && !lateDb) S.teams.late = localTeams.late;
@@ -1073,7 +1120,7 @@ async function syncToSupabase() {
       });
       if (error) throw error;
     }
-    setBaseline({ ...baseline, money: snap.money });
+    setBaseline({ ...baseline, money: { ...snap.money, credit: baseline.money.credit } });
     if (!moneyDb) { moneyDb = true; renderMoneyNotice(); }
   } catch (e) {
     console.error('Money sync failed', e);
@@ -1115,6 +1162,17 @@ async function syncToSupabase() {
     if (tableMissing(e)) { skillsDb = false; renderTeamsNotice(); status = 'Saved. Skill ratings are kept on this device until the skills table is added to the database.'; }
     else status = 'Skill ratings save failed - check your connection. They are still safe on this device.';
   }
+  if (!creditDiffEmpty(d) && moneyDb) try {
+    if (d.delCredit.length) { const { error } = await sb.from('player_credit').delete().in('player_id', d.delCredit); if (error) throw error; }
+    if (d.upCredit.length) { const { error } = await sb.from('player_credit').upsert(d.upCredit.map(x => ({ player_id: x.playerId, amount_p: x.amount }))); if (error) throw error; }
+    setBaseline({ ...baseline, money: { ...baseline.money, credit: snap.money.credit } });
+    if (!creditDb) { creditDb = true; renderMoneyNotice(); }
+  } catch (e) {
+    console.error('Credit sync failed', e);
+    statusErr = true;
+    if (tableMissing(e)) { creditDb = false; renderMoneyNotice(); status = 'Saved. Credit is kept on this device until the credit table is added to the database.'; }
+    else status = 'Credit save failed - check your connection. It is still safe on this device.';
+  }
   if (!lateDiffEmpty(d)) try {
     if (d.delLate.length) { const { error } = await sb.from('game_late').delete().in('game_id', d.delLate); if (error) throw error; }
     if (d.upLate.length) { const { error } = await sb.from('game_late').upsert(d.upLate.map(x => ({ game_id: x.gameId, player_ids: x.ids }))); if (error) throw error; }
@@ -1142,7 +1200,7 @@ function goTab(t) {
   document.querySelector(`.nb[onclick="goTab('${t}')"]`).classList.add('active');
   document.getElementById('page-' + t).classList.add('active');
   if (t === 'history') renderHistory();
-  if (t === 'money') renderMoney();
+  if (t === 'money') { moneyToast = ''; renderMoney(); }
   if (t === 'teams') renderTeamsPage();
   if (t === 'ratings') renderRatings();
 }
@@ -1174,6 +1232,7 @@ function removePlayer(id) {
   if (!confirm('Remove this player?')) return;
   S.players = S.players.filter(p => p.id !== id);
   S.reserveNext = S.reserveNext.filter(i => i !== id);
+  S.money.credit = S.money.credit.filter(x => x.playerId !== id);
   S.teams.ratings = S.teams.ratings.filter(r => r.playerId !== id);
   S.teams.skills = S.teams.skills.filter(x => x.playerId !== id);
   S.teams.rules = S.teams.rules.filter(x => x.a !== id && x.b !== id);
@@ -1599,12 +1658,12 @@ function saveManualGame() {
 
   const game = { id: Date.now(), date, day, iso, manual: true, playingIds, reserveIds };
   const org = document.getElementById('mg-org').value;
-  if (org) S.money.games.push(newGameMoney(game.id, org));
   // Insert in date order (after any games on the same date)
   let at = S.games.length;
   for (let i = 0; i < S.games.length; i++) { const gt = gameTime(S.games[i]); if (!isNaN(gt) && gt > t) { at = i; break; } }
   S.games.splice(at, 0, game);
   if (confirmedGameIdx !== null && at <= confirmedGameIdx) confirmedGameIdx++;
+  if (org) { S.money.games.push(newGameMoney(game.id, org)); applyCredit(game.id); }
 
   S.players.forEach(p => {
     if (playingIds.includes(p.id)) p.played++;
@@ -1788,15 +1847,106 @@ function moneyHoldings() {
   return h;
 }
 
+/* ---- WHO OWES AND CREDIT ----
+   Who owes comes straight from the tracked games: anyone who played and isn't
+   ticked as paid. Clearing a debt ticks them as paid on that game. Credit is a
+   simple list of money paid ahead; it pays off whole games, oldest first, and
+   is used automatically when a game's money starts being tracked. */
+let moneyView = 'owe', moneyToast = '';
+function debtsOwed() {
+  const out = [];
+  trackedGames().forEach(({ g, m }) => g.playingIds.forEach(pid => { if (!m.paidIds.includes(pid)) out.push({ g, m, pid, amt: m.price }); }));
+  return out.sort((a, b) => (a.g.iso || '').localeCompare(b.g.iso || '') || a.g.id - b.g.id);
+}
+const creditOf = pid => { const c = S.money.credit.find(x => x.playerId === pid); return c ? c.amount : 0; };
+function setCredit(pid, amount) {
+  S.money.credit = S.money.credit.filter(x => x.playerId !== pid);
+  if (amount > 0) S.money.credit.push({ playerId: pid, amount });
+}
+// Pays whole games from a player's credit, oldest first; returns what's left
+function payFromCredit(pid, pence) {
+  let left = pence;
+  debtsOwed().filter(d => d.pid === pid).forEach(d => { if (left >= d.amt) { d.m.paidIds.push(pid); left -= d.amt; } });
+  return left;
+}
+// When a game starts being tracked, anyone with enough credit is marked as paid
+function applyCredit(gameId) {
+  const m = moneyRecord(gameId), g = S.games.find(x => x.id === gameId), used = [];
+  if (!m || !g) return used;
+  g.playingIds.forEach(pid => {
+    const c = creditOf(pid);
+    if (!m.paidIds.includes(pid) && c >= m.price) { m.paidIds.push(pid); setCredit(pid, c - m.price); used.push(pName(pid)); }
+  });
+  return used;
+}
+function renderOwes() {
+  const debts = debtsOwed(), people = [...new Set(debts.map(d => d.pid))], credits = [...S.money.credit];
+  const owed = debts.reduce((s, d) => s + d.amt, 0), held = credits.reduce((s, x) => s + x.amount, 0);
+  document.getElementById('owe-shortcuts').innerHTML = `
+    <button class="owe-short owe" onclick="moneyView='owe'; moneyToast=''; renderOwes()" aria-pressed="${moneyView === 'owe'}"><span class="l">🔴 Who owes</span><span class="n">${gbp(owed)}</span><span class="s">${people.length ? `${people.length} player${people.length === 1 ? '' : 's'}` : 'Nobody owes anything'}</span></button>
+    <button class="owe-short cred" onclick="moneyView='cred'; moneyToast=''; renderOwes()" aria-pressed="${moneyView === 'cred'}"><span class="l">💷 Credit</span><span class="n">${gbp(held)}</span><span class="s">${credits.length ? `${credits.length} player${credits.length === 1 ? '' : 's'} paid ahead` : 'Nobody in credit'}</span></button>`;
+  const toast = moneyToast ? `<div class="ok" style="font-size:13px;padding:8px 12px">✓ ${esc(moneyToast)}</div>` : '';
+  const el = document.getElementById('owe-panel');
+  if (moneyView === 'owe') {
+    const total = pid => debts.filter(d => d.pid === pid).reduce((s, d) => s + d.amt, 0);
+    people.sort((a, b) => total(b) - total(a) || pName(a).localeCompare(pName(b)));
+    el.innerHTML = `<h3 style="margin-bottom:4px">Who owes</h3><p class="hint">Everyone who played in a tracked game and hasn't paid. Clearing a game ticks them as paid on the Games list below. Once everything is cleared they come off this list.</p>${toast}` +
+      (people.map(pid => {
+        const mine = debts.filter(d => d.pid === pid);
+        return `<div class="owe-person"><div class="top"><span class="nm">${esc(pName(pid))}</span><span class="amt">${gbp(total(pid))}</span>${mine.length > 1 ? `<button class="btn xs owe-clear" onclick="oweClearAll(${pid})">✓ Clear all</button>` : ''}</div>
+          ${mine.map(d => `<div class="owe-game"><span class="d">${esc(d.g.date)} ${whoBadge(d.m.org)}</span><span class="v">${gbp(d.amt)}</span><button class="btn xs owe-clear" onclick="oweClear(${d.g.id},${pid})">✓ Clear</button></div>`).join('')}</div>`;
+      }).join('') || '<p class="owe-empty">Everyone\'s paid up 🎉</p>');
+  } else {
+    credits.sort((a, b) => b.amount - a.amount || pName(a.playerId).localeCompare(pName(b.playerId)));
+    const price = S.money.settings.price;
+    el.innerHTML = `<h3 style="margin-bottom:4px">Credit</h3><p class="hint">Money paid ahead. It's used automatically when they play and a game's money is tracked, and they come off this list once it's used up.</p>${toast}` +
+      (credits.map(x => `<div class="row"><span class="name">${esc(pName(x.playerId))}</span><span class="owe-cred">${gbp(x.amount)}</span><span class="sub">${price ? `≈ ${Math.floor(x.amount / price)} game${Math.floor(x.amount / price) === 1 ? '' : 's'}` : ''}</span><button class="btn xs dghost edit-only" onclick="creditRemove(${x.playerId})">Remove</button></div>`).join('')
+        || '<p class="hint" style="padding:6px 0">Nobody has credit at the moment.</p>') +
+      `<div class="owe-add edit-only">
+        <div><label for="credit-who">Player</label><select id="credit-who"><option value="">Choose…</option>${[...S.players].sort((a, b) => a.name.localeCompare(b.name)).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></div>
+        <div><label for="credit-amt">Amount (£)</label><input type="number" id="credit-amt" min="0" step="0.5" inputmode="decimal" placeholder="${(price / 100).toFixed(2)}"></div>
+        <button class="btn primary sm" onclick="creditAdd()"><i class="ti ti-plus"></i> Add credit</button>
+      </div><div id="credit-err" class="err"></div>`;
+  }
+}
+function oweClear(gameId, pid) {
+  const m = moneyRecord(gameId), g = S.games.find(x => x.id === gameId); if (!m || !g) return;
+  if (!m.paidIds.includes(pid)) m.paidIds.push(pid);
+  const left = debtsOwed().some(d => d.pid === pid);
+  moneyToast = `${pName(pid)}'s ${g.date} game cleared.${left ? '' : ` ${pName(pid)} is all paid up.`}`;
+  save(); renderMoney();
+}
+function oweClearAll(pid) {
+  debtsOwed().filter(d => d.pid === pid).forEach(d => d.m.paidIds.push(pid));
+  moneyToast = `${pName(pid)} is all paid up.`;
+  save(); renderMoney();
+}
+function creditAdd() {
+  const pid = +document.getElementById('credit-who').value, amount = poundsToPence(document.getElementById('credit-amt').value);
+  if (!pid) { setMsg('credit-err', 'Choose a player.', false); return; }
+  if (!(amount > 0)) { setMsg('credit-err', 'Enter an amount above £0.', false); return; }
+  const left = payFromCredit(pid, amount + creditOf(pid)), paid = amount + creditOf(pid) - left;
+  setCredit(pid, left);
+  moneyToast = paid ? `${pName(pid)} owed money, so ${gbp(paid)} paid that off${left ? ` and they have ${gbp(left)} credit` : ''}.` : `${gbp(amount)} credit added for ${pName(pid)}.`;
+  save(); renderMoney();
+}
+function creditRemove(pid) {
+  if (!confirm(`Remove ${pName(pid)}'s ${gbp(creditOf(pid))} credit?`)) return;
+  moneyToast = `${pName(pid)}'s credit removed.`;
+  setCredit(pid, 0); save(); renderMoney();
+}
+
 function renderMoneyNotice() {
   const el = document.getElementById('money-notice'); if (!el) return;
-  const show = sb && !moneyDb;
-  el.style.display = show ? 'block' : 'none';
-  if (show) el.textContent = 'Money is only saved on this device for now. To share it, run supabase/money.sql in the Supabase SQL Editor (see the README).';
+  const msg = !sb ? '' : !moneyDb ? 'Money is only saved on this device for now. To share it, run supabase/money.sql and supabase/credit.sql in the Supabase SQL Editor (see the README).'
+    : !creditDb ? 'Credit is only saved on this device for now. To share it, run supabase/credit.sql in the Supabase SQL Editor (see the README).' : '';
+  el.style.display = msg ? 'block' : 'none';
+  el.textContent = msg;
 }
 
 function renderMoney() {
   renderMoneyNotice();
+  renderOwes();
   const h = moneyHoldings(), tracked = trackedGames();
   let kitty = 0, owed = 0, owedPeople = 0, owedGames = 0;
   ORGANISERS.forEach(o => { kitty += h[o].kitty; });
@@ -1923,6 +2073,8 @@ function moneyTrack(gameId) {
   if (moneyRecord(gameId)) return;
   let org = ORGANISERS[0]; try { org = localStorage.getItem('fbv3_org') || org; } catch (e) {}
   S.money.games.push(newGameMoney(gameId, org));
+  const used = applyCredit(gameId);
+  if (used.length) moneyToast = `Paid from credit: ${used.join(', ')}.`;
   moneyOpenGame = gameId; save(); renderMoney();
 }
 function moneyUntrack(gameId) {

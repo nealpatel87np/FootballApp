@@ -55,6 +55,12 @@ The **Money** tab tracks payments, the pitch cost and the kitty.
 - To keep the page short, the Games list shows the latest 5 games plus any older game where money is still owed, and the Kitty ledger shows the latest 15 rows. Use **Show older games** or **Show full ledger** to see the rest. Totals always include everything. The History game log also shows the latest 5 games with a **Show older games** button.
 - A game only counts towards the kitty and **Still owed** once its money is tracked. Games added by hand can be tracked straight away by choosing an organiser in the add-game form.
 
+- **Who owes** and **Credit** are two buttons at the top of the Money tab.
+  - **Who owes** lists only the players who owe money, with each unpaid game, its organiser and the amount. **Clear** marks that game as paid, and **Clear all** clears all of a player's games. It's linked to the Games list: clearing a debt ticks the player as paid there, and ticking someone paid on the Games list takes them off Who owes. Once a player owes nothing they drop off the list.
+  - **Credit** is a simple list of players who have paid ahead. To add credit, choose a player and an amount. If they already owe money, the credit pays off their oldest games first and anything left stays as credit. When a game's money starts being tracked, anyone with enough credit for that game is marked as paid and it comes off their credit. Players drop off the list once their credit is used up, and **Remove** takes it off by hand (for example, if you give it back). Credit isn't part of the kitty until it pays for a game.
+
+**Setup (once):** run `supabase/credit.sql` in the Supabase SQL Editor for the credit list. Until then, credit is saved only on the device where it was entered.
+
 **Setup (once):** run `supabase/money.sql` in the Supabase SQL Editor to create the money tables. Until then, money is saved only on the device where it was entered, and the Money tab shows a notice.
 
 ### Teams
