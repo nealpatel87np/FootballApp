@@ -186,8 +186,15 @@
   .fold-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .fold-h h3 { margin: 0; }
   .fold-h + div:not([hidden]) { margin-top: 12px; }
-  .ledger.stats th:first-child, .ledger.stats td:first-child { width: 34%; }
-  @media (max-width: 420px) { .ledger.stats th { font-size: 10px; letter-spacing: .02em; } .ledger.stats th, .ledger.stats td { padding-right: 5px; } }
+  .ledger.stats { width: 100%; border: 0.5px solid var(--border-strong); table-layout: auto; }
+  .ledger.stats th, .ledger.stats td { border: 0.5px solid var(--border-strong); padding: 7px 6px; }
+  .ledger.stats thead th { background: var(--surface-1); text-align: center; letter-spacing: .02em; }
+  .ledger.stats td.r { text-align: center; }
+  @media (max-width: 480px) {
+    .ledger.stats { font-size: 12px; }
+    .ledger.stats th { font-size: 9px; letter-spacing: 0; padding: 6px 2px; }
+    .ledger.stats td { padding: 6px 3px; }
+  }
   /* Outstanding Payments and credit */
   .owe-shortcuts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
   .owe-short { text-align: left; border-radius: 12px; padding: 14px; border: 1.5px solid transparent; cursor: pointer; font: inherit; color: inherit; display: grid; gap: 2px; min-width: 0; }
@@ -1314,7 +1321,7 @@ function renderPlayers() {
     const gt = p.guarThu ? `<span class="badge b-guar">Guar Thu</span>` : '';
     const rn = S.reserveNext.includes(p.id) ? `<span class="badge b-res">→Next</span>` : '';
     return `<div class="row" id="prow-${p.id}">
-      <span class="name">${esc(p.name)} <span class="sub">${p.played} GP · ${p.reserved} Resv</span></span>
+      <span class="name">${esc(p.name)}</span>
       ${db}${pb}${gm}${gt}${rn}
       <button class="btn xs" onclick="editPlayer(${p.id})" title="Edit player"><i class="ti ti-edit"></i></button>
     </div>`;
