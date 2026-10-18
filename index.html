@@ -183,6 +183,18 @@
   #front-login .pwrow { display: flex; gap: 8px; }
   #front-login input { flex: 1; min-width: 0; margin: 0; }
   input[type=password] { width: 100%; padding: 8px 10px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); font-size: 14px; background: var(--surface-2); color: var(--text-primary); }
+  .fold-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .fold-h h3 { margin: 0; }
+  .fold-h + div:not([hidden]) { margin-top: 12px; }
+  .ledger.stats { width: 100%; border: 0.5px solid var(--border-strong); table-layout: auto; }
+  .ledger.stats th, .ledger.stats td { border: 0.5px solid var(--border-strong); padding: 7px 6px; }
+  .ledger.stats thead th { background: var(--surface-1); text-align: center; letter-spacing: .02em; }
+  .ledger.stats td.r { text-align: center; }
+  @media (max-width: 480px) {
+    .ledger.stats { font-size: 12px; }
+    .ledger.stats th { font-size: 9px; letter-spacing: 0; padding: 6px 2px; }
+    .ledger.stats td { padding: 6px 3px; }
+  }
   /* Outstanding Payments and credit */
   .owe-shortcuts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
   .owe-short { text-align: left; border-radius: 12px; padding: 14px; border: 1.5px solid transparent; cursor: pointer; font: inherit; color: inherit; display: grid; gap: 2px; min-width: 0; }
@@ -364,14 +376,17 @@
     <button class="nb edit-only" onclick="goTab('game')">Run game</button>
     <button class="nb edit-only" onclick="goTab('teams')">Teams</button>
     <button class="nb edit-only" onclick="goTab('ratings')">Ratings</button>
-    <button class="nb" onclick="goTab('history')">History</button>
+    <button class="nb" onclick="goTab('history')">Game Log</button>
+    <button class="nb" onclick="goTab('stats')">Player Stats</button>
     <button class="nb" onclick="goTab('money')">Money</button>
   </div>
 
   <!-- SETUP -->
   <div id="page-setup" class="page active">
+    <div class="stat" style="margin-bottom:12px"><div class="n" id="setup-count">0</div><div class="l">Players</div></div>
     <div class="card">
-      <h3>Add player</h3>
+      <div class="fold-h"><h3>Add player</h3><button class="btn xs" onclick="toggleFold('add-box', this)" aria-expanded="false" aria-controls="add-box">Show</button></div>
+      <div id="add-box" hidden>
       <label>Name</label>
       <input id="add-name" type="text" placeholder="Player name" oninput="document.getElementById('add-err').textContent=''">
       <div id="add-err" class="err"></div>
@@ -398,6 +413,7 @@
       <div style="margin-top:14px">
         <button class="btn primary" onclick="addPlayer()"><i class="ti ti-plus"></i> Add player</button>
       </div>
+      </div>
     </div>
     <div class="card">
       <h3>All players</h3>
@@ -407,7 +423,8 @@
 
     <!-- EXPORT (read-only, does not change any data) -->
     <div class="card">
-      <h3>Export data</h3>
+      <div class="fold-h"><h3>Export data</h3><button class="btn xs" onclick="toggleFold('export-box', this)" aria-expanded="false" aria-controls="export-box">Show</button></div>
+      <div id="export-box" hidden>
       <p class="hint" id="xfer-summary">Saves a copy of all players and game history. Doesn't change anything.</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn primary" onclick="exportFile()"><i class="ti ti-download"></i> Download file</button>
@@ -419,11 +436,13 @@
       </div>
       <textarea id="xfer" rows="4" readonly style="width:100%;margin-top:10px;padding:8px;border:0.5px solid var(--border-strong);border-radius:var(--radius);background:var(--surface-2);color:var(--text-primary);font-size:12px" placeholder="Exported text appears here"></textarea>
       <div id="xfer-msg" class="hint" style="margin-top:6px"></div>
+      </div>
     </div>
 
     <!-- IMPORT (use on the new device) -->
     <div class="card">
-      <h3>Import data</h3>
+      <div class="fold-h"><h3>Import data</h3><button class="btn xs" onclick="toggleFold('import-box', this)" aria-expanded="false" aria-controls="import-box">Show</button></div>
+      <div id="import-box" hidden>
       <p class="hint">Use this on the new device. Your current data is backed up automatically before anything is replaced.</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <label class="btn" style="margin:0;cursor:pointer;color:var(--text-primary)">
@@ -434,6 +453,7 @@
       <textarea id="imp" rows="4" style="width:100%;margin-top:10px;padding:8px;border:0.5px solid var(--border-strong);border-radius:var(--radius);background:var(--surface-2);color:var(--text-primary);font-size:12px" placeholder="Or paste exported text here"></textarea>
       <button class="btn sm" style="margin-top:8px" onclick="importText()">Import pasted text</button>
       <div id="imp-msg" class="hint" style="margin-top:6px"></div>
+      </div>
     </div>
   </div>
 
@@ -546,14 +566,17 @@
     </div>
   </div>
 
+  <!-- PLAYER STATS -->
+  <div id="page-stats" class="page">
+    <div class="card">
+      <h3>Player Stats</h3>
+      <div id="stats-table"></div>
+    </div>
+  </div>
+
   <!-- HISTORY -->
   <div id="wa-park" style="display:none"></div>
   <div id="page-history" class="page">
-    <div id="hist-stats" class="g2" style="margin-bottom:12px"></div>
-    <div class="card">
-      <h3>Win / loss record</h3>
-      <div id="hist-record"></div>
-    </div>
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px">
         <h3 style="margin:0">Game log</h3>
@@ -595,7 +618,6 @@
       <p class="hint">Tap a game to expand and edit the squad.</p>
       <div id="hist-log"><p style="color:var(--text-muted);font-size:13px">No games yet.</p></div>
     </div>
-    <div class="card"><h3>Player stats</h3><div id="hist-players"><p style="color:var(--text-muted);font-size:13px">No data yet.</p></div></div>
   </div>
 
   <!-- MONEY -->
@@ -931,6 +953,7 @@ function rerenderAll() {
   if (document.getElementById('page-money').classList.contains('active')) renderMoney();
   if (document.getElementById('page-teams').classList.contains('active')) renderTeamsPage();
   if (document.getElementById('page-ratings').classList.contains('active')) renderRatings();
+  if (document.getElementById('page-stats').classList.contains('active')) renderStats();
 }
 
 // Everything currently in the database
@@ -1200,6 +1223,7 @@ function goTab(t) {
   if (t === 'money') { moneyToast = ''; renderMoney(); }
   if (t === 'teams') renderTeamsPage();
   if (t === 'ratings') renderRatings();
+  if (t === 'stats') renderStats();
 }
 
 function togglePref() {
@@ -1281,7 +1305,13 @@ function saveEdit(id) {
   save(); renderPlayers();
 }
 
+// Sections on Setup that stay closed until tapped
+function toggleFold(id, btn) {
+  const el = document.getElementById(id); el.hidden = !el.hidden;
+  btn.textContent = el.hidden ? 'Show' : 'Hide'; btn.setAttribute('aria-expanded', String(!el.hidden));
+}
 function renderPlayers() {
+  document.getElementById('setup-count').textContent = S.players.length;
   const el = document.getElementById('player-list');
   if (!S.players.length) { el.innerHTML = '<p style="color:var(--text-muted);font-size:13px">No players added yet.</p>'; return; }
   el.innerHTML = S.players.map(p => {
@@ -1291,7 +1321,7 @@ function renderPlayers() {
     const gt = p.guarThu ? `<span class="badge b-guar">Guar Thu</span>` : '';
     const rn = S.reserveNext.includes(p.id) ? `<span class="badge b-res">→Next</span>` : '';
     return `<div class="row" id="prow-${p.id}">
-      <span class="name">${esc(p.name)} <span class="sub">${p.played} GP · ${p.reserved} Resv</span></span>
+      <span class="name">${esc(p.name)}</span>
       ${db}${pb}${gm}${gt}${rn}
       <button class="btn xs" onclick="editPlayer(${p.id})" title="Edit player"><i class="ti ti-edit"></i></button>
     </div>`;
@@ -1698,24 +1728,13 @@ let histShowAll = false, moneyShowAllGames = false, moneyShowFullLedger = false;
 
 function renderHistory() {
   const gs = S.games;
-  document.getElementById('hist-stats').innerHTML = `<div class="stat"><div class="n">${gs.length}</div><div class="l">Games run</div></div><div class="stat"><div class="n">${S.players.length}</div><div class="l">Players</div></div>`;
-  const pd = document.getElementById('hist-players');
-  if (!S.players.length) { pd.innerHTML = '<p style="color:var(--text-muted);font-size:13px">No players yet.</p>'; }
-  else {
-    pd.innerHTML = [...S.players].sort((a, b) => b.played - a.played).map(p => {
-      const db = p.avail === 'mon' ? `<span class="badge b-mon">Mon</span>` : p.avail === 'thu' ? `<span class="badge b-thu">Thu</span>` : `<span class="badge b-both">Both</span>`;
-      const rn = S.reserveNext.includes(p.id) ? `<span class="badge b-res">→Next</span>` : '';
-      return `<div class="row"><span class="name">${esc(p.name)}</span>${db}${rn}<span style="font-size:12px;color:var(--text-secondary)">${p.played} Played · ${p.reserved} Reserved</span></div>`;
-    }).join('');
-  }
   const ld = document.getElementById('hist-log');
-  if (!gs.length) { ld.innerHTML = '<p style="color:var(--text-muted);font-size:13px">No games yet.</p>'; renderRecord(); return; }
+  if (!gs.length) { ld.innerHTML = '<p style="color:var(--text-muted);font-size:13px">No games yet.</p>'; return; }
   // Newest 5 games, unless someone asked to see older ones
   const firstShown = histShowAll ? 0 : Math.max(0, gs.length - RECENT_GAMES);
   ld.innerHTML = gs.map((g, i) => i >= firstShown ? `<div class="log-entry" id="log-entry-${i}"></div>` : '').reverse().join('') +
     (gs.length > RECENT_GAMES ? `<button class="btn sm" style="margin-top:4px" onclick="histShowAll = !histShowAll; renderHistory()">${histShowAll ? 'Show only the latest 5' : `Show older games (${firstShown})`}</button>` : '');
   gs.forEach((g, i) => { if (i >= firstShown) renderLogEntry(i); });
-  renderRecord();
 }
 
 function renderLogEntry(gIdx) {
@@ -2189,7 +2208,7 @@ function logOut() {
 /* ---- TEAMS ----
    Positions and ratings live on the Ratings tab. Teams are picked on the Teams
    tab, closer to the game: a draft is saved and shared with the other organisers,
-   and only shows on the front page once it's confirmed. The score is added in History. */
+   and only shows on the front page once it's confirmed. The score is added in the Game Log. */
 const POS_SHORT = { def: 'DEF', att: 'ATT', any: 'ANY' };
 const POS_ORDER = { def: 0, any: 1, att: 2 };
 const SKILLS = [['att', 'Attack', 'Shooting, dribbling, getting forward'], ['def', 'Defence', 'Tackling, marking, positioning'],
@@ -2394,7 +2413,7 @@ function renderTeamsPage() {
       <div id="teams-wa-msg" class="hint" style="margin:6px 0 0"></div>
     </div>
     ${locked
-      ? `<div class="ok"><i class="ti ti-check"></i> Teams confirmed. They show on the front page, and you can add the score in History after the game.</div><button class="btn" onclick="teamsUnconfirm()"><i class="ti ti-edit"></i> Change teams</button>`
+      ? `<div class="ok"><i class="ti ti-check"></i> Teams confirmed. They show on the front page, and you can add the score in the Game Log after the game.</div><button class="btn" onclick="teamsUnconfirm()"><i class="ti ti-edit"></i> Change teams</button>`
       : `<p class="hint">The draft is saved and the other organisers can see it here, but it isn't on the front page until you confirm.</p>
          <div class="tactions"><button class="btn primary" style="padding:12px" onclick="teamsConfirm()"><i class="ti ti-check"></i> Confirm teams</button><button class="btn dghost" onclick="teamsDiscard()">Discard draft</button></div>`}`;
   el.innerHTML = html;
@@ -2570,26 +2589,30 @@ function scoreSave(gameId) {
   if (!t) return;
   if (a === null || b === null) { setMsg('score-msg-' + gameId, 'Enter both scores as whole numbers.', false); return; }
   t.score1 = a; t.score2 = b; save();
-  const gIdx = S.games.findIndex(x => x.id === gameId); renderLogEntry(gIdx); renderRecord();
+  const gIdx = S.games.findIndex(x => x.id === gameId); renderLogEntry(gIdx);
 }
 function scoreClear(gameId) {
   const t = gameTeams(gameId); if (!t) return;
   t.score1 = null; t.score2 = null; save();
-  const gIdx = S.games.findIndex(x => x.id === gameId); renderLogEntry(gIdx); renderRecord();
+  const gIdx = S.games.findIndex(x => x.id === gameId); renderLogEntry(gIdx);
 }
 // Played, won, drawn and lost for each player, from confirmed teams with a score
-function renderRecord() {
-  const el = document.getElementById('hist-record'); if (!el) return;
+// Games played, wins, draws, losses (from confirmed teams with a score) and times in reserve, most games first
+function renderStats() {
+  const el = document.getElementById('stats-table'); if (!el) return;
   const rec = new Map();
   S.teams.games.filter(t => t.status === 'confirmed' && hasScore(t) && S.games.some(g => g.id === t.gameId)).forEach(t => [1, 2].forEach(n => t['t' + n].forEach(id => {
-    const r = rec.get(id) || { p: 0, w: 0, d: 0, l: 0 }, us = n === 1 ? t.score1 : t.score2, them = n === 1 ? t.score2 : t.score1;
-    r.p++; if (us > them) r.w++; else if (us < them) r.l++; else r.d++;
+    const r = rec.get(id) || { w: 0, d: 0, l: 0 }, us = n === 1 ? t.score1 : t.score2, them = n === 1 ? t.score2 : t.score1;
+    if (us > them) r.w++; else if (us < them) r.l++; else r.d++;
     rec.set(id, r);
   })));
-  if (!rec.size) { el.innerHTML = '<p class="hint" style="margin:0">No scores yet. Confirm teams, then add the score to the game in the log below after it\'s played.</p>'; return; }
-  const rows = [...rec.entries()].sort(([a, x], [b, y]) => (y.w / y.p - x.w / x.p) || (y.p - x.p) || pName(a).localeCompare(pName(b)));
-  el.innerHTML = `<div class="tablewrap"><table class="ledger" style="min-width:0"><thead><tr><th>Player</th><th class="r">P</th><th class="r">W</th><th class="r">D</th><th class="r">L</th><th class="r">Win %</th></tr></thead><tbody>${rows.map(([id, r]) =>
-    `<tr><td>${esc(pName(id))}</td><td class="r">${r.p}</td><td class="r">${r.w}</td><td class="r">${r.d}</td><td class="r">${r.l}</td><td class="r">${Math.round(r.w / r.p * 100)}%</td></tr>`).join('')}</tbody></table></div>`;
+  if (!S.players.length) { el.innerHTML = '<p class="hint" style="margin:0">No players yet.</p>'; return; }
+  const none = { w: 0, d: 0, l: 0 };
+  const rows = [...S.players].sort((a, b) => (b.played - a.played) || ((rec.get(b.id) || none).w - (rec.get(a.id) || none).w) || a.name.localeCompare(b.name));
+  el.innerHTML = `<div class="tablewrap"><table class="ledger stats" style="min-width:0"><thead><tr><th>Player</th><th class="r">Played</th><th class="r">Won</th><th class="r">Drawn</th><th class="r">Lost</th><th class="r">Win %</th><th class="r">Reserve</th></tr></thead><tbody>${rows.map(p => {
+    const r = rec.get(p.id) || none;
+    return `<tr><td>${esc(p.name)}</td><td class="r">${p.played}</td><td class="r">${r.w}</td><td class="r">${r.d}</td><td class="r">${r.l}</td><td class="r">${r.w + r.d + r.l ? Math.round(r.w / (r.w + r.d + r.l) * 100) + '%' : '–'}</td><td class="r">${p.reserved}</td></tr>`;
+  }).join('')}</tbody></table></div>`;
 }
 
 /* ---- WHATSAPP MESSAGE ---- */
