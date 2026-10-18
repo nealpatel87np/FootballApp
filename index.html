@@ -183,7 +183,7 @@
   #front-login .pwrow { display: flex; gap: 8px; }
   #front-login input { flex: 1; min-width: 0; margin: 0; }
   input[type=password] { width: 100%; padding: 8px 10px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); font-size: 14px; background: var(--surface-2); color: var(--text-primary); }
-  /* Who owes and credit */
+  /* Outstanding Payments and credit */
   .owe-shortcuts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
   .owe-short { text-align: left; border-radius: 12px; padding: 14px; border: 1.5px solid transparent; cursor: pointer; font: inherit; color: inherit; display: grid; gap: 2px; min-width: 0; }
   .owe-short .l { font-size: 13px; font-weight: 500; }
@@ -525,8 +525,7 @@
   <div id="page-ratings" class="page">
     <div class="notice teams-notice" style="display:none"></div>
     <div class="card">
-      <h3 style="margin-bottom:4px">Player skills</h3>
-      <p class="hint">Score each skill from 1 to 10; tap a player to change theirs. <strong>Overall</strong> is the average of Attack, Defence and Fitness. The position is worked out from Attack and Defence unless you choose one. Everyone has a Goalkeeping score in case there aren't enough keepers; switch on <strong>Regular keeper</strong> for your keepers. Players who haven't been scored yet start from their old star rating. This page is only shown to organisers.</p>
+      <h3>Player skills</h3>
       <div class="rt-filters" id="rt-filters"></div>
       <div id="rating-list"></div>
     </div>
@@ -551,7 +550,6 @@
   <div id="wa-park" style="display:none"></div>
   <div id="page-history" class="page">
     <div id="hist-stats" class="g2" style="margin-bottom:12px"></div>
-    <div class="card"><h3>Player stats</h3><div id="hist-players"><p style="color:var(--text-muted);font-size:13px">No data yet.</p></div></div>
     <div class="card">
       <h3 style="margin-bottom:4px">Win / loss record</h3>
       <p class="hint">From every game with teams and a score. Ratings never change automatically.</p>
@@ -598,6 +596,7 @@
       <p class="hint">Tap a game to expand and edit the squad.</p>
       <div id="hist-log"><p style="color:var(--text-muted);font-size:13px">No games yet.</p></div>
     </div>
+    <div class="card"><h3>Player stats</h3><div id="hist-players"><p style="color:var(--text-muted);font-size:13px">No data yet.</p></div></div>
   </div>
 
   <!-- MONEY -->
@@ -609,6 +608,31 @@
       <h3>Kitty</h3>
       <div class="money-tiles" id="money-tiles"></div>
       <div class="holders" id="money-holders" style="margin-top:10px"></div>
+    </div>
+    <div class="card">
+      <h3>Games</h3>
+      <div id="money-games"></div>
+      <div id="money-games-more"></div>
+    </div>
+    <div class="card">
+      <h3>Kitty ledger</h3>
+      <div class="tablewrap">
+        <table class="ledger">
+          <thead><tr><th>Date</th><th>What</th><th>Held by</th><th class="r">In</th><th class="r">Out</th><th class="r">Balance</th></tr></thead>
+          <tbody id="money-ledger"></tbody>
+        </table>
+      </div>
+      <div id="money-ledger-more"></div>
+      <div class="spend-form edit-only">
+        <div class="wide"><label for="sp-what">Spend from the kitty</label><input type="text" id="sp-what" placeholder="e.g. Curry after Thursday"></div>
+        <div><label for="sp-cat">Type</label><select id="sp-cat"><option>Dinner</option><option>Drinks</option><option>Football</option><option>Other</option></select></div>
+        <div><label for="sp-from">Paid by</label><select id="sp-from"><option>Neal</option><option>Kev</option><option>Gav</option></select></div>
+        <div><label for="sp-amt">Amount (£)</label><input type="number" id="sp-amt" step="0.01" min="0" placeholder="0.00"></div>
+      </div>
+      <div class="edit-only" style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
+        <button class="btn primary sm" onclick="moneyAddSpend()"><i class="ti ti-plus"></i> Add spend</button>
+        <span id="sp-err" class="err" style="margin:0"></span>
+      </div>
     </div>
     <div class="card edit-only">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
@@ -631,32 +655,6 @@
         <div><label for="m-open-Kev">Kev (£)</label><input type="number" id="m-open-Kev" step="0.01" onchange="moneySettingsChanged()"></div>
         <div><label for="m-open-Gav">Gav (£)</label><input type="number" id="m-open-Gav" step="0.01" onchange="moneySettingsChanged()"></div>
       </div>
-      </div>
-    </div>
-    <div class="card">
-      <h3>Games</h3>
-      <p class="hint">Tap a game to change the organiser and tick who has paid.</p>
-      <div id="money-games"></div>
-      <div id="money-games-more"></div>
-    </div>
-    <div class="card">
-      <h3>Kitty ledger</h3>
-      <div class="tablewrap">
-        <table class="ledger">
-          <thead><tr><th>Date</th><th>What</th><th>Held by</th><th class="r">In</th><th class="r">Out</th><th class="r">Balance</th></tr></thead>
-          <tbody id="money-ledger"></tbody>
-        </table>
-      </div>
-      <div id="money-ledger-more"></div>
-      <div class="spend-form edit-only">
-        <div class="wide"><label for="sp-what">Spend from the kitty</label><input type="text" id="sp-what" placeholder="e.g. Curry after Thursday"></div>
-        <div><label for="sp-cat">Type</label><select id="sp-cat"><option>Dinner</option><option>Drinks</option><option>Football</option><option>Other</option></select></div>
-        <div><label for="sp-from">Paid by</label><select id="sp-from"><option>Neal</option><option>Kev</option><option>Gav</option></select></div>
-        <div><label for="sp-amt">Amount (£)</label><input type="number" id="sp-amt" step="0.01" min="0" placeholder="0.00"></div>
-      </div>
-      <div class="edit-only" style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
-        <button class="btn primary sm" onclick="moneyAddSpend()"><i class="ti ti-plus"></i> Add spend</button>
-        <span id="sp-err" class="err" style="margin:0"></span>
       </div>
     </div>
   </div>
@@ -1770,7 +1768,6 @@ function renderLogEntry(gIdx) {
       </div>
       ${logTeamsBlock(g, gIdx)}
       <div style="font-size:12px;font-weight:500;color:var(--text-success);margin-bottom:6px">Playing</div>
-      <p class="hint edit-only" style="margin:-2px 0 6px">Tap ⏰ Late for anyone who arrived late. They're picked after everyone else who isn't guaranteed for their next game.</p>
       ${playingRows}
       ${reserveRows}
       ${addRow}
@@ -1848,7 +1845,7 @@ function moneyHoldings() {
 }
 
 /* ---- WHO OWES AND CREDIT ----
-   Who owes comes straight from the tracked games: anyone who played and isn't
+   Outstanding Payments come straight from the tracked games: anyone who played and isn't
    ticked as paid. Clearing a debt ticks them as paid on that game. Credit is a
    simple list of money paid ahead; it pays off whole games, oldest first, and
    is used automatically when a game's money starts being tracked. */
@@ -1883,14 +1880,14 @@ function renderOwes() {
   const debts = debtsOwed(), people = [...new Set(debts.map(d => d.pid))], credits = [...S.money.credit];
   const owed = debts.reduce((s, d) => s + d.amt, 0), held = credits.reduce((s, x) => s + x.amount, 0);
   document.getElementById('owe-shortcuts').innerHTML = `
-    <button class="owe-short owe" onclick="moneyView='owe'; moneyToast=''; renderOwes()" aria-pressed="${moneyView === 'owe'}"><span class="l">🔴 Who owes</span><span class="n">${gbp(owed)}</span><span class="s">${people.length ? `${people.length} player${people.length === 1 ? '' : 's'}` : 'Nobody owes anything'}</span></button>
+    <button class="owe-short owe" onclick="moneyView='owe'; moneyToast=''; renderOwes()" aria-pressed="${moneyView === 'owe'}"><span class="l">🔴 Outstanding Payments</span><span class="n">${gbp(owed)}</span><span class="s">${people.length ? `${people.length} player${people.length === 1 ? '' : 's'}` : 'Nobody owes anything'}</span></button>
     <button class="owe-short cred" onclick="moneyView='cred'; moneyToast=''; renderOwes()" aria-pressed="${moneyView === 'cred'}"><span class="l">💷 Credit</span><span class="n">${gbp(held)}</span><span class="s">${credits.length ? `${credits.length} player${credits.length === 1 ? '' : 's'} paid ahead` : 'Nobody in credit'}</span></button>`;
   const toast = moneyToast ? `<div class="ok" style="font-size:13px;padding:8px 12px">✓ ${esc(moneyToast)}</div>` : '';
   const el = document.getElementById('owe-panel');
   if (moneyView === 'owe') {
     const total = pid => debts.filter(d => d.pid === pid).reduce((s, d) => s + d.amt, 0);
     people.sort((a, b) => total(b) - total(a) || pName(a).localeCompare(pName(b)));
-    el.innerHTML = `<h3 style="margin-bottom:4px">Who owes</h3><p class="hint">Everyone who played in a tracked game and hasn't paid. Clearing a game ticks them as paid on the Games list below. Once everything is cleared they come off this list.</p>${toast}` +
+    el.innerHTML = `<h3>Outstanding Payments</h3>${toast}` +
       (people.map(pid => {
         const mine = debts.filter(d => d.pid === pid);
         return `<div class="owe-person"><div class="top"><span class="nm">${esc(pName(pid))}</span><span class="amt">${gbp(total(pid))}</span>${mine.length > 1 ? `<button class="btn xs owe-clear" onclick="oweClearAll(${pid})">✓ Clear all</button>` : ''}</div>
@@ -1899,7 +1896,7 @@ function renderOwes() {
   } else {
     credits.sort((a, b) => b.amount - a.amount || pName(a.playerId).localeCompare(pName(b.playerId)));
     const price = S.money.settings.price;
-    el.innerHTML = `<h3 style="margin-bottom:4px">Credit</h3><p class="hint">Money paid ahead. It's used automatically when they play and a game's money is tracked, and they come off this list once it's used up.</p>${toast}` +
+    el.innerHTML = `<h3>Credit</h3>${toast}` +
       (credits.map(x => `<div class="row"><span class="name">${esc(pName(x.playerId))}</span><span class="owe-cred">${gbp(x.amount)}</span><span class="sub">${price ? `≈ ${Math.floor(x.amount / price)} game${Math.floor(x.amount / price) === 1 ? '' : 's'}` : ''}</span><button class="btn xs dghost edit-only" onclick="creditRemove(${x.playerId})">Remove</button></div>`).join('')
         || '<p class="hint" style="padding:6px 0">Nobody has credit at the moment.</p>') +
       `<div class="owe-add edit-only">
@@ -2348,7 +2345,6 @@ function renderTeamsPage() {
   html += `<div class="card"><h3 style="margin-bottom:4px">Squad · ${g.playingIds.length} playing</h3>
     ${locked ? '' : '<p class="hint">Someone dropped out? Move them to the reserves and bring someone in before you generate.</p>'}
     <div class="tchips">${g.playingIds.map(id => { const late = lateIdsOf(g.id).includes(id); return `<span class="tchip${late ? ' late' : ''}">${esc(pName(id))}<button class="lt${late ? ' on' : ''}" onclick="toggleLate(${g.id},${id})" aria-pressed="${late}" aria-label="${esc(pName(id))} arrived late" title="Arrived late">⏰</button>${locked ? '' : `<button onclick="teamsMoveOut(${id})" aria-label="Move ${esc(pName(id))} to reserves" title="Move to reserves">✕</button>`}</span>`; }).join('') || '<span class="hint">No players.</span>'}</div>
-    <p class="hint" style="margin:8px 0 0">Tap ⏰ for anyone who arrives late. They're picked after everyone else who isn't guaranteed for their next game.</p>
     ${g.reserveIds.length ? `<div class="sh">Reserves</div><div class="tchips">${g.reserveIds.map(id => `<span class="tchip res">${esc(pName(id))}${locked ? '' : `<button onclick="teamsMoveIn(${id})" aria-label="Bring in ${esc(pName(id))}">+ In</button>`}</span>`).join('')}</div>` : ''}
   </div>`;
 
@@ -2502,7 +2498,6 @@ function renderRatings() {
             </select>
             <label class="sk-switch" for="sk-keeper-${p.id}"><input type="checkbox" role="switch" id="sk-keeper-${p.id}"${x.keeper ? ' checked' : ''} onchange="skillSet(${p.id}, { keeper: this.checked })"><span class="knob" aria-hidden="true"></span>Regular keeper</label>
           </div>
-          <p class="hint" style="margin:0">${x.keeper ? 'Regular keepers are shared out evenly between the teams.' : 'Not a regular keeper. Their Goalkeeping score still counts when there are fewer than two keepers.'}</p>
         </div>` : ''}
       </div>`;
     }).join('');
