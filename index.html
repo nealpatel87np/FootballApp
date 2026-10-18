@@ -378,6 +378,7 @@
     <button class="nb edit-only" onclick="goTab('ratings')">Ratings</button>
     <button class="nb" onclick="goTab('history')">Game Log</button>
     <button class="nb" onclick="goTab('stats')">Player Stats</button>
+    <button class="nb edit-only" onclick="goTab('attendance')">Attendance</button>
     <button class="nb" onclick="goTab('money')">Money</button>
   </div>
 
@@ -571,6 +572,14 @@
     <div class="card">
       <h3>Player Stats</h3>
       <div id="stats-table"></div>
+    </div>
+  </div>
+
+  <!-- ATTENDANCE (organisers only) -->
+  <div id="page-attendance" class="page">
+    <div class="card">
+      <h3>Attendance</h3>
+      <div id="attendance-table"></div>
     </div>
   </div>
 
@@ -954,6 +963,7 @@ function rerenderAll() {
   if (document.getElementById('page-teams').classList.contains('active')) renderTeamsPage();
   if (document.getElementById('page-ratings').classList.contains('active')) renderRatings();
   if (document.getElementById('page-stats').classList.contains('active')) renderStats();
+  if (document.getElementById('page-attendance').classList.contains('active')) renderAttendance();
 }
 
 // Everything currently in the database
@@ -1214,7 +1224,7 @@ function tableMissing(e) {
 let currentDay = null, builtPlaying = [], builtReserves = [], confirmedGameIdx = null;
 
 function goTab(t) {
-  if (appMode === 'view' && ['setup', 'game', 'teams', 'ratings'].includes(t)) t = 'history';
+  if (appMode === 'view' && ['setup', 'game', 'teams', 'ratings', 'attendance'].includes(t)) t = 'history';
   document.querySelectorAll('.nb').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelector(`.nb[onclick="goTab('${t}')"]`).classList.add('active');
@@ -1224,6 +1234,7 @@ function goTab(t) {
   if (t === 'teams') renderTeamsPage();
   if (t === 'ratings') renderRatings();
   if (t === 'stats') renderStats();
+  if (t === 'attendance') renderAttendance();
 }
 
 function togglePref() {
@@ -2597,7 +2608,7 @@ function scoreClear(gameId) {
   const gIdx = S.games.findIndex(x => x.id === gameId); renderLogEntry(gIdx);
 }
 // Played, won, drawn and lost for each player, from confirmed teams with a score
-// Games played, wins, draws, losses (from confirmed teams with a score) and times in reserve, most games first
+// Player Stats: only games with confirmed teams and a score. Played = wins + draws + losses.
 function renderStats() {
   const el = document.getElementById('stats-table'); if (!el) return;
   const rec = new Map();
@@ -2607,12 +2618,20 @@ function renderStats() {
     rec.set(id, r);
   })));
   if (!S.players.length) { el.innerHTML = '<p class="hint" style="margin:0">No players yet.</p>'; return; }
-  const none = { w: 0, d: 0, l: 0 };
-  const rows = [...S.players].sort((a, b) => (b.played - a.played) || ((rec.get(b.id) || none).w - (rec.get(a.id) || none).w) || a.name.localeCompare(b.name));
-  el.innerHTML = `<div class="tablewrap"><table class="ledger stats" style="min-width:0"><thead><tr><th>Player</th><th class="r">Played</th><th class="r">Won</th><th class="r">Drawn</th><th class="r">Lost</th><th class="r">Win %</th><th class="r">Reserve</th></tr></thead><tbody>${rows.map(p => {
-    const r = rec.get(p.id) || none;
-    return `<tr><td>${esc(p.name)}</td><td class="r">${p.played}</td><td class="r">${r.w}</td><td class="r">${r.d}</td><td class="r">${r.l}</td><td class="r">${r.w + r.d + r.l ? Math.round(r.w / (r.w + r.d + r.l) * 100) + '%' : '–'}</td><td class="r">${p.reserved}</td></tr>`;
+  const none = { w: 0, d: 0, l: 0 }, get = id => rec.get(id) || none, played = r => r.w + r.d + r.l;
+  const rows = [...S.players].sort((a, b) => (played(get(b.id)) - played(get(a.id))) || (get(b.id).w - get(a.id).w) || a.name.localeCompare(b.name));
+  el.innerHTML = `<div class="tablewrap"><table class="ledger stats" style="min-width:0"><thead><tr><th>Player</th><th class="r">Played</th><th class="r">Won</th><th class="r">Drawn</th><th class="r">Lost</th><th class="r">Win %</th></tr></thead><tbody>${rows.map(p => {
+    const r = get(p.id), n = played(r);
+    return `<tr><td>${esc(p.name)}</td><td class="r">${n}</td><td class="r">${r.w}</td><td class="r">${r.d}</td><td class="r">${r.l}</td><td class="r">${n ? Math.round(r.w / n * 100) + '%' : '–'}</td></tr>`;
   }).join('')}</tbody></table></div>`;
+}
+// Attendance (organisers only): games played and times in reserve, from the squad records
+function renderAttendance() {
+  const el = document.getElementById('attendance-table'); if (!el) return;
+  if (!S.players.length) { el.innerHTML = '<p class="hint" style="margin:0">No players yet.</p>'; return; }
+  const rows = [...S.players].sort((a, b) => (b.played - a.played) || (b.reserved - a.reserved) || a.name.localeCompare(b.name));
+  el.innerHTML = `<div class="tablewrap"><table class="ledger stats" style="min-width:0"><thead><tr><th>Player</th><th class="r">Played</th><th class="r">Reserve</th></tr></thead><tbody>${rows.map(p =>
+    `<tr><td>${esc(p.name)}</td><td class="r">${p.played}</td><td class="r">${p.reserved}</td></tr>`).join('')}</tbody></table></div>`;
 }
 
 /* ---- WHATSAPP MESSAGE ---- */
