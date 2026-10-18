@@ -186,7 +186,8 @@
   .fold-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .fold-h h3 { margin: 0; }
   .fold-h + div:not([hidden]) { margin-top: 12px; }
-  .ledger.stats th:first-child, .ledger.stats td:first-child { width: 40%; }
+  .ledger.stats th:first-child, .ledger.stats td:first-child { width: 34%; }
+  @media (max-width: 420px) { .ledger.stats th { font-size: 10px; letter-spacing: .02em; } .ledger.stats th, .ledger.stats td { padding-right: 5px; } }
   /* Outstanding Payments and credit */
   .owe-shortcuts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
   .owe-short { text-align: left; border-radius: 12px; padding: 14px; border: 1.5px solid transparent; cursor: pointer; font: inherit; color: inherit; display: grid; gap: 2px; min-width: 0; }
@@ -368,14 +369,14 @@
     <button class="nb edit-only" onclick="goTab('game')">Run game</button>
     <button class="nb edit-only" onclick="goTab('teams')">Teams</button>
     <button class="nb edit-only" onclick="goTab('ratings')">Ratings</button>
-    <button class="nb" onclick="goTab('history')">History</button>
-    <button class="nb" onclick="goTab('stats')">Player stats</button>
+    <button class="nb" onclick="goTab('history')">Game Log</button>
+    <button class="nb" onclick="goTab('stats')">Player Stats</button>
     <button class="nb" onclick="goTab('money')">Money</button>
   </div>
 
   <!-- SETUP -->
   <div id="page-setup" class="page active">
-    <div class="g2" style="margin-bottom:12px"><div class="stat"><div class="n" id="setup-count">0</div><div class="l">Players</div></div></div>
+    <div class="stat" style="margin-bottom:12px"><div class="n" id="setup-count">0</div><div class="l">Players</div></div>
     <div class="card">
       <div class="fold-h"><h3>Add player</h3><button class="btn xs" onclick="toggleFold('add-box', this)" aria-expanded="false" aria-controls="add-box">Show</button></div>
       <div id="add-box" hidden>
@@ -561,7 +562,7 @@
   <!-- PLAYER STATS -->
   <div id="page-stats" class="page">
     <div class="card">
-      <h3>Player stats</h3>
+      <h3>Player Stats</h3>
       <div id="stats-table"></div>
     </div>
   </div>
@@ -2200,7 +2201,7 @@ function logOut() {
 /* ---- TEAMS ----
    Positions and ratings live on the Ratings tab. Teams are picked on the Teams
    tab, closer to the game: a draft is saved and shared with the other organisers,
-   and only shows on the front page once it's confirmed. The score is added in History. */
+   and only shows on the front page once it's confirmed. The score is added in the Game Log. */
 const POS_SHORT = { def: 'DEF', att: 'ATT', any: 'ANY' };
 const POS_ORDER = { def: 0, any: 1, att: 2 };
 const SKILLS = [['att', 'Attack', 'Shooting, dribbling, getting forward'], ['def', 'Defence', 'Tackling, marking, positioning'],
@@ -2405,7 +2406,7 @@ function renderTeamsPage() {
       <div id="teams-wa-msg" class="hint" style="margin:6px 0 0"></div>
     </div>
     ${locked
-      ? `<div class="ok"><i class="ti ti-check"></i> Teams confirmed. They show on the front page, and you can add the score in History after the game.</div><button class="btn" onclick="teamsUnconfirm()"><i class="ti ti-edit"></i> Change teams</button>`
+      ? `<div class="ok"><i class="ti ti-check"></i> Teams confirmed. They show on the front page, and you can add the score in the Game Log after the game.</div><button class="btn" onclick="teamsUnconfirm()"><i class="ti ti-edit"></i> Change teams</button>`
       : `<p class="hint">The draft is saved and the other organisers can see it here, but it isn't on the front page until you confirm.</p>
          <div class="tactions"><button class="btn primary" style="padding:12px" onclick="teamsConfirm()"><i class="ti ti-check"></i> Confirm teams</button><button class="btn dghost" onclick="teamsDiscard()">Discard draft</button></div>`}`;
   el.innerHTML = html;
@@ -2601,9 +2602,9 @@ function renderStats() {
   if (!S.players.length) { el.innerHTML = '<p class="hint" style="margin:0">No players yet.</p>'; return; }
   const none = { w: 0, d: 0, l: 0 };
   const rows = [...S.players].sort((a, b) => (b.played - a.played) || ((rec.get(b.id) || none).w - (rec.get(a.id) || none).w) || a.name.localeCompare(b.name));
-  el.innerHTML = `<div class="tablewrap"><table class="ledger stats" style="min-width:0"><thead><tr><th>Player</th><th class="r">Played</th><th class="r">Won</th><th class="r">Drawn</th><th class="r">Lost</th><th class="r">Reserve</th></tr></thead><tbody>${rows.map(p => {
+  el.innerHTML = `<div class="tablewrap"><table class="ledger stats" style="min-width:0"><thead><tr><th>Player</th><th class="r">Played</th><th class="r">Won</th><th class="r">Drawn</th><th class="r">Lost</th><th class="r">Win %</th><th class="r">Reserve</th></tr></thead><tbody>${rows.map(p => {
     const r = rec.get(p.id) || none;
-    return `<tr><td>${esc(p.name)}</td><td class="r">${p.played}</td><td class="r">${r.w}</td><td class="r">${r.d}</td><td class="r">${r.l}</td><td class="r">${p.reserved}</td></tr>`;
+    return `<tr><td>${esc(p.name)}</td><td class="r">${p.played}</td><td class="r">${r.w}</td><td class="r">${r.d}</td><td class="r">${r.l}</td><td class="r">${r.w + r.d + r.l ? Math.round(r.w / (r.w + r.d + r.l) * 100) + '%' : '–'}</td><td class="r">${p.reserved}</td></tr>`;
   }).join('')}</tbody></table></div>`;
 }
 
