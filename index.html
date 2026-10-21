@@ -582,7 +582,7 @@
       <div id="attendance-table"></div>
     </div>
     <div class="card">
-      <div class="fold-h"><h3 id="legacy-title">Old spreadsheet players</h3><button class="btn xs" onclick="toggleFold('legacy-box', this)" aria-expanded="false" aria-controls="legacy-box">Show</button></div>
+      <div class="fold-h"><h3 id="legacy-title">Legacy Player Data</h3><button class="btn xs" onclick="toggleFold('legacy-box', this)" aria-expanded="false" aria-controls="legacy-box">Show</button></div>
       <div id="legacy-box" hidden><div id="legacy-table"></div></div>
     </div>
   </div>
@@ -2773,7 +2773,7 @@ function renderLegacyList() {
   const el = document.getElementById('legacy-table'); if (!el) return;
   const inApp = new Set(S.players.map(p => p.name.trim().toLowerCase()));
   const rows = [...LEGACY_APPS].sort((a, b) => (b[1] + b[2] - a[1] - a[2]) || a[0].localeCompare(b[0]));
-  document.getElementById('legacy-title').textContent = `Old spreadsheet players (${rows.length})`;
+  document.getElementById('legacy-title').textContent = `Legacy Player Data (${rows.length})`;
   el.innerHTML = `<div class="tablewrap"><table class="ledger stats" style="min-width:0"><thead><tr><th>Name</th><th class="r">Before 2026</th><th class="r">2026</th><th class="r">Total</th><th class="r">In app</th></tr></thead><tbody>${rows.map(r =>
     `<tr><td>${esc(r[0])}</td><td class="r">${r[1]}</td><td class="r">${r[2]}</td><td class="r"><strong>${r[1] + r[2]}</strong></td><td class="r">${inApp.has(r[0].toLowerCase()) ? '<span style="color:var(--text-success);font-weight:600">✓</span>' : ''}</td></tr>`).join('')}</tbody></table></div>`;
 }
