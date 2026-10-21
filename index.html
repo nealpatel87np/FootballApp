@@ -376,7 +376,7 @@
 
   <div id="modebar"><span id="modebar-text"></span><span style="display:flex;gap:6px"><button class="btn xs" onclick="goFront()">Home</button><button class="btn xs" id="logout-btn" onclick="logOut()">Log out</button></span></div>
 
-  <div class="navsel"><label for="nav-select">Section</label><select id="nav-select" onchange="goTab(this.value)"></select></div>
+  <div class="navsel"><select id="nav-select" aria-label="Go to page" onchange="goTab(this.value)"></select></div>
   <div class="nav">
     <button class="nb active edit-only" onclick="goTab('setup')">Setup</button>
     <button class="nb edit-only" onclick="goTab('game')">Run game</button>
