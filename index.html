@@ -2625,7 +2625,7 @@ function renderStats() {
     return `<tr><td>${esc(p.name)}</td><td class="r">${n}</td><td class="r">${r.w}</td><td class="r">${r.d}</td><td class="r">${r.l}</td><td class="r">${n ? Math.round(r.w / n * 100) + '%' : '–'}</td></tr>`;
   }).join('')}</tbody></table></div>`;
 }
-/* Appearances before the app, from the old spreadsheet: [name, up to the end of 2025, 2026 before the app].
+/* Appearances before the app, from the old spreadsheet: [name, before 2026, 2026 before the app].
    Matched to players by name, so anyone not in the app yet shows up as soon as they're added with this name. */
 const LEGACY_APPS = [
   ["Neal", 339, 53],
@@ -2760,7 +2760,7 @@ function renderAttendance() {
     const byYear = years.map(y => (m[y] || 0) + (y === 2026 ? l.y2026 : 0));
     return { p, upTo2025: l.upTo2025, byYear, total: l.upTo2025 + byYear.reduce((a, b) => a + b, 0) };
   }).sort((a, b) => (b.total - a.total) || a.p.name.localeCompare(b.p.name));
-  el.innerHTML = `<div class="tablewrap"><table class="ledger stats" style="min-width:0"><thead><tr><th>Player</th><th class="r">Up to 2025</th>${years.map(y => `<th class="r">${y}</th>`).join('')}<th class="r">Total</th><th class="r">Reserve</th></tr></thead><tbody>${rows.map(r =>
+  el.innerHTML = `<div class="tablewrap"><table class="ledger stats" style="min-width:0"><thead><tr><th>Player</th><th class="r">Before 2026</th>${years.map(y => `<th class="r">${y}</th>`).join('')}<th class="r">Total</th><th class="r">Reserve</th></tr></thead><tbody>${rows.map(r =>
     `<tr><td>${esc(r.p.name)}</td><td class="r">${r.upTo2025}</td>${r.byYear.map(v => `<td class="r">${v}</td>`).join('')}<td class="r"><strong>${r.total}</strong></td><td class="r">${r.p.reserved}</td></tr>`).join('')}</tbody></table></div>`;
 }
 
