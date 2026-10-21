@@ -2761,7 +2761,8 @@ const LEGACY_APPS = [
   ["Steven", 1, 0],
   ["Veer", 1, 0],
   ["Washington", 1, 0],
-  ["Zak", 1, 0]
+  ["Zak", 1, 0],
+  ["Shawkat", 0, 1]
 ];
 const legacyOf = name => { const n = String(name).trim().toLowerCase(), r = LEGACY_APPS.find(x => x[0].toLowerCase() === n); return r ? { upTo2025: r[1], y2026: r[2] } : { upTo2025: 0, y2026: 0 }; };
 // Attendance (organisers only): appearances by year (old spreadsheet plus games in the app) and times in reserve
