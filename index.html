@@ -2625,13 +2625,143 @@ function renderStats() {
     return `<tr><td>${esc(p.name)}</td><td class="r">${n}</td><td class="r">${r.w}</td><td class="r">${r.d}</td><td class="r">${r.l}</td><td class="r">${n ? Math.round(r.w / n * 100) + '%' : '–'}</td></tr>`;
   }).join('')}</tbody></table></div>`;
 }
-// Attendance (organisers only): games played and times in reserve, from the squad records
+/* Appearances before the app, from the old spreadsheet: [name, before 2026, 2026 before the app].
+   Matched to players by name, so anyone not in the app yet shows up as soon as they're added with this name. */
+const LEGACY_APPS = [
+  ["Neal", 339, 53],
+  ["Kev", 325, 46],
+  ["White Gav", 334, 26],
+  ["Russ", 269, 51],
+  ["Carlos", 262, 48],
+  ["Bhads", 249, 40],
+  ["Emad", 262, 20],
+  ["Dave", 234, 44],
+  ["Vic", 187, 14],
+  ["White Steve", 157, 19],
+  ["Nick", 170, 0],
+  ["Brown Steve", 145, 23],
+  ["Michael", 113, 46],
+  ["Lee", 150, 2],
+  ["Andrea", 146, 4],
+  ["Pedro", 102, 37],
+  ["Suraj", 113, 18],
+  ["Ethan", 85, 19],
+  ["Lewis", 84, 14],
+  ["Younus", 70, 26],
+  ["Hussain", 83, 9],
+  ["Shakz", 81, 0],
+  ["Kieran", 62, 0],
+  ["Nathan", 37, 23],
+  ["Kellz", 38, 16],
+  ["Umar", 49, 1],
+  ["Marcus", 50, 0],
+  ["Shez", 30, 15],
+  ["Tom", 30, 2],
+  ["Dardan", 32, 0],
+  ["Danny", 27, 4],
+  ["Nasri", 29, 0],
+  ["Kumar", 23, 6],
+  ["Dennis", 20, 6],
+  ["Dani", 24, 1],
+  ["Ryan H", 22, 1],
+  ["Glenn", 22, 0],
+  ["Damo", 20, 0],
+  ["Stuart", 17, 0],
+  ["Hamza", 0, 17],
+  ["Dutch", 14, 2],
+  ["Shaf", 14, 0],
+  ["Yesar", 14, 0],
+  ["Nikhil", 8, 4],
+  ["Pranav", 8, 3],
+  ["Tan Steve", 1, 10],
+  ["Antonio", 10, 0],
+  ["Raj", 8, 0],
+  ["Tufail", 0, 8],
+  ["Ralph", 7, 0],
+  ["Ahsan", 5, 1],
+  ["Ollie", 6, 0],
+  ["Sanjay", 4, 1],
+  ["Imran", 5, 0],
+  ["Mini", 5, 0],
+  ["Rob", 5, 0],
+  ["Shabran", 5, 0],
+  ["Chris H", 4, 0],
+  ["Karim", 4, 0],
+  ["Zoren", 4, 0],
+  ["Chris", 0, 3],
+  ["Andre", 3, 0],
+  ["Dheeraj", 3, 0],
+  ["Hemal", 3, 0],
+  ["Jash", 3, 0],
+  ["Mario", 3, 0],
+  ["Rahul", 3, 0],
+  ["Tommy", 3, 0],
+  ["Khory", 0, 2],
+  ["Brad", 2, 0],
+  ["Carlos (Emad's mate)", 2, 0],
+  ["Dominic", 2, 0],
+  ["Fahd", 2, 0],
+  ["Jermaine", 2, 0],
+  ["Mark C", 2, 0],
+  ["Minesh", 2, 0],
+  ["Neil", 2, 0],
+  ["Nigel", 2, 0],
+  ["Omer", 2, 0],
+  ["Vinay", 2, 0],
+  ["Asgar", 0, 1],
+  ["Dean", 0, 1],
+  ["Abra", 1, 0],
+  ["Ayo", 1, 0],
+  ["Ben", 1, 0],
+  ["Brown Gav M", 1, 0],
+  ["Damo C", 1, 0],
+  ["Danny 2", 1, 0],
+  ["Didi", 1, 0],
+  ["Glenn's mate", 1, 0],
+  ["Jaider", 1, 0],
+  ["Jake", 1, 0],
+  ["JJ", 1, 0],
+  ["Jonathan", 1, 0],
+  ["Joseph", 1, 0],
+  ["Kam", 1, 0],
+  ["Kenny", 1, 0],
+  ["Lak", 1, 0],
+  ["Liban", 1, 0],
+  ["Michael (Nasri mate)", 1, 0],
+  ["Mo", 1, 0],
+  ["Mo (Neal's mate)", 1, 0],
+  ["Moe", 1, 0],
+  ["Mohsin", 1, 0],
+  ["Montell", 1, 0],
+  ["Nouri", 1, 0],
+  ["Pearcy", 1, 0],
+  ["Pete", 1, 0],
+  ["Ray", 1, 0],
+  ["Richard", 1, 0],
+  ["Shukr", 1, 0],
+  ["Sina", 1, 0],
+  ["Steven", 1, 0],
+  ["Veer", 1, 0],
+  ["Washington", 1, 0],
+  ["Zak", 1, 0]
+];
+const legacyOf = name => { const n = String(name).trim().toLowerCase(), r = LEGACY_APPS.find(x => x[0].toLowerCase() === n); return r ? { upTo2025: r[1], y2026: r[2] } : { upTo2025: 0, y2026: 0 }; };
+// Attendance (organisers only): appearances by year (old spreadsheet plus games in the app) and times in reserve
 function renderAttendance() {
   const el = document.getElementById('attendance-table'); if (!el) return;
   if (!S.players.length) { el.innerHTML = '<p class="hint" style="margin:0">No players yet.</p>'; return; }
-  const rows = [...S.players].sort((a, b) => (b.played - a.played) || (b.reserved - a.reserved) || a.name.localeCompare(b.name));
-  el.innerHTML = `<div class="tablewrap"><table class="ledger stats" style="min-width:0"><thead><tr><th>Player</th><th class="r">Played</th><th class="r">Reserve</th></tr></thead><tbody>${rows.map(p =>
-    `<tr><td>${esc(p.name)}</td><td class="r">${p.played}</td><td class="r">${p.reserved}</td></tr>`).join('')}</tbody></table></div>`;
+  const yearOf = g => { const t = gameTime(g); return isNaN(t) ? null : new Date(t).getFullYear(); };
+  const appYears = new Map();   // playerId -> { year: games }
+  S.games.forEach(g => { const y = yearOf(g); if (!y) return; g.playingIds.forEach(id => { const m = appYears.get(id) || {}; m[y] = (m[y] || 0) + 1; appYears.set(id, m); }); });
+  const lastYear = Math.max(2026, new Date().getFullYear(), ...S.games.map(yearOf).filter(Boolean));
+  const years = []; for (let y = 2026; y <= lastYear; y++) years.push(y);
+  const rows = S.players.map(p => {
+    const l = legacyOf(p.name), m = appYears.get(p.id) || {};
+    const byYear = years.map(y => (m[y] || 0) + (y === 2026 ? l.y2026 : 0));
+    return { p, upTo2025: l.upTo2025, byYear, total: l.upTo2025 + byYear.reduce((a, b) => a + b, 0) };
+  }).sort((a, b) => (b.total - a.total) || a.p.name.localeCompare(b.p.name));
+  el.innerHTML = `<div class="tablewrap"><table class="ledger stats" style="min-width:0"><thead><tr><th>Player</th><th class="r">Before 2026</th>${years.map(y => `<th class="r">${y}</th>`).join('')}<th class="r">Total</th><th class="r">Reserve</th></tr></thead><tbody>${rows.map(r =>
+    `<tr><td>${esc(r.p.name)}</td><td class="r">${r.upTo2025}</td>${r.byYear.map(v => `<td class="r">${v}</td>`).join('')}<td class="r"><strong>${r.total}</strong></td><td class="r">${r.p.reserved}</td></tr>`).join('')}</tbody></table></div>`;
 }
 
 /* ---- WHATSAPP MESSAGE ---- */
