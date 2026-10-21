@@ -88,6 +88,9 @@ After a game, open it in the History game log and enter the score under the team
 
 **Setup (once):** run `supabase/teams.sql` and `supabase/skills.sql` in the Supabase SQL Editor. They create the tables for ratings, skill scores, team rules, and each game's teams and score. Until then, these are saved only on the device where they were entered, and the Teams and Ratings tabs show a notice.
 
+### Moving around
+Use the menu at the top to switch between pages. In View mode it only lists Game Log, Player Stats and Money.
+
 ### Front page and log in
 The page opens on a front page showing the next game (date, time, venue, organiser and squad) and the kitty, with two buttons:
 
