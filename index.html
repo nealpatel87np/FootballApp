@@ -2027,13 +2027,15 @@ function renderMoney() {
   // Games, newest first
   const gamesEl = document.getElementById('money-games');
   if (!S.games.length) { gamesEl.innerHTML = '<p style="color:var(--text-muted);font-size:13px">No games yet.</p>'; }
-  // Newest 5 games, plus any older game where money is still owed (and the one that's open)
+  // Only games that still need something: money owed, or a recent game whose money isn't tracked yet
+  // (plus the one that's open, so it doesn't vanish while you tick the last payment). Paid games are behind a button.
   const newestFirst = [...S.games].reverse();
   const owesMoney = g => { const m = S.money.games.find(x => x.gameId === g.id); return m && gameSplit(g, m).unpaid > 0; };
-  const shownGames = moneyShowAllGames ? newestFirst : newestFirst.filter((g, i) => i < RECENT_GAMES || owesMoney(g) || g.id === moneyOpenGame);
+  const untrackedRecent = (g, i) => i < RECENT_GAMES && !S.money.games.some(x => x.gameId === g.id);
+  const shownGames = moneyShowAllGames ? newestFirst : newestFirst.filter((g, i) => owesMoney(g) || untrackedRecent(g, i) || g.id === moneyOpenGame);
   const hiddenGames = newestFirst.length - shownGames.length;
-  document.getElementById('money-games-more').innerHTML = (hiddenGames || moneyShowAllGames) && newestFirst.length > RECENT_GAMES
-    ? `<button class="btn sm" style="margin-top:8px" onclick="moneyShowAllGames = !moneyShowAllGames; renderMoney()">${moneyShowAllGames ? 'Show only recent games and money owed' : `Show older games (${hiddenGames})`}</button>` : '';
+  document.getElementById('money-games-more').innerHTML = hiddenGames || moneyShowAllGames
+    ? `<button class="btn sm" style="margin-top:8px" onclick="moneyShowAllGames = !moneyShowAllGames; renderMoney()">${moneyShowAllGames ? 'Hide paid games' : `Show paid games (${hiddenGames})`}</button>` : '';
   if (S.games.length) gamesEl.innerHTML = shownGames.map(g => {
     const m = S.money.games.find(x => x.gameId === g.id);
     const head = `<span class="when"><span class="d">${esc(g.date)}</span> <span class="badge ${g.day === 'mon' ? 'b-mon' : g.day === 'thu' ? 'b-thu' : 'b-both'}">${dayLabel(g.day)}</span>`;
@@ -2072,6 +2074,7 @@ function renderMoney() {
       `${whoBadge(m.org)}${owe}${res}<i class="ti ti-chevron-down" style="color:var(--text-muted);${open ? 'transform:rotate(180deg)' : ''}"></i></button>${body}</div>`;
   }).join('');
 
+  if (S.games.length && !shownGames.length) gamesEl.innerHTML = '<p class="owe-empty">All games paid up 🎉</p>';
   // Ledger: starting balances, tracked games and spends, with a running balance
   const rows = ORGANISERS.map(o => ({ iso: '', what: 'Starting balance', sub: 'Held before the app', org: o, amt: S.money.opening[o], order: 0 }));
   tracked.forEach(({ g, m }) => { const s = gameSplit(g, m); rows.push({ iso: g.iso || '', date: g.date, what: `${dayLabel(g.day)} game`, sub: `${s.paid} paid`, org: m.org, amt: s.toKitty, order: 1 }); });
