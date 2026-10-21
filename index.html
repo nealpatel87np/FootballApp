@@ -162,7 +162,12 @@
   /* Front page and access modes */
   #front { display: none; }
   body.on-front #front { display: block; }
-  body.on-front .nav, body.on-front .page, body.on-front #modebar { display: none !important; }
+  body.on-front .nav, body.on-front .navsel, body.on-front .page, body.on-front #modebar { display: none !important; }
+  /* The tabs are replaced by the section menu; the buttons stay (hidden) to track the current tab */
+  .nav { display: none !important; }
+  .navsel { display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem; }
+  .navsel label { margin: 0; font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+  .navsel select { flex: 1; margin: 0; padding: 10px 12px; font-size: 16px; font-weight: 500; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text-primary); }
   #modebar { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; border-radius: var(--radius); padding: 8px 12px; font-size: 13px; margin-bottom: 14px; }
   body.mode-view #modebar { background: var(--surface-1); color: var(--text-secondary); }
   body.mode-edit #modebar { background: var(--bg-success); color: var(--text-success); }
@@ -371,6 +376,7 @@
 
   <div id="modebar"><span id="modebar-text"></span><span style="display:flex;gap:6px"><button class="btn xs" onclick="goFront()">Home</button><button class="btn xs" id="logout-btn" onclick="logOut()">Log out</button></span></div>
 
+  <div class="navsel"><label for="nav-select">Section</label><select id="nav-select" onchange="goTab(this.value)"></select></div>
   <div class="nav">
     <button class="nb active edit-only" onclick="goTab('setup')">Setup</button>
     <button class="nb edit-only" onclick="goTab('game')">Run game</button>
@@ -1233,6 +1239,7 @@ function goTab(t) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelector(`.nb[onclick="goTab('${t}')"]`).classList.add('active');
   document.getElementById('page-' + t).classList.add('active');
+  const ns = document.getElementById('nav-select'); if (ns) ns.value = t;
   if (t === 'history') renderHistory();
   if (t === 'money') { moneyToast = ''; renderMoney(); }
   if (t === 'teams') renderTeamsPage();
@@ -2185,10 +2192,17 @@ function enterApp(mode) {
   document.body.classList.add('mode-' + mode);
   document.getElementById('modebar-text').textContent = mode === 'edit' ? 'Logged in as an organiser.' : 'View only. Log in on the home page to make changes.';
   document.getElementById('logout-btn').style.display = mode === 'edit' ? '' : 'none';
+  buildNavSelect();
   goTab(mode === 'edit' ? 'setup' : 'history');
   rerenderAll();
 }
 function enterView() { enterApp('view'); }
+// The section menu: one option per tab this person can use (organiser-only tabs are left out in View mode)
+function buildNavSelect() {
+  document.getElementById('nav-select').innerHTML = [...document.querySelectorAll('.nav .nb')]
+    .filter(b => appMode === 'edit' || !b.classList.contains('edit-only'))
+    .map(b => `<option value="${b.getAttribute('onclick').match(/goTab\('(\w+)'\)/)[1]}">${esc(b.textContent)}</option>`).join('');
+}
 function frontLoginClicked() {
   if (isLoggedIn()) { enterApp('edit'); return; }
   const f = document.getElementById('front-login');
