@@ -404,7 +404,7 @@
     <button class="nb" onclick="goTab('history')">Game Log</button>
     <button class="nb" onclick="goTab('stats')">Player Stats</button>
     <button class="nb edit-only" onclick="goTab('attendance')">Attendance</button>
-    <button class="nb" onclick="goTab('money')">Kitty</button>
+    <button class="nb" onclick="goTab('money')">Payments</button>
   </div>
 
   <!-- SETUP -->
@@ -1569,7 +1569,7 @@ function confirmGame() {
   S.reserveNext = reserveIds;
   save();
   document.getElementById('done-banner').innerHTML = `<i class="ti ti-check"></i> Game saved — ${date}`;
-  document.getElementById('done-summary').innerHTML = `<p style="font-size:13px;color:var(--text-secondary)">${day === 'mon' ? 'Monday' : 'Thursday'} · ${playingIds.length} playing · ${reserveIds.length} reserve${reserveIds.length !== 1 ? 's' : ''}</p>${reserveIds.length ? `<p style="font-size:12px;color:var(--text-secondary);margin-top:6px"><i class="ti ti-info-circle"></i> ${reserveIds.length} player(s) guaranteed next game.</p>` : ''}<p style="font-size:12px;color:var(--text-secondary);margin-top:6px"><i class="ti ti-coin-pound"></i> Money isn't tracked for this game yet. When you're ready, press <strong>Track money</strong> on it in the Kitty tab${org ? ` (${esc(org)} will be set as the organiser)` : ''}.</p>`;
+  document.getElementById('done-summary').innerHTML = `<p style="font-size:13px;color:var(--text-secondary)">${day === 'mon' ? 'Monday' : 'Thursday'} · ${playingIds.length} playing · ${reserveIds.length} reserve${reserveIds.length !== 1 ? 's' : ''}</p>${reserveIds.length ? `<p style="font-size:12px;color:var(--text-secondary);margin-top:6px"><i class="ti ti-info-circle"></i> ${reserveIds.length} player(s) guaranteed next game.</p>` : ''}<p style="font-size:12px;color:var(--text-secondary);margin-top:6px"><i class="ti ti-coin-pound"></i> Money isn't tracked for this game yet. When you're ready, press <strong>Track money</strong> on it in the Payments tab${org ? ` (${esc(org)} will be set as the organiser)` : ''}.</p>`;
   renderPostGame();
   document.getElementById('step-squad').style.display = 'none';
   document.getElementById('step-done').style.display = 'block';
