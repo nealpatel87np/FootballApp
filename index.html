@@ -162,12 +162,29 @@
   /* Front page and access modes */
   #front { display: none; }
   body.on-front #front { display: block; }
-  body.on-front .nav, body.on-front .navsel, body.on-front .page, body.on-front #modebar { display: none !important; }
-  /* The tabs are replaced by the section menu; the buttons stay (hidden) to track the current tab */
-  .nav { display: none !important; }
-  .navsel { display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem; }
-  .navsel label { margin: 0; font-size: 13px; font-weight: 500; color: var(--text-secondary); }
-  .navsel select { flex: 1; margin: 0; padding: 10px 12px; font-size: 16px; font-weight: 500; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text-primary); }
+  body.on-front .nav, body.on-front .bnav, body.on-front .bsheet, body.on-front .bshade, body.on-front .page, body.on-front #modebar { display: none !important; }
+  /* Page menu: a row of tabs on a computer; on a phone, a bar at the bottom with More for the rest */
+  .nav .nb { white-space: nowrap; padding: 8px 9px; font-size: 13.5px; }
+  .bnav, .bsheet, .bshade { display: none; }
+  @media (max-width: 720px) {
+    .nav { display: none; }
+    .bnav { display: grid; position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--surface-2); border-top: 0.5px solid var(--border-strong); padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px)); }
+    .bnav button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0; border: none; background: none; color: var(--text-muted); font: inherit; font-size: 11px; cursor: pointer; min-width: 0; }
+    .bnav button i { font-size: 22px; }
+    .bnav button.active { color: var(--text-accent); font-weight: 600; }
+    .bnav button span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; }
+    body:not(.on-front) .app { padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+    .bshade { display: block; position: fixed; inset: 0; z-index: 21; background: rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: opacity .2s; }
+    .bsheet { display: block; position: fixed; left: 0; right: 0; bottom: 0; z-index: 22; background: var(--surface-2); border-radius: 18px 18px 0 0; box-shadow: 0 -6px 24px rgba(0,0,0,0.18); padding: 10px 12px calc(14px + env(safe-area-inset-bottom, 0px)); transform: translateY(105%); transition: transform .2s ease; }
+    body.more-open .bshade { opacity: 1; pointer-events: auto; }
+    body.more-open .bsheet { transform: translateY(0); }
+    .bsheet .grab { width: 36px; height: 4px; border-radius: 2px; background: var(--border-strong); margin: 0 auto 8px; }
+    .bsheet button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 8px; border: none; border-bottom: 0.5px solid var(--border); background: none; color: var(--text-primary); font: inherit; font-size: 15px; cursor: pointer; text-align: left; }
+    .bsheet button:last-child { border-bottom: none; }
+    .bsheet button i { font-size: 20px; color: var(--text-secondary); }
+    .bsheet button.active, .bsheet button.active i { color: var(--text-accent); font-weight: 600; }
+  }
+  @media (prefers-reduced-motion: reduce) { .bsheet, .bshade { transition: none; } }
   #modebar { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; border-radius: var(--radius); padding: 8px 12px; font-size: 13px; margin-bottom: 14px; }
   body.mode-view #modebar { background: var(--surface-1); color: var(--text-secondary); }
   body.mode-edit #modebar { background: var(--bg-success); color: var(--text-success); }
@@ -376,7 +393,9 @@
 
   <div id="modebar"><span id="modebar-text"></span><span style="display:flex;gap:6px"><button class="btn xs" onclick="goFront()">Home</button><button class="btn xs" id="logout-btn" onclick="logOut()">Log out</button></span></div>
 
-  <div class="navsel"><select id="nav-select" aria-label="Go to page" onchange="goTab(this.value)"></select></div>
+  <nav class="bnav" id="bnav" aria-label="Pages"></nav>
+  <div class="bshade" onclick="closeMore()"></div>
+  <div class="bsheet" id="bsheet" role="dialog" aria-label="More pages"></div>
   <div class="nav">
     <button class="nb active edit-only" onclick="goTab('setup')">Setup</button>
     <button class="nb edit-only" onclick="goTab('game')">Run game</button>
@@ -385,7 +404,7 @@
     <button class="nb" onclick="goTab('history')">Game Log</button>
     <button class="nb" onclick="goTab('stats')">Player Stats</button>
     <button class="nb edit-only" onclick="goTab('attendance')">Attendance</button>
-    <button class="nb" onclick="goTab('money')">Money</button>
+    <button class="nb" onclick="goTab('money')">Kitty</button>
   </div>
 
   <!-- SETUP -->
@@ -1239,7 +1258,7 @@ function goTab(t) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelector(`.nb[onclick="goTab('${t}')"]`).classList.add('active');
   document.getElementById('page-' + t).classList.add('active');
-  const ns = document.getElementById('nav-select'); if (ns) ns.value = t;
+  markNav(t);
   if (t === 'history') renderHistory();
   if (t === 'money') { moneyToast = ''; renderMoney(); }
   if (t === 'teams') renderTeamsPage();
@@ -1550,7 +1569,7 @@ function confirmGame() {
   S.reserveNext = reserveIds;
   save();
   document.getElementById('done-banner').innerHTML = `<i class="ti ti-check"></i> Game saved — ${date}`;
-  document.getElementById('done-summary').innerHTML = `<p style="font-size:13px;color:var(--text-secondary)">${day === 'mon' ? 'Monday' : 'Thursday'} · ${playingIds.length} playing · ${reserveIds.length} reserve${reserveIds.length !== 1 ? 's' : ''}</p>${reserveIds.length ? `<p style="font-size:12px;color:var(--text-secondary);margin-top:6px"><i class="ti ti-info-circle"></i> ${reserveIds.length} player(s) guaranteed next game.</p>` : ''}<p style="font-size:12px;color:var(--text-secondary);margin-top:6px"><i class="ti ti-coin-pound"></i> Money isn't tracked for this game yet. When you're ready, press <strong>Track money</strong> on it in the Money tab${org ? ` (${esc(org)} will be set as the organiser)` : ''}.</p>`;
+  document.getElementById('done-summary').innerHTML = `<p style="font-size:13px;color:var(--text-secondary)">${day === 'mon' ? 'Monday' : 'Thursday'} · ${playingIds.length} playing · ${reserveIds.length} reserve${reserveIds.length !== 1 ? 's' : ''}</p>${reserveIds.length ? `<p style="font-size:12px;color:var(--text-secondary);margin-top:6px"><i class="ti ti-info-circle"></i> ${reserveIds.length} player(s) guaranteed next game.</p>` : ''}<p style="font-size:12px;color:var(--text-secondary);margin-top:6px"><i class="ti ti-coin-pound"></i> Money isn't tracked for this game yet. When you're ready, press <strong>Track money</strong> on it in the Kitty tab${org ? ` (${esc(org)} will be set as the organiser)` : ''}.</p>`;
   renderPostGame();
   document.getElementById('step-squad').style.display = 'none';
   document.getElementById('step-done').style.display = 'block';
@@ -2195,17 +2214,38 @@ function enterApp(mode) {
   document.body.classList.add('mode-' + mode);
   document.getElementById('modebar-text').textContent = mode === 'edit' ? 'Logged in as an organiser.' : 'View only. Log in on the home page to make changes.';
   document.getElementById('logout-btn').style.display = mode === 'edit' ? '' : 'none';
-  buildNavSelect();
+  buildNav();
   goTab(mode === 'edit' ? 'setup' : 'history');
   rerenderAll();
 }
 function enterView() { enterApp('view'); }
-// The section menu: one option per tab this person can use (organiser-only tabs are left out in View mode)
-function buildNavSelect() {
-  document.getElementById('nav-select').innerHTML = [...document.querySelectorAll('.nav .nb')]
-    .filter(b => appMode === 'edit' || !b.classList.contains('edit-only'))
-    .map(b => `<option value="${b.getAttribute('onclick').match(/goTab\('(\w+)'\)/)[1]}">${esc(b.textContent)}</option>`).join('');
+// Phone page menu: four pages in the bottom bar, the rest under More. In View mode its three pages all fit in the bar.
+const NAV_ICONS = { setup: 'settings', game: 'ball-football', teams: 'users-group', ratings: 'star', history: 'history', stats: 'chart-bar', attendance: 'calendar-check', money: 'pig-money' };
+const NAV_BAR = ['game', 'teams', 'history', 'money'];
+function navPages() {
+  return [...document.querySelectorAll('.nav .nb')].filter(b => appMode === 'edit' || !b.classList.contains('edit-only'))
+    .map(b => ({ id: b.getAttribute('onclick').match(/goTab\('(\w+)'\)/)[1], name: b.textContent }));
 }
+function buildNav() {
+  const pages = navPages(), inBar = appMode === 'edit' ? pages.filter(p => NAV_BAR.includes(p.id)) : pages, more = pages.filter(p => !inBar.includes(p));
+  const btn = p => `<button data-tab="${p.id}" onclick="goTab('${p.id}')"><i class="ti ti-${NAV_ICONS[p.id]}"></i><span>${esc(p.name)}</span></button>`;
+  const bar = document.getElementById('bnav');
+  bar.style.gridTemplateColumns = `repeat(${inBar.length + (more.length ? 1 : 0)}, minmax(0, 1fr))`;
+  bar.innerHTML = inBar.map(btn).join('') + (more.length ? `<button id="bnav-more" onclick="toggleMore()" aria-haspopup="dialog"><i class="ti ti-dots"></i><span>More</span></button>` : '');
+  document.getElementById('bsheet').innerHTML = '<div class="grab"></div>' + more.map(btn).join('');
+}
+function markNav(t) {
+  document.querySelectorAll('#bnav [data-tab], #bsheet [data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+  const more = document.getElementById('bnav-more');
+  if (more) {
+    const inMore = !!document.querySelector(`#bsheet [data-tab="${t}"]`);
+    more.classList.toggle('active', inMore);
+    more.querySelector('span').textContent = inMore ? document.querySelector(`#bsheet [data-tab="${t}"] span`).textContent : 'More';
+  }
+  closeMore();
+}
+function toggleMore() { document.body.classList.toggle('more-open'); }
+function closeMore() { document.body.classList.remove('more-open'); }
 function frontLoginClicked() {
   if (isLoggedIn()) { enterApp('edit'); return; }
   const f = document.getElementById('front-login');
