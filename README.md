@@ -33,6 +33,8 @@ This project is a very simple football app that stores player data in a local SQ
 - `data/football.db` - database file created automatically
 
 ## Football organisation page
+The full system specification, including the versioning policy, is in [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md). Current release: **1.0**.
+
 `index.html` in the project root is the football organisation page. It is published with GitHub Pages and saves its data to Supabase.
 
 ### WhatsApp message
