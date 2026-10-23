@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | **Document** | Solution Design Document (SDD) |
-| **Version** | 1.1 |
-| **Release** | Production Release 1.1 |
+| **Version** | 1.2 |
+| **Release** | Production Release 1.2 |
 | **Status** | Approved for production |
 | **Date** | 23 October 2026 |
 | **System** | Football Organisation App (`index.html`, GitHub Pages and Supabase) |
@@ -65,6 +65,7 @@ If you aren't sure, treat the change as **minor** unless it changes the data mod
 |---|---|---|---|
 | 1.0 | 22 Oct 2026 | Organisers with Claude Code | First production release. Baseline design for every feature in the app at that date. |
 | 1.1 | 23 Oct 2026 | Organisers with Claude Code | Added explicit Data API `grant` statements to every SQL script, after Supabase's change to grants for new tables (30 Oct 2026). New tables must include them (13.3). No app change. |
+| 1.2 | 23 Oct 2026 | Organisers with Claude Code | Installable app: named **Brent Football** (page title and heading), with app icon, web app manifest and service worker for home-screen install and opening offline. |
 
 ### 1.4 Approval
 
@@ -271,6 +272,7 @@ flowchart TB
 | Data client | `@supabase/supabase-js` | v2 (jsDelivr UMD build) |
 | Database | Supabase (PostgreSQL 15+) with PostgREST | Row Level Security on, open policies |
 | Local persistence | Web Storage (`localStorage`) | Full data copy and the sync baseline |
+| Installable app | Web app manifest (`manifest.webmanifest`), service worker (`sw.js`), icons (`icons/`) | Home-screen install as Brent Football; network first, cached copy when offline |
 | Hosting | GitHub Pages | Deployed by GitHub Actions on push to `main` |
 | Source control | Git or GitHub | Pull request per change |
 
@@ -615,7 +617,7 @@ The app stores **first names or nicknames**, attendance, ratings, scores and pay
 | Area | Design |
 |---|---|
 | **Performance** | Rendering is plain DOM string building for small data sets. Team picker: under 50ms for 12 players and about 1s worst case for 20. Startup shows the device copy before any network call. |
-| **Availability** | Static hosting via the GitHub Pages CDN. Offline-tolerant through `localStorage`. Changes queue until the database is reachable. |
+| **Availability** | Static hosting via the GitHub Pages CDN. Offline-tolerant through `localStorage`. The service worker keeps a copy of the page, icons and CDN scripts, so the installed app opens with no signal; it always tries the network first, so each deploy reaches people straight away. Database requests are never cached. Changes queue until the database is reachable. |
 | **Integrity** | Per-row diffs against a stored baseline. Writes are serialised. The baseline advances per feature group only after success. Last write wins per row. |
 | **Scalability** | Comfortable to several hundred players and a few thousand games. Beyond that, the history list and the full-table fetch would need paging. |
 | **Maintainability** | One file, grouped by feature with comment headers. Each feature's database table is optional and fails safe. The user guide (README), functional spec and this SDD are kept up to date with each release. |
@@ -837,6 +839,7 @@ Neal, Kev and Gav. They're listed in `ORGANISERS` in the code. Adding one is a m
 | Path | Purpose |
 |---|---|
 | `index.html` | The application |
+| `manifest.webmanifest`, `sw.js`, `icons/` | Installable app: name, icon, splash colours and offline copy |
 | `supabase/*.sql` | Database setup scripts |
 | `.github/workflows/static.yml` | Pages deployment |
 | `docs/SOLUTION_DESIGN.md` | This document |
