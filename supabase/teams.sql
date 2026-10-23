@@ -45,3 +45,9 @@ drop policy if exists "Anyone can use game teams" on public.game_teams;
 create policy "Anyone can use player ratings" on public.player_ratings for all using (true) with check (true);
 create policy "Anyone can use team rules" on public.team_rules for all using (true) with check (true);
 create policy "Anyone can use game teams" on public.game_teams for all using (true) with check (true);
+
+-- Let the page reach the tables through the Data API
+-- (Supabase no longer grants this automatically for tables created from 30 Oct 2026)
+grant select, insert, update, delete on public.player_ratings to anon, authenticated;
+grant select, insert, update, delete on public.team_rules to anon, authenticated;
+grant select, insert, update, delete on public.game_teams to anon, authenticated;

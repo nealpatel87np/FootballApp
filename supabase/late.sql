@@ -14,3 +14,7 @@ create table if not exists public.game_late (
 alter table public.game_late enable row level security;
 drop policy if exists "Anyone can use game late" on public.game_late;
 create policy "Anyone can use game late" on public.game_late for all using (true) with check (true);
+
+-- Let the page reach the table through the Data API
+-- (Supabase no longer grants this automatically for tables created from 30 Oct 2026)
+grant select, insert, update, delete on public.game_late to anon, authenticated;

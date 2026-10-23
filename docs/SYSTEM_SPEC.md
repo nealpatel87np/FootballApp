@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Document version** | 1.0 |
-| **Release** | Production Release 1.0 |
+| **Document version** | 1.1 |
+| **Release** | Production Release 1.1 |
 | **Status** | Released |
-| **Date** | 22 October 2026 |
+| **Date** | 23 October 2026 |
 | **Application** | `index.html` (repository root), published with GitHub Pages |
 | **Owner** | The organisers (Neal, Kev, Gav) |
 
@@ -41,6 +41,7 @@ If you aren't sure, treat it as minor unless it changes the data model or a core
 | Version | Date | Summary |
 |---|---|---|
 | 1.0 | 22 Oct 2026 | First production release. Covers squad selection, team picking with skill ratings, late arrivals, scores and player stats, attendance with legacy data, payments, credit, the kitty, WhatsApp messages, front page and access, and phone and desktop navigation. |
+| 1.1 | 23 Oct 2026 | Every SQL script now grants the page access to its tables through the Data API, as Supabase requires for tables created from 30 Oct 2026. No app change. |
 
 ---
 
@@ -410,7 +411,7 @@ See you later. Please be on time for the {time} kick-off
 | `game_late` | `game_id` | player_ids[] | `late.sql` |
 | `player_credit` | `player_id` | amount_p | `credit.sql` |
 
-Row Level Security is on for every table, with "anyone can read and write" policies (`policies.sql` for the original three tables, and within each later script).
+Row Level Security is on for every table, with "anyone can read and write" policies (`policies.sql` for the original three tables, and within each later script). Each script also grants the `anon` and `authenticated` roles access to its tables.
 
 ### 9.2 Browser storage (`localStorage`)
 
@@ -462,6 +463,8 @@ Run each of these once in the Supabase SQL Editor. All are safe to run again.
 6. `supabase/credit.sql`
 
 All six had been run on the production database by release 1.0.
+
+Each script also grants the page (`anon` and `authenticated` roles) select, insert, update and delete on its tables. Supabase stops granting this automatically for tables created from 30 October 2026, so **any new table added in a later release must include the same `grant` line in its script**, or the page gets "permission denied" for it. Re-running the scripts on the existing database is harmless.
 
 ## 12. Non-functional requirements
 

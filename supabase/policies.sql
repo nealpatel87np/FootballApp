@@ -31,3 +31,9 @@ create policy "Anyone can use games" on public.games for all using (true) with c
 
 alter table public.app_state enable row level security;
 create policy "Anyone can use app state" on public.app_state for all using (true) with check (true);
+
+-- 4. Let the page reach the tables through the Data API
+-- (Supabase no longer grants this automatically for tables created from 30 Oct 2026)
+grant select, insert, update, delete on public.players to anon, authenticated;
+grant select, insert, update, delete on public.games to anon, authenticated;
+grant select, insert, update, delete on public.app_state to anon, authenticated;
