@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Document version** | 1.1 |
-| **Release** | Production Release 1.1 |
+| **Document version** | 1.2 |
+| **Release** | Production Release 1.2 |
 | **Status** | Released |
 | **Date** | 23 October 2026 |
 | **Application** | `index.html` (repository root), published with GitHub Pages |
@@ -42,6 +42,7 @@ If you aren't sure, treat it as minor unless it changes the data model or a core
 |---|---|---|
 | 1.0 | 22 Oct 2026 | First production release. Covers squad selection, team picking with skill ratings, late arrivals, scores and player stats, attendance with legacy data, payments, credit, the kitty, WhatsApp messages, front page and access, and phone and desktop navigation. |
 | 1.1 | 23 Oct 2026 | Every SQL script now grants the page access to its tables through the Data API, as Supabase requires for tables created from 30 Oct 2026. No app change. |
+| 1.2 | 23 Oct 2026 | The app is named Brent Football and can be installed on the home screen, with its own icon, a green opening screen and full-screen display. It opens with the last data when there's no signal. |
 
 ---
 
@@ -470,7 +471,8 @@ Each script also grants the page (`anon` and `authenticated` roles) select, inse
 
 - **Devices:** works on current iPhone and Android browsers and desktop browsers. Tested at 375px, 390px and 1280px wide, with no sideways scrolling.
 - **Tap targets and text:** menu text is at least 16px on inputs that could zoom on iPhone. The bottom bar respects the iPhone home-bar area.
-- **Offline:** viewing and editing work from the device copy. Changes are sent when the database is reachable again.
+- **Install:** the page can be installed as an app called Brent Football (Chrome: Install app; iPhone Safari: Share → Add to Home Screen). It opens full screen with its own icon and a green opening screen, and updates itself with each deploy.
+- **Offline:** the installed app opens with no signal, and viewing and editing work from the device copy. Changes are sent when the database is reachable again.
 - **Accessibility:** buttons and inputs have labels, focus is visible, and animations respect reduced-motion settings.
 
 ## 13. Known limitations

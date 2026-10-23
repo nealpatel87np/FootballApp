@@ -3,7 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Football Organisation</title>
+<title>Brent Football</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Brent Football">
+<meta name="theme-color" content="#f3f3f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1a1a18" media="(prefers-color-scheme: dark)">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
@@ -373,7 +380,7 @@
 </head>
 <body class="on-front">
 <div class="app">
-  <h2><i class="ti ti-ball-football" style="margin-right:8px;font-size:20px"></i>Football organisation</h2>
+  <h2><i class="ti ti-ball-football" style="margin-right:8px;font-size:20px"></i>Brent Football</h2>
   <div id="sync-status" style="font-size:11px;color:var(--text-muted);margin:-8px 0 14px 2px"></div>
 
   <!-- FRONT PAGE -->
@@ -2996,6 +3003,11 @@ renderHistory = function () {
 
 try { const o = localStorage.getItem('fbv3_org'); if (ORGANISERS.includes(o)) document.getElementById('org-select').value = o; } catch (e) {}
 loadState();
+
+// Installable app: lets phones add Brent Football to the home screen and open it with no signal
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
 </script>
 </body>
 </html>

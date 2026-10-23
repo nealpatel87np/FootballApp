@@ -33,7 +33,7 @@ This project is a very simple football app that stores player data in a local SQ
 - `data/football.db` - database file created automatically
 
 ## Football organisation page
-The design is documented in [`docs/SOLUTION_DESIGN.md`](docs/SOLUTION_DESIGN.md) (Solution Design Document) and [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md) (functional specification). Both include the versioning policy. Current release: **1.1**.
+The design is documented in [`docs/SOLUTION_DESIGN.md`](docs/SOLUTION_DESIGN.md) (Solution Design Document) and [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md) (functional specification). Both include the versioning policy. Current release: **1.2**.
 
 Every file in `supabase/` grants the page access to its tables. Supabase no longer does this automatically for tables created from 30 October 2026, so any new table needs the same `grant` line.
 
@@ -91,6 +91,14 @@ The **Ratings** tab is where organisers score each player from 1 to 10 on **Atta
 After a game, open it in the History game log and enter the score under the teams. The game log then shows the score, or **Score needed** for a played game with no score yet. The winning team is marked **Won**. The **Player Stats** tab lists every player's games played, won, drawn and lost, with their win percentage, most games first. It only counts games with confirmed teams and a score. The **Attendance** tab, for organisers only, shows each player's appearances **Before 2026**, in **2026** and in **Total**, plus how many times they've been a reserve. Appearances from before the app come from the old spreadsheet (stored in the page as `LEGACY_APPS`) and are added to the games recorded in the app. They're matched by name, so a player from the old spreadsheet who isn't in the app yet shows their numbers as soon as they're added with the same name. Below the table, **Legacy Player Data** (closed until you tap **Show**) lists every name from the old spreadsheet with their figures and a ✓ for those already in the app. The **Game log (CSV)** export includes both teams, who wore the bibs and the score, ready for further analysis.
 
 **Setup (once):** run `supabase/teams.sql` and `supabase/skills.sql` in the Supabase SQL Editor. They create the tables for ratings, skill scores, team rules, and each game's teams and score. Until then, these are saved only on the device where they were entered, and the Teams and Ratings tabs show a notice.
+
+### Install as an app
+The page can be installed on a phone as **Brent Football**, with its own icon on the home screen.
+
+- **Android:** open the link in Chrome and tap **Install app** when it's offered, or ⋮ → **Install app** / **Add to Home screen**.
+- **iPhone:** open the link in Safari, tap **Share**, then **Add to Home Screen**.
+
+It opens full screen with no address bar, and shows the last data even with no signal. It's the same site, so every update reaches the app automatically. The icon files are in `icons/`, and `manifest.webmanifest` and `sw.js` make it installable.
 
 ### Moving around
 On a phone, use the bar at the bottom of the screen: Run game, Teams, Game Log and Payments, with **More** for Setup, Ratings, Player Stats and Attendance. On a computer the pages are a row of tabs along the top. In View mode only Game Log, Player Stats and Payments are shown.
