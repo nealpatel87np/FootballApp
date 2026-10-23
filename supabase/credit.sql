@@ -14,3 +14,7 @@ create table if not exists public.player_credit (
 alter table public.player_credit enable row level security;
 drop policy if exists "Anyone can use player credit" on public.player_credit;
 create policy "Anyone can use player credit" on public.player_credit for all using (true) with check (true);
+
+-- Let the page reach the table through the Data API
+-- (Supabase no longer grants this automatically for tables created from 30 Oct 2026)
+grant select, insert, update, delete on public.player_credit to anon, authenticated;

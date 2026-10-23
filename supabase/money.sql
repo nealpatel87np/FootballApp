@@ -46,3 +46,9 @@ drop policy if exists "Anyone can use money settings" on public.money_settings;
 create policy "Anyone can use game money" on public.game_money for all using (true) with check (true);
 create policy "Anyone can use kitty spends" on public.kitty_spends for all using (true) with check (true);
 create policy "Anyone can use money settings" on public.money_settings for all using (true) with check (true);
+
+-- Let the page reach the tables through the Data API
+-- (Supabase no longer grants this automatically for tables created from 30 Oct 2026)
+grant select, insert, update, delete on public.game_money to anon, authenticated;
+grant select, insert, update, delete on public.kitty_spends to anon, authenticated;
+grant select, insert, update, delete on public.money_settings to anon, authenticated;

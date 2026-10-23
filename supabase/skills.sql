@@ -19,3 +19,7 @@ create table if not exists public.player_skills (
 alter table public.player_skills enable row level security;
 drop policy if exists "Anyone can use player skills" on public.player_skills;
 create policy "Anyone can use player skills" on public.player_skills for all using (true) with check (true);
+
+-- Let the page reach the table through the Data API
+-- (Supabase no longer grants this automatically for tables created from 30 Oct 2026)
+grant select, insert, update, delete on public.player_skills to anon, authenticated;

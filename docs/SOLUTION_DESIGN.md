@@ -3,10 +3,10 @@
 | | |
 |---|---|
 | **Document** | Solution Design Document (SDD) |
-| **Version** | 1.0 |
-| **Release** | Production Release 1.0 |
+| **Version** | 1.1 |
+| **Release** | Production Release 1.1 |
 | **Status** | Approved for production |
-| **Date** | 22 October 2026 |
+| **Date** | 23 October 2026 |
 | **System** | Football Organisation App (`index.html`, GitHub Pages and Supabase) |
 | **Repository** | `nealpatel87np/FootballApp` |
 | **Companion document** | [`docs/SYSTEM_SPEC.md`](SYSTEM_SPEC.md): page-by-page functional specification |
@@ -64,6 +64,7 @@ If you aren't sure, treat the change as **minor** unless it changes the data mod
 | Version | Date | Author | Summary |
 |---|---|---|---|
 | 1.0 | 22 Oct 2026 | Organisers with Claude Code | First production release. Baseline design for every feature in the app at that date. |
+| 1.1 | 23 Oct 2026 | Organisers with Claude Code | Added explicit Data API `grant` statements to every SQL script, after Supabase's change to grants for new tables (30 Oct 2026). New tables must include them (13.3). No app change. |
 
 ### 1.4 Approval
 
@@ -638,7 +639,7 @@ There's no separate staging database. Previews are shared as screenshots or inte
 
 Branch, then test, then a pull request with a description and test notes, then merge to `main`. GitHub Actions (`static.yml`) uploads the repository and deploys Pages, usually in 1–2 minutes. Then tag `vX.Y`.
 
-**Rollback:** revert the merge commit on `main`, which redeploys the previous version. Database scripts only add tables and policies, so a code rollback is safe.
+**Rollback:** revert the merge commit on `main`, which redeploys the previous version. Database scripts only add tables, policies and grants, so a code rollback is safe.
 
 ### 13.3 Database setup scripts
 
@@ -652,6 +653,8 @@ Run each of these once in the Supabase SQL Editor. All are idempotent.
 6. `supabase/credit.sql`
 
 All six had been run in production by release 1.0.
+
+Each script also grants the page (`anon` and `authenticated` roles) select, insert, update and delete on its tables. Supabase stops granting this automatically for tables created from 30 October 2026, so **any new table added in a later release must include the same `grant` line in its script**, or the page gets "permission denied" for it. Re-running the scripts on the existing database is harmless.
 
 ---
 
