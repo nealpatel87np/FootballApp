@@ -3179,7 +3179,7 @@ renderHistory = function () {
    learns which players have them on. Organisers send them when they confirm a game
    or teams and from Outstanding Payments; payment reminders also go out on a
    schedule (supabase/push-cron.sql). */
-const APP_VERSION = '3.3';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
+const APP_VERSION = '3.4';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
 const PUSH_FN = SUPABASE_URL + '/functions/v1/notify';
 const PUSH_KEY = 'fbv3_push';   // this phone only: { playerId, endpoint, prefs, hideCard }
 const PUSH_KINDS = [['availability', 'Availability', 'When it opens, and if you play'], ['squad', 'Squad picked', 'Playing or reserve'], ['teams', 'Teams confirmed', 'Your team and bibs'],
@@ -3719,19 +3719,16 @@ async function renderUsers() {
   let data;
   try { data = await pushCall('admin_users', {}); } catch (e) { el.innerHTML = `<h3>📱 App users</h3><p class="hint">${esc(e.message)}</p>`; return; }
   const KIND_SHORT = { availability: 'Avail', squad: 'Squad', teams: 'Teams', payments: 'Pay', credit: 'Credit' };
-  const when = t => { if (!t) return ''; const d = new Date(t); return d.toDateString() === new Date().toDateString() ? 'Today ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); };
   const rows = S.players.map(p => {
     const devs = data.devices.filter(d => Number(d.player_id) === p.id), subs = data.subscriptions.filter(s => Number(s.player_id) === p.id);
-    const seen = [...devs.map(d => d.last_seen), ...subs.map(s => s.updated_at)].sort().pop() || '';
-    return { p, devs, subs, seen, has: devs.length || subs.length };
-  }).sort((a, b) => (b.has ? 1 : 0) - (a.has ? 1 : 0) || b.seen.localeCompare(a.seen) || a.p.name.localeCompare(b.p.name));
+    return { p, devs, subs, has: devs.length || subs.length };
+  }).sort((a, b) => (b.has ? 1 : 0) - (a.has ? 1 : 0) || a.p.name.localeCompare(b.p.name));
   const withApp = rows.filter(r => r.has).length, withNote = rows.filter(r => r.subs.length).length, installed = rows.filter(r => r.devs.some(d => d.installed)).length;
   el.innerHTML = `<h3>📱 App users</h3>
     <div class="av-stats" style="margin-top:8px"><div class="i"><b>${withApp}</b>Set up</div><div class="n"><b>${installed}</b>Installed</div><div class="i"><b>${withNote}</b>Notifications on</div><div class="o"><b>${S.players.length - withApp}</b>Not yet</div></div>
-    <div class="tablewrap"><table class="ledger stats" style="min-width:0"><thead><tr><th>Player</th><th>App</th><th>Notifications</th><th class="r">Seen</th></tr></thead><tbody>${rows.map(r =>
+    <div class="tablewrap"><table class="ledger stats" style="min-width:0"><thead><tr><th>Player</th><th>App</th><th>Notifications</th></tr></thead><tbody>${rows.map(r =>
       `<tr><td>${esc(r.p.name)}</td><td>${r.devs.length ? r.devs.map(d => `${d.installed ? '📱 Installed' : '🌐 Browser'}<br><span class="hint">${esc(d.browser)} · ${esc(d.platform)}</span>`).join('<br>') : r.subs.length ? '📱 Yes' : '<span class="hint">–</span>'}</td>
-        <td>${r.subs.length ? r.subs.map(s => `🔔 On <span class="hint">${Object.keys(KIND_SHORT).filter(k => s.prefs[k]).map(k => KIND_SHORT[k]).join(' · ')}</span>`).join('<br>') : r.has ? '<span class="hint">Off</span>' : '<span class="hint">–</span>'}</td>
-        <td class="r hint">${esc(when(r.seen))}</td></tr>`).join('')}</tbody></table></div>
+        <td>${r.subs.length ? r.subs.map(s => `🔔 On <span class="hint">${Object.keys(KIND_SHORT).filter(k => s.prefs[k]).map(k => KIND_SHORT[k]).join(' · ')}</span>`).join('<br>') : r.has ? '<span class="hint">Off</span>' : '<span class="hint">–</span>'}</td></tr>`).join('')}</tbody></table></div>
     <p class="hint" style="margin-top:8px">Phones show up once they've chosen "Who are you?" or turned on notifications. A player can have more than one phone.</p>`;
 }
 

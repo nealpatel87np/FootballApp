@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Document version** | 3.3 |
-| **Release** | Production Release 3.3 |
+| **Document version** | 3.4 |
+| **Release** | Production Release 3.4 |
 | **Status** | Released |
 | **Date** | 24 October 2026 |
 | **Application** | `index.html` (repository root), published with GitHub Pages |
@@ -56,6 +56,7 @@ If you aren't sure, treat it as minor unless it changes the data model or a core
 | 3.1 | 24 Oct 2026 | The notify function carries its own copy of the selection rules, so Supabase can deploy it. |
 | 3.2 | 24 Oct 2026 | Organiser **Dashboard**, the first page after logging in: next game, to-do list, money, the group, turnout and this season. The organisers' phone bar is now Dashboard, Run game, Teams, Payments and More. |
 | 3.3 | 24 Oct 2026 | Dashboard layout: The group under To do; Money, a new League table and This season in one row; Turnout across the bottom, showing reserves. To do groups repeated jobs into one line. |
+| 3.4 | 24 Oct 2026 | App users no longer shows when each phone was last seen. |
 
 ---
 
@@ -313,8 +314,7 @@ Shown on the front page and on the **Availability** page, but only when Self-ser
 - **Availability message:** when the switch is On, the message asks players to answer in the app, with the link.
 - **App users (organisers):** counts and a table showing, for each player:
   - whether the app is set up (installed or in a browser), and the browser and platform;
-  - whether notifications are on, and which kinds;
-  - when they were last seen.
+  - whether notifications are on, and which kinds.
 
 ### 6.13 Dashboard (organisers)
 

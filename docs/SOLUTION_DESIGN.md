@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | **Document** | Solution Design Document (SDD) |
-| **Version** | 3.3 |
-| **Release** | Production Release 3.3 |
+| **Version** | 3.4 |
+| **Release** | Production Release 3.4 |
 | **Status** | Approved for production |
 | **Date** | 24 October 2026 |
 | **System** | Brent Football: the web app (`index.html`, `selection.js`, `sw.js`) on GitHub Pages, the Supabase database, the `notify` Edge Function and two scheduled jobs |
@@ -79,6 +79,7 @@ If you aren't sure, treat the change as **minor** unless it changes the data mod
 | 3.1 | 24 Oct 2026 | Organisers with Claude Code | Supabase refused to bundle the function because it imported `selection.js` from the website. The rules are now copied into the function between `BEGIN selection.js` and `END selection.js` markers, and the file is self-contained again. |
 | 3.2 | 24 Oct 2026 | Organisers with Claude Code | **Organiser dashboard** (7.7), the first page after logging in. It has: Next game, To do, Money, Recent answers, The group, Turnout and This season. It's a grid on computers and one column on phones. The organisers' phone bar becomes Dashboard, Run game, Teams, Payments and More. No database change. Full review of this document for 3.2: earlier sections brought up to date (scope, constraints, architecture, data, security, operations, roadmap, defaults and glossary). |
 | 3.3 | 24 Oct 2026 | Organisers with Claude Code | Dashboard layout. On computers: To do and The group on the left beside Next game (and Recent answers); Money, a new **League** table and This season in one row; Turnout across the full width with reserves stacked on each bar. Cards in a row are the same height, and the league shows as many rows as fit its row. To do groups missing scores and untracked money into one line each. Document reviewed for 3.3 (requirements, modules, capability map, defaults, decisions, glossary). |
+| 3.4 | 24 Oct 2026 | Organisers with Claude Code | App users page: the "Seen" column is removed, as organisers didn't need it. Players with the app are listed first, then by name. The check-in still records a last-seen time in `app_devices`, but nothing shows it. |
 
 ### 1.4 Approval
 
@@ -673,8 +674,9 @@ Each phone that has chosen "Who are you?" checks in through `hello` (at most eve
 The organisers' **App users** page combines this with `push_subscriptions` (through `admin_users`). For each player it shows:
 - whether they've set up the app, and whether it's installed;
 - the browser and platform;
-- whether notifications are on, and which kinds;
-- when the phone was last seen.
+- whether notifications are on, and which kinds.
+
+Players with the app are listed first, then alphabetically. The last-seen time is still recorded but isn't shown (removed in 3.4).
 
 ### 7.7 Organiser dashboard (release 3.2)
 
