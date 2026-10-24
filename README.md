@@ -33,7 +33,7 @@ This project is a very simple football app that stores player data in a local SQ
 - `data/football.db` - database file created automatically
 
 ## Football organisation page
-The design is documented in [`docs/SOLUTION_DESIGN.md`](docs/SOLUTION_DESIGN.md) (Solution Design Document) and [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md) (functional specification). Both include the versioning policy. Current release: **3.0**. The version is shown at the bottom of the front page.
+The design is documented in [`docs/SOLUTION_DESIGN.md`](docs/SOLUTION_DESIGN.md) (Solution Design Document) and [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md) (functional specification). Both include the versioning policy. Current release: **3.1**. The version is shown at the bottom of the front page.
 
 Every file in `supabase/` grants the page access to its tables. Supabase no longer does this automatically for tables created from 30 October 2026, so any new table needs the same `grant` line.
 
@@ -154,7 +154,7 @@ Players can say whether they're in for the next game in the app. At closing time
 
 **Setup (once):**
 1. Run `supabase/availability.sql` in the SQL Editor.
-2. After the site has published, redeploy the `notify` function. Open its Code tab, paste the whole of the new `supabase/functions/notify/index.ts`, and press Deploy. Keep Verify JWT off.
+2. Redeploy the `notify` function. Open its Code tab, paste the whole of the new `supabase/functions/notify/index.ts`, and press Deploy. Keep Verify JWT off. The function has its own copy of the squad rules from `selection.js`, so if a rule ever changes, both files must change.
 3. Turn it to **Trial** on Setup when you're ready to try it.
 
 ### Moving around

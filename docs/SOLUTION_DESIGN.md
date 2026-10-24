@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | **Document** | Solution Design Document (SDD) |
-| **Version** | 3.0 |
-| **Release** | Production Release 3.0 |
+| **Version** | 3.1 |
+| **Release** | Production Release 3.1 |
 | **Status** | Approved for production |
 | **Date** | 24 October 2026 |
 | **System** | Brent Football (Football Organisation App: `index.html`, GitHub Pages, Supabase and the `notify` Edge Function) |
@@ -76,6 +76,7 @@ If you aren't sure, treat the change as **minor** unless it changes the data mod
 | 2.6 | 24 Oct 2026 | Organisers with Claude Code | Notifications use `renotify` and a vibration pattern, so a repeat with the same tag still alerts. Runbook covers Samsung showing site notifications silently. |
 | 2.7 | 24 Oct 2026 | Organisers with Claude Code | Status bar badge (`icons/badge-96.png`, white football) on every notification. In Samsung Internet, the Get notified card and the Notifications page advise installing from Chrome, with an **Open in Chrome** link (Android intent). Samsung Internet delivered pushes but the phone didn't pop them up; Chrome works. |
 | 3.0 | 24 Oct 2026 | Organisers with Claude Code | **Self-service availability** (7.6): players say in or out, availability opens and closes on a timetable, and the squad is picked and saved automatically with the shared selection rules (`selection.js`). It sits behind an Off / Trial / On switch (off by default). **App users** page for organisers. New tables `availability_settings`, `availability_rounds`, `availability_answers`, `app_devices`. A 15-minute schedule. New Availability notification type. First-time welcome, install and "Who are you?" cards. |
+| 3.1 | 24 Oct 2026 | Organisers with Claude Code | Supabase refused to bundle the function because it imported `selection.js` from the website. The rules are now copied into the function between `BEGIN selection.js` and `END selection.js` markers, and the file is self-contained again. |
 
 ### 1.4 Approval
 
@@ -727,7 +728,7 @@ The two push tables are the only ones **closed to the page**: RLS is on with no 
 | `notify` Edge Function | `POST {SUPABASE_URL}/functions/v1/notify` with JSON `{action}`: `status`, `subscribe`, `unsubscribe`, `send`, `daily`. JWT verification is off (the page has no sign-in). Supabase still requires the project's key, so the page sends the publishable key as `apikey`. CORS open. | The function uses the service role key provided by Supabase. No secrets are set by hand. |
 | Web Push | `web-push` encrypts each notification (aes128gcm) and signs it with VAPID (subject: the app's address) for the phone's push service | Gone phones (404/410) are deleted. Time to live is 24 hours. |
 | Availability schedule | `pg_cron` job `brent-football-availability` calls `avail_tick` every 15 minutes | Set up by `availability.sql`. Does nothing while the switch is Off. |
-| Selection rules | The function imports `selection.js` from the published site when it's deployed, so the server and Run game use one copy of the rules | Redeploy the function after changing `selection.js`. |
+| Selection rules | The function carries an exact copy of `selection.js` between `BEGIN selection.js` and `END selection.js` markers, because Supabase can't import from other websites | When a rule changes, change both copies and redeploy the function. The release test checks that they match. |
 | Schedule | `pg_cron` job `brent-football-payment-reminders` calls the function through `pg_net` every day at 10:00 UTC, sending the publishable key as `apikey` | Set up by `push-cron.sql`. |
 | CDN | jsDelivr for `supabase-js` and the Tabler icon font | If the CDN fails, the database is unavailable (the device copy is still used) and icons are missing. |
 
@@ -833,7 +834,7 @@ For release 2.0, also:
 For release 3.0, also:
 
 10. `supabase/availability.sql`: the availability and app users tables, plus the 15-minute schedule.
-11. Redeploy the `notify` function with the 3.0 code (Code tab → paste → Deploy). Do this after the site has published, because the function imports `selection.js` from it. Keep **Verify JWT** off.
+11. Redeploy the `notify` function with the latest code (Code tab → paste → Deploy). Keep **Verify JWT** off. The file is self-contained.
 
 The feature stays **Off** until an organiser changes the switch on Setup.
 
@@ -932,7 +933,7 @@ The sync status line under the page title shows "Up to date", "Saving…", "Save
 | ADR-16 | Phones and keys live in closed tables, used only by the `notify` function | The page can't leak push addresses or the private key | The page learns only which players have notifications on |
 | ADR-17 | The function makes its own VAPID keys on first run | No secrets to create or paste during setup | Losing `push_config` means every phone must turn notifications on again |
 | ADR-18 | Self-service availability sits behind an Off / Trial / On switch in the database | Can be deployed safely and tried by organisers before players see it | One more setting to manage |
-| ADR-19 | The selection rules live in one shared file, `selection.js` | The 9pm close and Run game can never disagree | The function must be redeployed after a rule change |
+| ADR-19 | The selection rules live in `selection.js`, with an exact copy inside the function | The 9pm close and Run game pick the same squad. Supabase can't import code from the website. | Both copies must change together, which is checked before each release |
 | ADR-20 | All availability changes go through the function. The page can only read rounds and answers. | One place enforces open, closed and kick-off rules and sends notifications | Answering needs the function to be reachable |
 | ADR-21 | Guaranteed players must opt in, and late flags are organiser-only | Agreed with the organisers | Guaranteed players who forget count as out (they're nudged) |
 
