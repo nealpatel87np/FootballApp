@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Document version** | 2.4 |
-| **Release** | Production Release 2.4 |
+| **Document version** | 2.5 |
+| **Release** | Production Release 2.5 |
 | **Status** | Released |
 | **Date** | 24 October 2026 |
 | **Application** | `index.html` (repository root), published with GitHub Pages |
@@ -49,6 +49,7 @@ If you aren't sure, treat it as minor unless it changes the data model or a core
 | 2.2 | 24 Oct 2026 | Setup shows organisers a 🔔 line saying whether notifications are connected, and why not. |
 | 2.3 | 24 Oct 2026 | Turn on notifications stops with a message saying which step failed, instead of staying on "Turning on…". |
 | 2.4 | 24 Oct 2026 | The front page shows the version ("Brent Football 2.4"), turning on shows each step, and new releases reach the installed app straight away. |
+| 2.5 | 24 Oct 2026 | Notifications page: a "Received on this phone" confirmation when a push arrives while it's open, a **Show one on this phone** button, and the phone's push service and version. |
 
 ---
 

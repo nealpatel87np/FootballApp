@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | **Document** | Solution Design Document (SDD) |
-| **Version** | 2.4 |
-| **Release** | Production Release 2.4 |
+| **Version** | 2.5 |
+| **Release** | Production Release 2.5 |
 | **Status** | Approved for production |
 | **Date** | 24 October 2026 |
 | **System** | Brent Football (Football Organisation App: `index.html`, GitHub Pages, Supabase and the `notify` Edge Function) |
@@ -72,6 +72,7 @@ If you aren't sure, treat the change as **minor** unless it changes the data mod
 | 2.2 | 24 Oct 2026 | Organisers with Claude Code | Setup page shows organisers whether notifications are connected, and why not (function unreachable, wrong code deployed, or the error it returned). |
 | 2.3 | 24 Oct 2026 | Organisers with Claude Code | Turning notifications on gives up with a clear message at whichever step stalls (permission, background helper, the phone's push service, saving the phone) instead of waiting on "Turning on…". Registers the service worker if it's missing. |
 | 2.4 | 24 Oct 2026 | Organisers with Claude Code | Front page shows the app version (`APP_VERSION`). Turning on shows each step as it happens. Permission works with older callback-style browsers. The service worker fetches the app's own files with `no-cache`, so a release isn't held back by GitHub Pages' 10-minute browser cache. |
+| 2.5 | 24 Oct 2026 | Organisers with Claude Code | Delivery checks on the Notifications page: the service worker tells an open app when a push arrives (and whether it was shown), **Show one on this phone** displays a local notification, and the page shows the phone's push service and the version. The test reports how many phones it was sent to. |
 
 ### 1.4 Approval
 
