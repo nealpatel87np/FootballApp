@@ -3095,7 +3095,7 @@ renderHistory = function () {
    learns which players have them on. Organisers send them when they confirm a game
    or teams and from Outstanding Payments; payment reminders also go out on a
    schedule (supabase/push-cron.sql). */
-const APP_VERSION = '2.4';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
+const APP_VERSION = '2.5';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
 const PUSH_FN = SUPABASE_URL + '/functions/v1/notify';
 const PUSH_KEY = 'fbv3_push';   // this phone only: { playerId, endpoint, prefs, hideCard }
 const PUSH_KINDS = [['squad', 'Squad picked', 'Playing or reserve'], ['teams', 'Teams confirmed', 'Your team and bibs'],
@@ -3219,10 +3219,25 @@ async function pushTest() {
   pushNote = 'Sending…'; renderNotify();
   try {
     const r = await pushCall('send', { messages: [{ playerId: PUSH.playerId, kind: 'test', title: '🔔 Brent Football', body: "Test notification. You're all set.", url: './', tag: 'test' }] });
-    pushNote = r.sent ? 'Sent. It should arrive in a few seconds.' : "Nothing was sent. Turn notifications off and on again.";
+    pushNote = r.sent ? `Sent to ${pushPlural(r.sent, 'phone')}. It should arrive in a few seconds. Keep this page open: it will say when it reaches this phone.` : "Nothing was sent. Turn notifications off and on again.";
   } catch (e) { pushNote = e.message; }
   renderNotify();
 }
+// Shows a notification straight from this phone, with no internet, to check the phone can display them
+async function pushLocalTest() {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    await reg.showNotification('🔔 Brent Football', { body: 'Local test: this phone can show notifications.', icon: 'icons/icon-192.png', tag: 'local-test' });
+    pushNote = "Shown. If no notification appeared, the phone is hiding them: check Settings → Apps → Samsung Internet (or your browser) → Notifications.";
+  } catch (e) { pushNote = `This phone couldn't show a notification (${e.message}).`; }
+  renderNotify();
+}
+// The service worker tells an open app when a notification arrives
+if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', e => {
+  if (!e.data || e.data.type !== 'push-received') return;
+  pushNote = `✓ Received on this phone at ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}: "${e.data.title}" (${e.data.shown}).`;
+  if (document.getElementById('page-notify').classList.contains('active')) renderNotify();
+});
 async function pushTurnOff() {
   try {
     const reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
@@ -3272,7 +3287,8 @@ function renderNotify() {
     html += `<div class="ok" style="font-size:13px;padding:8px 12px">✓ Notifications are on for <strong>${esc(pName(PUSH.playerId))}</strong> on this phone.</div>
       <div class="sh" style="margin-top:4px">Notify me about</div>
       ${PUSH_KINDS.map(([k, label, sub]) => `<label class="chklbl"><input type="checkbox" ${prefs[k] ? 'checked' : ''} onchange="pushSetPref('${k}', this.checked)"> <span>${label} <span class="hint">· ${sub}</span></span></label>`).join('')}
-      <div class="tactions" style="margin-top:12px"><button class="btn" onclick="pushTest()"><i class="ti ti-send"></i> Send a test notification</button></div>${note}
+      <div class="tactions" style="margin-top:12px"><button class="btn" onclick="pushTest()"><i class="ti ti-send"></i> Send a test notification</button><button class="btn" onclick="pushLocalTest()"><i class="ti ti-device-mobile"></i> Show one on this phone</button></div>${note}
+      <p class="hint" style="margin-top:6px;font-size:11px">Push service: ${esc((() => { try { return new URL(PUSH.endpoint).host; } catch (e) { return '?'; } })())} · version ${APP_VERSION}</p>
       <div class="sh">Not you?</div>
       <div class="pwrow"><select id="notify-who" aria-label="Who are you?">${pushPlayerOptions(PUSH.playerId)}</select><button class="btn" onclick="pushChangeName()">Change name</button></div>
       <button class="btn dghost" style="margin-top:10px" onclick="pushTurnOff()">Turn off notifications</button>`;
