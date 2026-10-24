@@ -2,8 +2,8 @@
 // first, so every deploy reaches people straight away; the cached copy is only
 // used when there's no signal. Database requests are never cached.
 // It also shows push notifications and opens the app when one is tapped.
-const CACHE = 'brent-football-v6';
-const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png', 'icons/badge-96.png'];
+const CACHE = 'brent-football-v7';
+const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png', 'icons/badge-96.png', 'selection.js'];
 const CDN = 'https://cdn.jsdelivr.net/';
 
 self.addEventListener('install', e => {

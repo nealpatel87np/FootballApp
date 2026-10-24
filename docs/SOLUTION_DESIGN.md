@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | **Document** | Solution Design Document (SDD) |
-| **Version** | 2.7 |
-| **Release** | Production Release 2.7 |
+| **Version** | 3.0 |
+| **Release** | Production Release 3.0 |
 | **Status** | Approved for production |
 | **Date** | 24 October 2026 |
 | **System** | Brent Football (Football Organisation App: `index.html`, GitHub Pages, Supabase and the `notify` Edge Function) |
@@ -75,6 +75,7 @@ If you aren't sure, treat the change as **minor** unless it changes the data mod
 | 2.5 | 24 Oct 2026 | Organisers with Claude Code | Delivery checks on the Notifications page: the service worker tells an open app when a push arrives (and whether it was shown), **Show one on this phone** displays a local notification, and the page shows the phone's push service and the version. The test reports how many phones it was sent to. |
 | 2.6 | 24 Oct 2026 | Organisers with Claude Code | Notifications use `renotify` and a vibration pattern, so a repeat with the same tag still alerts. Runbook covers Samsung showing site notifications silently. |
 | 2.7 | 24 Oct 2026 | Organisers with Claude Code | Status bar badge (`icons/badge-96.png`, white football) on every notification. In Samsung Internet, the Get notified card and the Notifications page advise installing from Chrome, with an **Open in Chrome** link (Android intent). Samsung Internet delivered pushes but the phone didn't pop them up; Chrome works. |
+| 3.0 | 24 Oct 2026 | Organisers with Claude Code | **Self-service availability** (7.6): players say in or out, availability opens and closes on a timetable, and the squad is picked and saved automatically with the shared selection rules (`selection.js`). It sits behind an Off / Trial / On switch (off by default). **App users** page for organisers. New tables `availability_settings`, `availability_rounds`, `availability_answers`, `app_devices`. A 15-minute schedule. New Availability notification type. First-time welcome, install and "Who are you?" cards. |
 
 ### 1.4 Approval
 
@@ -190,6 +191,8 @@ Until October 2026 this was all managed in a spreadsheet with manual WhatsApp me
 | FR-17 | Export and import all data, and export a CSV game log. | Should | 7.3.9 |
 | FR-18 | Show the next game, its teams or squad, and the kitty on a front page. | Must | 7.3.1 |
 | FR-19 | Let each player turn on push notifications on their phone and choose which kinds they get. Notify players when the squad or teams are confirmed, when they owe money (by organiser and automatically the day after a game) and when credit is used. | Should | 7.5 |
+| FR-20 | Behind an organiser switch (Off / Trial / On), let players say in or out for the next game in the app, open and close availability on a timetable, and pick, save and announce the squad automatically with the Run game rules. Handle drop-outs and late joiners until kick-off. | Should | 7.6 |
+| FR-21 | Show organisers which players have set up the app, on which browser, and which notifications they have on. | Should | 7.6.4 |
 
 ### 4.2 Non-functional requirements
 
@@ -326,6 +329,8 @@ flowchart LR
 | **Payments** | Outstanding payments and credit | `debtsOwed`, `oweClear`, `creditAdd`, `applyCredit`, `renderOwes` |
 | **WhatsApp** | Message text, copy, open | `waText`, `teamsText`, `waCopy`, `teamsCopy`, `waOpen` |
 | **Export and import** | JSON file, share, text, CSV, import | `exportFile`, `exportLogCSV`, `applyImport` |
+| **Selection rules** (`selection.js`) | Squad order shared by Run game and the function | `orderSquad`, `splitSquad`, `latePenaltyFor` |
+| **Availability** | Player card, organiser card, settings, App users | `availLoad`, `avPlayerCard`, `avOrgCard`, `avSettingsCard`, `avAnswer`, `avAct`, `avHello`, `renderUsers`, `availRender` |
 | **Notifications** | Opt-in, choices, sending, front card, Notifications page | `pushLoadStatus`, `pushTurnOn`, `pushUpdate`, `pushTurnOff`, `pushSquad`, `pushTeams`, `pushRemind`, `pushCreditUsed`, `renderNotify`, `renderPushCard` |
 
 ### 7.2 State model
@@ -557,6 +562,75 @@ Rules:
 - **Daily reminder:** it uses the UK date of "yesterday". It only covers games whose money was tracked by then.
 - **Limits:** the function sends at most 200 messages per call. It clips titles to 80 characters and bodies to 300. Links must be relative to the app (`./…`).
 - **Not set up:** if the function isn't deployed, the Notifications page, the front card and all send options stay hidden.
+- **Availability (3.0):** an `availability` kind (on by default) covers availability opening, nudges, playing or reserve at the close, promotions, late joins and cancellations.
+
+### 7.6 Self-service availability (release 3.0)
+
+#### 7.6.1 Overview
+
+Players say whether they're in for the next game in the app. At closing time, the squad is picked automatically using the Run game rules.
+
+**The switch** (Setup → Self-service availability, saved in `availability_settings.mode`):
+
+| Mode | Who sees it | Notifications | At closing time |
+|---|---|---|---|
+| `off` (default) | Nobody. Everything works as in 2.x. | None | Nothing |
+| `trial` | Organisers only (logged-in devices) | Only to the organisers' own player ids (`organiser_ids`) | Always held for an organiser to confirm |
+| `on` | Everyone | Everyone with the Availability choice on | Saved and announced, unless **Announce automatically** is off (then held) |
+
+**Timetable** (UK time; organisers can change it in the settings):
+- Thursday games open on **Tuesday** at 09:00 and close at 21:00 the same day.
+- Monday games open on **Friday** at the same times.
+- A `pg_cron` job calls `avail_tick` every 15 minutes. The function works out UK time itself, so British Summer Time is handled.
+- Organisers can **Open now** early. A round opened early still closes at the scheduled time.
+
+#### 7.6.2 Round lifecycle
+
+```mermaid
+stateDiagram-v2
+  [*] --> Open: Tue/Fri 09:00 or Open now
+  Open --> Held: closing time (trial, or auto-announce off)
+  Open --> Closed: closing time (on and auto-announce)
+  Held --> Closed: Confirm and announce
+  Held --> Open: Reopen
+  Open --> Cancelled: Cancel this week
+  Held --> Cancelled: Cancel this week
+  Cancelled --> Open: Reopen
+  Closed --> [*]: kick-off locks changes
+```
+
+#### 7.6.3 Rules
+
+1. **Everyone must say in.** That includes guaranteed players: no answer counts as out. Saying in puts guaranteed players at the front.
+2. **The close** (it runs only once: the status change to closed or held happens first):
+   1. Take the players who said in.
+   2. Order them with `selection.js`, the same rules as Run game (7.4.1). The new tie-break is whoever answered first.
+   3. The first 12 play and the rest are reserves.
+   4. Save the game as **Confirm game** does: the `games` row, everyone's played and reserve counts and last played date, and `reserve_next`.
+   5. Notify everyone.
+   6. If a game already exists for that date (made by hand), it's kept and nothing is duplicated.
+3. **After closing, until kick-off:**
+   - **A player in the squad drops out:** the first reserve moves up and is told, and organisers are told. Draft teams are cleared and confirmed teams go back to draft ("Teams need redoing").
+   - **A reserve drops out:** they're removed and the others move up.
+   - **A late joiner says in:** they go into the squad if it has fewer than 12, otherwise to the end of the reserves.
+   - **If no reserves are left:** organisers are warned.
+4. **Fewer than 10 at closing:** the squad is saved. Players are told "we need N more", organisers are warned, and late joiners can still get in.
+5. **Privacy:** late flags and the "if it closed now" order are shown only on organisers' screens. Players see their own status and the names of players who said in.
+6. **Identity:** "Who are you?" (`fbv3_me`) is chosen once per phone and shared with notifications. Organisers can answer for any player.
+
+#### 7.6.4 App users
+
+Each phone that has chosen "Who are you?" checks in through `hello` (at most every 6 hours, and whenever its name or notifications change). It sends:
+- a random device id;
+- whether the app is installed;
+- the browser and platform;
+- whether notifications are on.
+
+The organisers' **App users** page combines this with `push_subscriptions` (through `admin_users`). For each player it shows:
+- whether they've set up the app, and whether it's installed;
+- the browser and platform;
+- whether notifications are on, and which kinds;
+- when the phone was last seen.
 
 ---
 
@@ -599,6 +673,10 @@ Relationships are held as id arrays (`playing_ids`, `paid_ids` and so on) rather
 | `player_credit` | `player_id` bigint | amount_p int | `credit.sql` |
 | `push_subscriptions` | `endpoint` text | player_id bigint, p256dh text, auth text, prefs jsonb (squad, teams, payments, credit), updated_at timestamptz | `push.sql` |
 | `push_config` | `id` int (= 1) | public_key text, private_key text (VAPID keys, made by the function on first run) | `push.sql` |
+| `availability_settings` | `id` int (= 1) | mode text (off, trial, on), open_time, close_time, mon_open_days_before, thu_open_days_before, auto_announce, kickoff_time, venue, organiser_ids bigint[] | `availability.sql` |
+| `availability_rounds` | `game_iso` text | day, status (open, held, closed, cancelled), game_id, opened_at, closed_at | `availability.sql` |
+| `availability_answers` | (`game_iso`, `player_id`) | answer (in, out), answered_at, by_organiser | `availability.sql` |
+| `app_devices` | `device_id` text | player_id, installed, browser, platform, notifications, last_seen | `availability.sql` |
 
 The two push tables are the only ones **closed to the page**: RLS is on with no policies and `anon` has no grants, so only the `notify` function (service role) can use them.
 
@@ -621,6 +699,9 @@ The two push tables are the only ones **closed to the page**: RLS is on with no 
 | `fbv3_whatsapp` | Time and venue for each day type, pitch-booked tick |
 | `fbv3_show_opening`, `fbv3_show_split` | Display preferences |
 | `fbv3_push` | This phone's notifications: player id, push address, choices, and whether the front card was dismissed |
+| `fbv3_me` | "Who are you?": this phone's player id (3.0) |
+| `fbv3_device`, `fbv3_hello` | Random device id and last check-in time, for App users |
+| `fbv3_install_hidden` | The welcome install card was dismissed |
 
 ### 8.4 Data lifecycle
 
@@ -645,6 +726,8 @@ The two push tables are the only ones **closed to the page**: RLS is on with no 
 | Web Share | `navigator.share` for exporting data | Falls back to download or copy. |
 | `notify` Edge Function | `POST {SUPABASE_URL}/functions/v1/notify` with JSON `{action}`: `status`, `subscribe`, `unsubscribe`, `send`, `daily`. JWT verification is off (the page has no sign-in). Supabase still requires the project's key, so the page sends the publishable key as `apikey`. CORS open. | The function uses the service role key provided by Supabase. No secrets are set by hand. |
 | Web Push | `web-push` encrypts each notification (aes128gcm) and signs it with VAPID (subject: the app's address) for the phone's push service | Gone phones (404/410) are deleted. Time to live is 24 hours. |
+| Availability schedule | `pg_cron` job `brent-football-availability` calls `avail_tick` every 15 minutes | Set up by `availability.sql`. Does nothing while the switch is Off. |
+| Selection rules | The function imports `selection.js` from the published site when it's deployed, so the server and Run game use one copy of the rules | Redeploy the function after changing `selection.js`. |
 | Schedule | `pg_cron` job `brent-football-payment-reminders` calls the function through `pg_net` every day at 10:00 UTC, sending the publishable key as `apikey` | Set up by `push-cron.sql`. |
 | CDN | jsDelivr for `supabase-js` and the Tabler icon font | If the CDN fails, the database is unavailable (the device copy is still used) and icons are missing. |
 
@@ -747,6 +830,13 @@ For release 2.0, also:
 8. Deploy the `notify` Edge Function. In the Supabase dashboard, go to **Edge Functions → Deploy a new function → Via Editor**, name it `notify`, paste `supabase/functions/notify/index.ts` and deploy. Then turn off **Verify JWT** in the function's settings.
 9. `supabase/push-cron.sql`: the daily payment reminder. It needs the `pg_cron` and `pg_net` extensions.
 
+For release 3.0, also:
+
+10. `supabase/availability.sql`: the availability and app users tables, plus the 15-minute schedule.
+11. Redeploy the `notify` function with the 3.0 code (Code tab → paste → Deploy). Do this after the site has published, because the function imports `selection.js` from it. Keep **Verify JWT** off.
+
+The feature stays **Off** until an organiser changes the switch on Setup.
+
 Each script also grants the page (`anon` and `authenticated` roles) select, insert, update and delete on its tables. Supabase stops granting this automatically for tables created from 30 October 2026, so **any new table added in a later release must include the same `grant` line in its script**, or the page gets "permission denied" for it. Re-running the scripts on the existing database is harmless.
 
 ---
@@ -782,6 +872,9 @@ Visual changes are reviewed through screenshots or interactive mock-ups before d
 | Navigation | Phone and desktop, view and edit modes | Correct menu and pages. More sheet opens and closes. No sideways scroll. |
 | Sync | A feature's table is missing | That feature stays on the device with a notice. Other features still save. |
 | Notifications | Function tested in Deno against a mock database and a mock push service that decrypts what it receives | Keys made once. Phones saved and removed. Choices respected. Unsafe links reset to `./`. Gone phones deleted. Daily reminder only for unpaid players of yesterday's tracked games. |
+| Selection | The old Run game sort compared with `selection.js` on 2,000 random cases from real data (both days, random reserve promises and late marks) | Identical order every time |
+| Availability | Function scenarios over a simulated fortnight against a mock database and push service | Covered: off, trial and on; opening on Tuesday and Friday at 09:00; nothing before 09:00; closing at 21:00; trial held and confirmed; squad identical to the shared rules; guaranteed player with no answer left out; counts and reserve promise; drop-out promotes the first reserve and resets teams; late joiner to reserves or the squad; under 10; changes refused after kick-off; nudge; cancel and reopen; early open not closed early; a hand-made game not duplicated; App users data. |
+| Availability | App in Chromium with the real function and mock database | Covered: settings saved to Trial; Open now; organiser answers; guaranteed warning; Who are you?; in and out; Close now, then held, then Confirm; trial hidden from players; On shows the welcome, install and Who are you? cards; late joiner becomes 3rd reserve; App users lists phones. No page errors and no sideways scroll. |
 | Notifications | App in Chromium with the real function, end to end | Front card, Notifications page in View mode, choices, test, squad, teams, reminders and credit-used notifications, tap opens Payments, Turn off. Nothing shows when the function isn't set up. |
 
 ---
@@ -801,6 +894,8 @@ The sync status line under the page title shows "Up to date", "Saving…", "Save
 | "Could not reach the database" | Offline, or Supabase paused or unavailable | Keep using the app. Changes send when back online. On the free tier, resume the project in Supabase if it's paused. |
 | Icons missing | CDN blocked | Reload. The app still works. |
 | Wrong data after an import | Bad import file | Re-import from the `fbv3_backup` copy, or from an earlier export. |
+| Availability doesn't open | Switch is Off, the schedule isn't set up, or the function wasn't redeployed | Check Setup → Self-service availability. Run `availability.sql`, redeploy the function, and check its logs for `avail_tick`. |
+| Availability card missing on Setup | `availability.sql` not run | Run it. The card says so. |
 | Notifications page missing | The `notify` function isn't deployed, has the wrong code, or can't be reached | Read the 🔔 status line on Setup. Check the function's Code tab starts with the Brent Football header, then follow 13.3 steps 7–9. |
 | Notifications don't arrive on iPhone | Not opened from the Home Screen, or iOS older than 16.4 | Add to Home Screen, open it from there, then turn notifications on. |
 | "Received… (shown)" but no banner | Android shows the site's notifications silently (Samsung's default for website channels) | Long-press the notification in the panel → Settings → **Alert** and **Show as pop-up**; or Settings → Apps → Samsung Internet → Notifications → the site's category. |
@@ -836,6 +931,10 @@ The sync status line under the page title shows "Up to date", "Saving…", "Save
 | ADR-15 | "Who are you?" links a phone to a player, with no sign-in | Simplest for the group; matches the existing access model | Anyone could choose another name (accepted, 10.2) |
 | ADR-16 | Phones and keys live in closed tables, used only by the `notify` function | The page can't leak push addresses or the private key | The page learns only which players have notifications on |
 | ADR-17 | The function makes its own VAPID keys on first run | No secrets to create or paste during setup | Losing `push_config` means every phone must turn notifications on again |
+| ADR-18 | Self-service availability sits behind an Off / Trial / On switch in the database | Can be deployed safely and tried by organisers before players see it | One more setting to manage |
+| ADR-19 | The selection rules live in one shared file, `selection.js` | The 9pm close and Run game can never disagree | The function must be redeployed after a rule change |
+| ADR-20 | All availability changes go through the function. The page can only read rounds and answers. | One place enforces open, closed and kick-off rules and sends notifications | Answering needs the function to be reachable |
+| ADR-21 | Guaranteed players must opt in, and late flags are organiser-only | Agreed with the organisers | Guaranteed players who forget count as out (they're nudged) |
 
 ---
 
@@ -850,6 +949,8 @@ The sync status line under the page title shows "Up to date", "Saving…", "Save
 | R-05 | Attendance table widens every year | Low | Certain | Merge older years into one column (planned minor change around 2029). |
 | R-06 | Renaming a player breaks the legacy link | Low | Low | Documented in the runbook. |
 | R-07 | Open `notify` function could be used to send unwanted notifications | Low | Low | Accepted (10.2). Players can turn them off. Sign-in on the roadmap. |
+| R-10 | Two triggers close the same round | Low | Low | The status change happens first and only one call wins. |
+| R-11 | Anyone could answer for another player (no sign-in) | Low | Low | Organisers see who answered and when. Sign-in is on the roadmap. |
 | R-09 | Samsung Internet on Samsung phones doesn't pop up notifications, even when they're delivered (seen on an S26 Ultra) | Medium | High for Samsung users | The app advises installing from Chrome and links straight to it. |
 | R-08 | Push services or Supabase change their rules | Medium | Low | Standard Web Push. The function is small and documented. |
 | I-01 | README's opening section still describes the old SQLite starter app | Low | | Tidy in a minor release. |
@@ -954,7 +1055,8 @@ Neal, Kev and Gav. They're listed in `ORGANISERS` in the code. Adding one is a m
 |---|---|
 | `index.html` | The application |
 | `manifest.webmanifest`, `sw.js`, `icons/` | Installable app: name, icon, splash colours, offline copy, and the notification badge (`icons/badge-96.png`) |
-| `supabase/*.sql` | Database setup scripts (`push.sql` and `push-cron.sql` for notifications) |
+| `supabase/*.sql` | Database setup scripts (`push.sql` and `push-cron.sql` for notifications, `availability.sql` for 3.0) |
+| `selection.js` | Squad selection rules shared by the page and the function |
 | `supabase/functions/notify/index.ts` | The `notify` Edge Function |
 | `.github/workflows/static.yml` | Pages deployment |
 | `docs/SOLUTION_DESIGN.md` | This document |

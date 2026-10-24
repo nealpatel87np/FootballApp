@@ -33,7 +33,7 @@ This project is a very simple football app that stores player data in a local SQ
 - `data/football.db` - database file created automatically
 
 ## Football organisation page
-The design is documented in [`docs/SOLUTION_DESIGN.md`](docs/SOLUTION_DESIGN.md) (Solution Design Document) and [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md) (functional specification). Both include the versioning policy. Current release: **2.7**. The version is shown at the bottom of the front page.
+The design is documented in [`docs/SOLUTION_DESIGN.md`](docs/SOLUTION_DESIGN.md) (Solution Design Document) and [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md) (functional specification). Both include the versioning policy. Current release: **3.0**. The version is shown at the bottom of the front page.
 
 Every file in `supabase/` grants the page access to its tables. Supabase no longer does this automatically for tables created from 30 October 2026, so any new table needs the same `grant` line.
 
@@ -130,6 +130,32 @@ Players can get notifications on their phone from the installed app. They're tol
 If the Notifications page doesn't appear, the 🔔 line at the top of **Setup** says why. If a test says "Received on this phone" but no banner pops up, the phone is showing them silently: on Samsung, long-press the notification in the panel, tap Settings, then choose **Alert** and **Show as pop-up**.
 
 There's no key to create or paste: the function makes its own notification keys the first time it runs. The phones and keys are kept in tables the page can't read. As with the rest of the app, there's no sign-in, so anyone could pick another name under "Who are you?".
+
+### Self-service availability
+Players can say whether they're in for the next game in the app. At closing time the squad is picked automatically with the usual Run game rules. It's switched **off** until an organiser turns it on.
+
+- **The switch:** Setup → **Self-service availability** → Show:
+  - **Off:** nothing changes.
+  - **Trial:** only organisers see it and get its notifications, and every squad waits for you to tap **Confirm and announce**.
+  - **On:** everyone.
+  - The same card has the times, kick-off, venue, **Announce automatically**, and which player each organiser is. Organisers get the organiser notifications, and they're the only ones notified in Trial.
+- **Timetable:** Thursday games open **Tuesday 9am**; Monday games open **Friday 9am**. Both close at **9pm** that day, when the squad is picked, saved like Confirm game, and everyone is told whether they're playing or a reserve. You can open early or close early from Run game.
+- **Players:**
+  - The first time, they see a welcome and install card, then **Who are you?**.
+  - When availability is open, they tap **I'm in** or **I'm out**. Guaranteed players must say they're in too, or they count as out.
+  - Players never see late flags. Late arrivals still count when the squad is picked.
+- **After 9pm:**
+  - **I can't make it any more** moves the first reserve up, and they're told. Organisers are told, and the teams are flagged for redoing.
+  - Anyone who says in late joins the squad if there's space, or the reserves.
+  - With fewer than 10, the squad is saved and organisers are warned.
+  - Changes stop at kick-off.
+- **Run game:** shows organisers the live counts, who's guaranteed but hasn't answered, the squad "if it closed now" (with late tags), and buttons for Nudge, Close now, Cancel this week, answering for a player, and Confirm and announce.
+- **App users** (organisers, under More) shows who has set up the app, whether it's installed, on which browser, and which notifications they have on.
+
+**Setup (once):**
+1. Run `supabase/availability.sql` in the SQL Editor.
+2. After the site has published, redeploy the `notify` function. Open its Code tab, paste the whole of the new `supabase/functions/notify/index.ts`, and press Deploy. Keep Verify JWT off.
+3. Turn it to **Trial** on Setup when you're ready to try it.
 
 ### Moving around
 On a phone, use the bar at the bottom of the screen: Run game, Teams, Game Log and Payments, with **More** for Setup, Ratings, Player Stats and Attendance. On a computer the pages are a row of tabs along the top. In View mode only Game Log, Player Stats and Payments are shown, plus Notifications once they are set up.
