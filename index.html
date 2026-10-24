@@ -397,6 +397,7 @@
       <div class="pwrow"><input type="password" id="front-pw" autocomplete="current-password"><button class="btn primary" type="submit">Log in</button></div>
       <div id="front-err" class="err"></div>
     </form>
+    <p class="hint" id="app-version" style="text-align:center;margin-top:18px"></p>
   </div>
 
   <div id="modebar"><span id="modebar-text"></span><span style="display:flex;gap:6px"><button class="btn xs" onclick="goFront()">Home</button><button class="btn xs" id="logout-btn" onclick="logOut()">Log out</button></span></div>
@@ -3094,6 +3095,7 @@ renderHistory = function () {
    learns which players have them on. Organisers send them when they confirm a game
    or teams and from Outstanding Payments; payment reminders also go out on a
    schedule (supabase/push-cron.sql). */
+const APP_VERSION = '2.4';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
 const PUSH_FN = SUPABASE_URL + '/functions/v1/notify';
 const PUSH_KEY = 'fbv3_push';   // this phone only: { playerId, endpoint, prefs, hideCard }
 const PUSH_KINDS = [['squad', 'Squad picked', 'Playing or reserve'], ['teams', 'Teams confirmed', 'Your team and bibs'],
@@ -3160,10 +3162,13 @@ const pushPlayerOptions = sel => '<option value="">Choose your name…</option>'
 // This phone: turn on, change player or preferences, test, turn off
 // Each step gives up with a clear message instead of waiting forever
 const pushStep = (p, ms, msg) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error(msg)), ms))]);
-async function pushSubscription() {
-  if (!(await navigator.serviceWorker.getRegistration())) await navigator.serviceWorker.register('sw.js');
+async function pushSubscription(progress = () => {}) {
+  progress('starting the background helper');
+  if (!(await pushStep(navigator.serviceWorker.getRegistration(), 10000, "The app's background helper couldn't be found. Close Brent Football fully, open it again and try again.")))
+    await pushStep(navigator.serviceWorker.register('sw.js'), 15000, "The app's background helper couldn't be installed. Close Brent Football fully, open it again and try again.");
   const reg = await pushStep(navigator.serviceWorker.ready, 15000,
     "The app's background helper didn't start. Close Brent Football fully, open it again and try again.");
+  progress("signing this phone up with its push service");
   try {
     return await pushStep((async () => (await reg.pushManager.getSubscription())
       || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: pushKeyBytes(pushPublicKey) }))(), 20000,
@@ -3176,13 +3181,19 @@ async function pushSubscription() {
 async function pushTurnOn(selectId) {
   const pid = toId(document.getElementById(selectId).value);
   if (!pid) { pushNote = 'Choose your name first.'; pushRerender(); return; }
-  pushNote = 'Turning on…'; pushRerender();
+  // Shows each step, so if a phone gets stuck we can see where
+  const progress = step => { pushNote = `Turning on… (${step})`; pushRerender(); };
   try {
-    const perm = await pushStep(Notification.requestPermission(), 60000, "The phone didn't ask for permission. Allow notifications for Brent Football in your phone's settings, then try again.");
+    progress('asking permission');
+    // Older browsers answer requestPermission through a callback instead of a promise
+    const ask = Notification.permission === 'granted' ? Promise.resolve('granted')
+      : new Promise(res => { const p = Notification.requestPermission(res); if (p && p.then) p.then(res); });
+    const perm = await pushStep(ask, 30000, "The phone didn't ask for permission. Allow notifications for Brent Football in your phone's settings, then try again.");
     if (perm !== 'granted') throw new Error(perm === 'denied'
       ? "Notifications are blocked for Brent Football. Allow them in your phone's settings for this app, then try again."
       : 'Notifications were not allowed. Tap Turn on notifications to try again.');
-    const sub = await pushSubscription(), prefs = Object.assign({}, PUSH_DEFAULTS, PUSH.prefs);
+    const sub = await pushSubscription(progress), prefs = Object.assign({}, PUSH_DEFAULTS, PUSH.prefs);
+    progress('saving this phone');
     await pushStep(pushCall('subscribe', { subscription: sub.toJSON(), playerId: pid, prefs }), 20000, "Couldn't save this phone with the notify function. Check your signal and try again.");
     PUSH = { playerId: pid, endpoint: sub.endpoint, prefs }; pushSave();
     pushPlayers.add(pid); pushNote = '';
@@ -3346,6 +3357,7 @@ const _pushRerenderAll = rerenderAll; rerenderAll = function () { _pushRerenderA
 
 try { const o = localStorage.getItem('fbv3_org'); if (ORGANISERS.includes(o)) document.getElementById('org-select').value = o; } catch (e) {}
 loadState();
+document.getElementById('app-version').textContent = 'Brent Football ' + APP_VERSION;
 pushLoadStatus();
 // Tapping a payment notification opens Payments (the app may already be open)
 function openFromLink() {
