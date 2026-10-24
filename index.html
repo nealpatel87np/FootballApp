@@ -504,6 +504,27 @@
           <button class="btn" style="flex:1;justify-content:center;padding:16px;font-size:15px" onclick="startGame('thu')"><i class="ti ti-calendar"></i> Thursday</button>
         </div>
       </div>
+      <div class="card" id="poll-card">
+        <h3><i class="ti ti-brand-whatsapp" style="color:#25a244"></i> Availability poll message</h3>
+        <p class="hint" style="margin-bottom:10px">Send this before running the game to find out who's available.</p>
+        <div style="display:flex;gap:8px;margin-bottom:4px">
+          <button class="btn sm" id="poll-mon" onclick="pollSetDay('mon')">Monday</button>
+          <button class="btn sm" id="poll-thu" onclick="pollSetDay('thu')">Thursday</button>
+        </div>
+        <div class="g2" style="gap:10px">
+          <div><label>Date</label><input type="date" id="poll-date" oninput="pollRefresh()"></div>
+          <div><label>Time</label><input type="text" id="poll-time" oninput="pollSaveSettings()"></div>
+        </div>
+        <label>Venue</label>
+        <input type="text" id="poll-venue" oninput="pollSaveSettings()">
+        <textarea id="poll-preview" rows="7" readonly style="width:100%;margin-top:12px;padding:10px;border:0.5px solid var(--border-strong);border-radius:var(--radius);background:var(--surface-1);color:var(--text-primary);font-size:13px;font-family:inherit;line-height:1.45"></textarea>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+          <button class="btn primary" onclick="pollCopy()"><i class="ti ti-copy"></i> Copy for WhatsApp</button>
+          <button class="btn" onclick="pollOpen()"><i class="ti ti-brand-whatsapp"></i> Open WhatsApp</button>
+        </div>
+        <div id="poll-msg" class="hint" style="margin:6px 0 0"></div>
+        <p class="hint" style="margin-top:8px"><i class="ti ti-info-circle"></i> WhatsApp doesn't let a link create the poll itself. Send the message, then add the poll in the group (📎 → Poll).</p>
+      </div>
     </div>
     <div id="step-avail" style="display:none">
       <div class="card">
@@ -2947,6 +2968,59 @@ const _waRenderSquad = renderSquad; renderSquad = function () { _waRenderSquad()
 const _waConfirm = confirmGame;     confirmGame = function () { _waConfirm(); waMount('done'); };
 const _waRenderPost = renderPostGame; renderPostGame = function () { _waRenderPost(); waRefresh(); };
 const _waReset = resetGame;         resetGame = function () { _waReset(); waCtx = null; waGameIdx = null; document.querySelector('#step-squad > p.hint').before(document.getElementById('wa-card')); };
+
+/* ---- AVAILABILITY POLL MESSAGE (before running a game) ---- */
+// Uses the same time and venue settings as the squad message for that day
+let pollDay = 'mon';
+function pollShortDate(iso) {
+  if (!iso) return '';
+  const dt = isoToDate(iso);
+  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dt.getDay()] + ' ' + waOrdinal(dt.getDate()) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][dt.getMonth()];
+}
+function pollText() {
+  const iso = document.getElementById('poll-date').value;
+  const weekday = iso ? isoToDate(iso).toLocaleDateString('en-GB', { weekday: 'long' }) : (pollDay === 'mon' ? 'Monday' : 'Thursday');
+  const time = document.getElementById('poll-time').value.trim().replace(/\s*([ap]m)$/i, (m, x) => x.toLowerCase());
+  return [
+    `⚽️ ${weekday} Football`,
+    `📅 ${pollShortDate(iso)} | ⏰ ${time}`,
+    `📍 ${document.getElementById('poll-venue').value.trim()}`, '',
+    'Please confirm availability ASAP! The final 12 players will be announced shortly after poll closes. ⚽️🔥'
+  ].join('\n');
+}
+function pollRefresh() {
+  document.getElementById('poll-preview').value = pollText();
+  document.getElementById('poll-msg').textContent = '';
+}
+function pollSetDay(day) {
+  pollDay = day;
+  document.getElementById('poll-mon').classList.toggle('primary', day === 'mon');
+  document.getElementById('poll-thu').classList.toggle('primary', day === 'thu');
+  document.getElementById('poll-date').value = waNextDate(day);
+  document.getElementById('poll-time').value = WA[day].time;
+  document.getElementById('poll-venue').value = WA[day].venue;
+  pollRefresh();
+}
+function pollSaveSettings() {
+  WA[pollDay] = { time: document.getElementById('poll-time').value, venue: document.getElementById('poll-venue').value };
+  try { localStorage.setItem(WA_KEY, JSON.stringify(WA)); } catch (e) {}
+  pollRefresh();
+}
+function pollCopy() {
+  const text = pollText(), ta = document.getElementById('poll-preview');
+  ta.value = text;
+  const fallback = () => {
+    ta.focus(); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+    setMsg('poll-msg', ok ? 'Copied. Paste it into the WhatsApp group.' : 'Text selected. Copy it manually.', true);
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(() => setMsg('poll-msg', 'Copied. Paste it into the WhatsApp group.', true)).catch(fallback);
+  } else fallback();
+}
+function pollOpen() { window.open('https://wa.me/?text=' + encodeURIComponent(pollText()), '_blank'); }
+// Start on whichever of Monday or Thursday comes next
+pollSetDay(waNextDate('mon') <= waNextDate('thu') ? 'mon' : 'thu');
 
 /* ---- WHATSAPP IN THE GAME LOG ---- */
 function waPark() { const c = document.getElementById('wa-card'); document.getElementById('wa-park').appendChild(c); }
