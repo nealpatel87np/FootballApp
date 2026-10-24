@@ -3,10 +3,10 @@
 | | |
 |---|---|
 | **Document** | Solution Design Document (SDD) |
-| **Version** | 1.2 |
-| **Release** | Production Release 1.2 |
+| **Version** | 1.3 |
+| **Release** | Production Release 1.3 |
 | **Status** | Approved for production |
-| **Date** | 23 October 2026 |
+| **Date** | 24 October 2026 |
 | **System** | Football Organisation App (`index.html`, GitHub Pages and Supabase) |
 | **Repository** | `nealpatel87np/FootballApp` |
 | **Companion document** | [`docs/SYSTEM_SPEC.md`](SYSTEM_SPEC.md): page-by-page functional specification |
@@ -66,6 +66,7 @@ If you aren't sure, treat the change as **minor** unless it changes the data mod
 | 1.0 | 22 Oct 2026 | Organisers with Claude Code | First production release. Baseline design for every feature in the app at that date. |
 | 1.1 | 23 Oct 2026 | Organisers with Claude Code | Added explicit Data API `grant` statements to every SQL script, after Supabase's change to grants for new tables (30 Oct 2026). New tables must include them (13.3). No app change. |
 | 1.2 | 23 Oct 2026 | Organisers with Claude Code | Installable app: named **Brent Football** (page title and heading), with app icon, web app manifest and service worker for home-screen install and opening offline. |
+| 1.3 | 24 Oct 2026 | Organisers with Claude Code | **Availability message** card on Run game (hidden until Show) builds the pre-game WhatsApp availability message for Monday or Thursday (19.1). No data change. |
 
 ### 1.4 Approval
 
@@ -169,7 +170,7 @@ Until October 2026 this was all managed in a spreadsheet with manual WhatsApp me
 | FR-05 | Rate players 1–10 on Attack, Defence, Fitness and Goalkeeping, with an auto or manual position and a regular keeper flag. | Must | 7.4.5 |
 | FR-06 | Generate balanced teams, honouring keep-apart and same-team rules, spreading regular keepers evenly and balancing keepers. A coin flip decides the bibs. | Must | 7.4.4 |
 | FR-07 | Hold teams as a shared draft until confirmed. Show confirmed teams on the front page. | Must | 7.3.4 |
-| FR-08 | Produce squad and teams WhatsApp messages in the group's format, with copy and open-in-WhatsApp. | Must | 19.1 |
+| FR-08 | Produce availability, squad and teams WhatsApp messages in the group's format, with copy and open-in-WhatsApp. | Must | 19.1 |
 | FR-09 | Record the score of each game with confirmed teams. | Must | 7.4.6 |
 | FR-10 | Show player statistics (played, won, drawn, lost, win %) from scored games only. | Must | 7.4.6 |
 | FR-11 | Show attendance (appearances by year, total, times in reserve) to organisers, including spreadsheet history, without affecting any other logic. | Must | 7.4.9 |
@@ -769,6 +770,16 @@ Candidates, each to be versioned under section 1.1:
 ## 19. Appendices
 
 ### 19.1 WhatsApp message templates
+
+**Availability message** (Run game, before the game; then add a WhatsApp poll by hand):
+
+```
+⚽️ {Weekday} Football
+📅 {Mon} {nth} {Oct} | ⏰ {time, e.g. 6:30pm}
+📍 {venue}
+
+Please confirm availability ASAP! The final 12 players will be announced shortly after poll closes. ⚽️🔥
+```
 
 **Squad message:**
 

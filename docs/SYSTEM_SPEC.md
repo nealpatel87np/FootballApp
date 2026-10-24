@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Document version** | 1.2 |
-| **Release** | Production Release 1.2 |
+| **Document version** | 1.3 |
+| **Release** | Production Release 1.3 |
 | **Status** | Released |
-| **Date** | 23 October 2026 |
+| **Date** | 24 October 2026 |
 | **Application** | `index.html` (repository root), published with GitHub Pages |
 | **Owner** | The organisers (Neal, Kev, Gav) |
 
@@ -43,6 +43,7 @@ If you aren't sure, treat it as minor unless it changes the data model or a core
 | 1.0 | 22 Oct 2026 | First production release. Covers squad selection, team picking with skill ratings, late arrivals, scores and player stats, attendance with legacy data, payments, credit, the kitty, WhatsApp messages, front page and access, and phone and desktop navigation. |
 | 1.1 | 23 Oct 2026 | Every SQL script now grants the page access to its tables through the Data API, as Supabase requires for tables created from 30 Oct 2026. No app change. |
 | 1.2 | 23 Oct 2026 | The app is named Brent Football and can be installed on the home screen, with its own icon, a green opening screen and full-screen display. It opens with the last data when there's no signal. |
+| 1.3 | 24 Oct 2026 | Run game has an **Availability message** card (hidden until Show) for the pre-game availability message and poll. |
 
 ---
 
@@ -335,6 +336,20 @@ Amounts are stored in pence.
 ## 8. WhatsApp messages
 
 Both messages are built from the game's date and the time and venue saved for that day type. Time and venue are remembered per day type on the device, with defaults of 6:30 PM and Harrow Powerleague.
+
+### 8.0 Availability message (Run game, before the game)
+
+Under "Which day are you running?", the **Availability message** card starts hidden (**Show** / **Hide**). Choose Monday or Thursday (it starts on whichever is next); the date defaults to the next one and time and venue come from that day's saved settings, which edits here also update. **Copy for WhatsApp** and **Open WhatsApp** as for the squad message. WhatsApp can't create a poll from a link, so the organiser adds the poll in the group.
+
+**Availability message** (Run game, before the game; then add a WhatsApp poll by hand):
+
+```
+⚽️ {Weekday} Football
+📅 {Mon} {nth} {Oct} | ⏰ {time, e.g. 6:30pm}
+📍 {venue}
+
+Please confirm availability ASAP! The final 12 players will be announced shortly after poll closes. ⚽️🔥
+```
 
 ### 8.1 Squad message (Run game, confirmation screen, Game Log "WhatsApp update")
 

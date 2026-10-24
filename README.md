@@ -33,7 +33,7 @@ This project is a very simple football app that stores player data in a local SQ
 - `data/football.db` - database file created automatically
 
 ## Football organisation page
-The design is documented in [`docs/SOLUTION_DESIGN.md`](docs/SOLUTION_DESIGN.md) (Solution Design Document) and [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md) (functional specification). Both include the versioning policy. Current release: **1.2**.
+The design is documented in [`docs/SOLUTION_DESIGN.md`](docs/SOLUTION_DESIGN.md) (Solution Design Document) and [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md) (functional specification). Both include the versioning policy. Current release: **1.3**.
 
 Every file in `supabase/` grants the page access to its tables. Supabase no longer does this automatically for tables created from 30 October 2026, so any new table needs the same `grant` line.
 
@@ -41,6 +41,8 @@ Every file in `supabase/` grants the page access to its tables. Supabase no long
 
 ### WhatsApp message
 The page can write the weekly WhatsApp message for you.
+
+- Before the game, open **Availability message** on **Run game** (tap **Show**). Choose Monday or Thursday, check the date, time and venue, then **Copy for WhatsApp** or **Open WhatsApp**. WhatsApp doesn't let a link create a poll, so add the poll in the group yourself (📎 → Poll).
 
 - After you build a squad on **Run game**, a **WhatsApp message** card appears under it. It also shows on the confirmation screen.
 - Set the date, time and venue, and tick **Pitch has been booked** if you've booked it. The message preview updates as you move players around.
