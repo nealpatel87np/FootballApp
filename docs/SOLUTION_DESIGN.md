@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | **Document** | Solution Design Document (SDD) |
-| **Version** | 3.2 |
-| **Release** | Production Release 3.2 |
+| **Version** | 3.3 |
+| **Release** | Production Release 3.3 |
 | **Status** | Approved for production |
 | **Date** | 24 October 2026 |
 | **System** | Brent Football: the web app (`index.html`, `selection.js`, `sw.js`) on GitHub Pages, the Supabase database, the `notify` Edge Function and two scheduled jobs |
@@ -78,6 +78,7 @@ If you aren't sure, treat the change as **minor** unless it changes the data mod
 | 3.0 | 24 Oct 2026 | Organisers with Claude Code | **Self-service availability** (7.6): players say in or out, availability opens and closes on a timetable, and the squad is picked and saved automatically with the shared selection rules (`selection.js`). It sits behind an Off / Trial / On switch (off by default). **App users** page for organisers. New tables `availability_settings`, `availability_rounds`, `availability_answers`, `app_devices`. A 15-minute schedule. New Availability notification type. First-time welcome, install and "Who are you?" cards. |
 | 3.1 | 24 Oct 2026 | Organisers with Claude Code | Supabase refused to bundle the function because it imported `selection.js` from the website. The rules are now copied into the function between `BEGIN selection.js` and `END selection.js` markers, and the file is self-contained again. |
 | 3.2 | 24 Oct 2026 | Organisers with Claude Code | **Organiser dashboard** (7.7), the first page after logging in. It has: Next game, To do, Money, Recent answers, The group, Turnout and This season. It's a grid on computers and one column on phones. The organisers' phone bar becomes Dashboard, Run game, Teams, Payments and More. No database change. Full review of this document for 3.2: earlier sections brought up to date (scope, constraints, architecture, data, security, operations, roadmap, defaults and glossary). |
+| 3.3 | 24 Oct 2026 | Organisers with Claude Code | Dashboard layout. On computers: To do and The group on the left beside Next game (and Recent answers); Money, a new **League** table and This season in one row; Turnout across the full width with reserves stacked on each bar. Cards in a row are the same height, and the league shows as many rows as fit its row. To do groups missing scores and untracked money into one line each. |
 
 ### 1.4 Approval
 
@@ -677,16 +678,28 @@ The organisers' **App users** page combines this with `push_subscriptions` (thro
 
 ### 7.7 Organiser dashboard (release 3.2)
 
-A **Dashboard** page is the first page organisers see after logging in. It only reads data the app already has: no new tables. On a computer (900px wide or more), it widens to a three-column grid. On a phone it's one column, with the next game first.
+A **Dashboard** page is the first page organisers see after logging in. It only reads data the app already has: no new tables.
+
+**Layout on a computer** (900px wide or more), a three-column grid where cards in the same row are the same height:
+
+```text
+| To do       | Next game (2 columns)              |
+| The group   | Recent answers (or Next game)      |
+| Money       | League          | This season      |
+| Turnout (full width)                           |
+```
+
+**On a phone:** one column, in the order Next game, To do, The group, Recent answers, Money, League, This season, Turnout.
 
 | Card | Shows | Actions |
 |---|---|---|
 | **Next game** | **While availability is open or held:** in, out and no-answer counts with a bar; time left; guaranteed players who haven't said in; the squad "if it closed now" (Guaranteed, →Next and Late tags). **Once a squad is saved:** a checklist (squad, teams, money), the squad, and a warning if the teams no longer match. **Otherwise:** when availability opens next. | Nudge, Close now or Confirm and announce, Answer for a player, Pick teams, WhatsApp, Track money, Open now |
-| **To do** | Generated from the data: a squad waiting to be confirmed; guaranteed players not in; scores missing for confirmed teams (last 45 days); played games with money not tracked; draft or out-of-date teams for the next game; money owed (total, players, oldest); late arrivals for yesterday's or today's game (optional). Shows "All caught up" when empty. | Each item jumps to the page that does it |
+| **To do** | Generated from the data: a squad waiting to be confirmed; guaranteed players not in; scores missing for confirmed teams (last 45 days, one line however many games); played games with money not tracked (one line, with the latest and oldest); draft or out-of-date teams for the next game; money owed (total, players, oldest); late arrivals for yesterday's or today's game (optional). Shows "All caught up" when empty. | Each item jumps to the page that does it |
 | **Money** | Kitty, still owed, credit held; what each organiser holds and is owed; the three who owe most | Payments; Send reminders (when anyone who owes has notifications on) |
 | **Recent answers** | The latest availability answers, including any made by an organiser (only when the switch isn't Off) | |
 | **The group** | On the app, notifications on, not yet; who isn't on the app; Samsung Internet users. Comes from `admin_users`, cached for 5 minutes. | App users; Copy invite message |
-| **Turnout** | The last 10 played games as bars (under 10 players in red), average, short games, reserves turned away, late arrivals, Monday and Thursday averages | |
+| **League** | This year's table from confirmed teams with a score: P, W, D, L, goal difference and points (3 for a win, 1 for a draw), ordered by points, then goal difference, then wins. Shows as many rows as fit the height of its row (top 6 on a phone), then "+ N more". | Player Stats |
+| **Turnout** | Full width: the last 12 played games as bars, with players at the bottom (under 10 in red) and reserves stacked on top, plus the total above each bar. Average, short games, reserves, late arrivals, Monday and Thursday averages, and a key. | |
 | **This season** | Most games this year (the app's games plus the spreadsheet's 2026 figures), and best win % with 5+ scored games | |
 
 **Phone bar for organisers:** Dashboard, Run game, Teams, Payments and More. Game Log moves under More. Viewers' pages are unchanged.
@@ -959,7 +972,7 @@ Visual changes are reviewed through screenshots or interactive mock-ups before d
 | Selection | The old Run game sort compared with `selection.js` on 2,000 random cases from real data (both days, random reserve promises and late marks) | Identical order every time |
 | Availability | Function scenarios over a simulated fortnight against a mock database and push service | Covered: off, trial and on; opening on Tuesday and Friday at 09:00; nothing before 09:00; closing at 21:00; trial held and confirmed; squad identical to the shared rules; guaranteed player with no answer left out; counts and reserve promise; drop-out promotes the first reserve and resets teams; late joiner to reserves or the squad; under 10; changes refused after kick-off; nudge; cancel and reopen; early open not closed early; a hand-made game not duplicated; App users data. |
 | Availability | App in Chromium with the real function and mock database | Covered: settings saved to Trial; Open now; organiser answers; guaranteed warning; Who are you?; in and out; Close now, then held, then Confirm; trial hidden from players; On shows the welcome, install and Who are you? cards; late joiner becomes 3rd reserve; App users lists phones. No page errors and no sideways scroll. |
-| Dashboard | App in Chromium at 1280px and 390px with the real function and mock database | Covered: organisers land on the Dashboard; live counts and guaranteed warning; to-do items (guaranteed, money not tracked, score needed, money owed); Money, Recent answers, Turnout and This season cards. Add score opens that game in the Game Log. Close now then Confirm from the dashboard switches the card to the saved squad. No page errors or sideways scroll. |
+| Dashboard | App in Chromium at 1280px and 390px with the real function and mock database | Covered: the 3.3 layout (Money, League and This season in one row and the same height, The group under To do, Turnout full width, league trimmed to fit); organisers land on the Dashboard; live counts and guaranteed warning; to-do items (guaranteed, money not tracked, score needed, money owed); Money, Recent answers, Turnout and This season cards. Add score opens that game in the Game Log. Close now then Confirm from the dashboard switches the card to the saved squad. No page errors or sideways scroll. |
 | Notifications | App in Chromium with the real function, end to end | Front card, Notifications page in View mode, choices, test, squad, teams, reminders and credit-used notifications, tap opens Payments, Turn off. Nothing shows when the function isn't set up. |
 
 ---

@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Document version** | 3.2 |
-| **Release** | Production Release 3.2 |
+| **Document version** | 3.3 |
+| **Release** | Production Release 3.3 |
 | **Status** | Released |
 | **Date** | 24 October 2026 |
 | **Application** | `index.html` (repository root), published with GitHub Pages |
@@ -55,6 +55,7 @@ If you aren't sure, treat it as minor unless it changes the data model or a core
 | 3.0 | 24 Oct 2026 | **Self-service availability** behind an Off / Trial / On switch. Players say in or out. It opens Tuesday (Thursday games) or Friday (Monday games) at 9am and closes at 9pm, then the squad is picked with the Run game rules, saved and announced. Drop-outs move reserves up, and late joiners fill gaps. Guaranteed players must say in. Late flags are organiser-only. New **App users** page, first-time welcome and Who are you? cards, and an Availability notification type. |
 | 3.1 | 24 Oct 2026 | The notify function carries its own copy of the selection rules, so Supabase can deploy it. |
 | 3.2 | 24 Oct 2026 | Organiser **Dashboard**, the first page after logging in: next game, to-do list, money, the group, turnout and this season. The organisers' phone bar is now Dashboard, Run game, Teams, Payments and More. |
+| 3.3 | 24 Oct 2026 | Dashboard layout: The group under To do; Money, a new League table and This season in one row; Turnout across the bottom, showing reserves. To do groups repeated jobs into one line. |
 
 ---
 
@@ -324,7 +325,11 @@ The first page after logging in. It's a grid on a computer and one column on a p
   - **When nothing is open:** when availability opens next, with Open now.
 - **To do:** a confirmed squad waiting, guaranteed players not in, missing scores, money not tracked, draft or changed teams, money owed, and late arrivals (optional). Each has a button. "All caught up" when there's nothing.
 - **Money:** kitty, owed, credit, each organiser's holdings, who owes most, and Send reminders.
-- **Recent answers** (availability), **The group** (app and notification counts, who's not on the app, Copy invite message), **Turnout** for the last 10 games, and **This season** (most games, best win %).
+- **Recent answers** (availability) and **The group** (app and notification counts, who's not on the app, Copy invite message).
+- **League** for this year: P, W, D, L, goal difference and points (3 a win, 1 a draw), as many rows as fit beside Money (top 6 on a phone).
+- **This season** (most games, best win %).
+- **Turnout** across the bottom: the last 12 games, players and reserves stacked.
+- **Computer layout:** To do and The group on the left beside Next game; Money, League and This season in one row; Turnout full width. Cards in a row are the same height.
 
 ## 7. Business rules
 

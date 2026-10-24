@@ -121,17 +121,30 @@
   .dash-feed div { display: flex; gap: 8px; padding: 6px 0; border-bottom: 0.5px solid var(--border); font-size: 13px; }
   .dash-feed div:last-child { border-bottom: none; }
   .dash-feed time { color: var(--text-muted); width: 44px; flex-shrink: 0; font-size: 12px; }
-  .dash-spark { display: flex; align-items: flex-end; gap: 5px; height: 60px; margin-top: 6px; }
-  .dash-spark i { flex: 1; background: var(--border-accent); border-radius: 3px 3px 0 0; min-height: 3px; }
-  .dash-spark i.low { background: var(--border-danger); }
+  .dash-spark { display: flex; align-items: stretch; gap: 6px; height: 96px; margin-top: 8px; }
+  .dash-spark .tb { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; min-width: 0; }
+  .dash-spark .tb b { font-size: 10px; font-weight: 500; color: var(--text-secondary); text-align: center; line-height: 1.4; }
+  .dash-spark .tb i { display: block; }
+  .dash-spark .tb .rs { background: var(--bg-warning); border: 0.5px solid var(--text-warning); border-bottom: none; border-radius: 3px 3px 0 0; }
+  .dash-spark .tb .pl { background: var(--border-accent); min-height: 3px; }
+  .dash-spark .tb .pl.low { background: var(--border-danger); }
+  .dash-spark .tb .pl:first-of-type { border-radius: 3px 3px 0 0; }
+  .dash-key { display: flex; gap: 12px; font-size: 11px; color: var(--text-secondary); margin-top: 6px; flex-wrap: wrap; }
+  .dash-key i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+  .dash-league td, .dash-league th { padding: 5px 4px; }
+  .dash-league td:first-child { color: var(--text-muted); width: 22px; }
   .dash-sparkl { display: flex; gap: 5px; font-size: 9.5px; color: var(--text-muted); margin-top: 3px; }
   .dash-sparkl span { flex: 1; text-align: center; overflow: hidden; white-space: nowrap; }
   @media (min-width: 900px) {
     body.wide .app { max-width: 1180px; }
-    #dash { display: grid; grid-template-columns: 1.25fr 1fr 1fr; gap: 14px; align-items: start; }
+    /* To do and The group on the left beside Next game; Money, League, This season; Turnout across the bottom */
+    #dash { display: grid; grid-template-columns: 1.25fr 1fr 1fr; gap: 14px; align-items: stretch;
+      grid-template-areas: "todo next next" "group next next" "money league season" "turn turn turn"; }
+    #dash.has-act { grid-template-areas: "todo next next" "group act act" "money league season" "turn turn turn"; }
     #dash .card { margin: 0; }
-    #dash .dash-todo { order: -1; }
-    #dash .dash-next, #dash .dash-wide { grid-column: span 2; }
+    #dash .da-todo { grid-area: todo; } #dash .da-next { grid-area: next; } #dash .da-group { grid-area: group; }
+    #dash .da-act { grid-area: act; } #dash .da-money { grid-area: money; } #dash .da-league { grid-area: league; }
+    #dash .da-season { grid-area: season; } #dash .da-turn { grid-area: turn; }
     .dash-cols { display: grid; grid-template-columns: 1fr 1.2fr; gap: 18px; }
   }
   .ok { background: var(--bg-success); color: var(--text-success); border-radius: var(--radius); padding: 10px 14px; font-size: 14px; margin-bottom: 12px; }
@@ -3166,7 +3179,7 @@ renderHistory = function () {
    learns which players have them on. Organisers send them when they confirm a game
    or teams and from Outstanding Payments; payment reminders also go out on a
    schedule (supabase/push-cron.sql). */
-const APP_VERSION = '3.2';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
+const APP_VERSION = '3.3';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
 const PUSH_FN = SUPABASE_URL + '/functions/v1/notify';
 const PUSH_KEY = 'fbv3_push';   // this phone only: { playerId, endpoint, prefs, hideCard }
 const PUSH_KINDS = [['availability', 'Availability', 'When it opens, and if you play'], ['squad', 'Squad picked', 'Playing or reserve'], ['teams', 'Teams confirmed', 'Your team and bibs'],
@@ -3782,12 +3795,17 @@ function dashTodos() {
     if (r.status === 'held') item('📋', 'var(--bg-accent)', `${avDayName(r.day)} squad waiting for you to confirm`, `${avPreview(r).playing.length} would play`, 'Check', "goTab('game')");
     if (missing.length) item('⭐', 'var(--bg-warning)', `${missing.length} guaranteed player${missing.length === 1 ? " hasn't" : "s haven't"} said in`, missing.map(p => p.name).join(', '), 'Nudge', `avAct('avail_nudge',{gameIso:'${r.game_iso}'},x=>'Nudged '+(x.players||0)+'.')`);
   }
-  const since = avAddDays(today, -45);
-  S.games.filter(g => g.iso && g.iso <= today && g.iso >= since).forEach(g => {
+  // Missing scores and untracked money: one line each, however many games
+  const since = avAddDays(today, -45), noScore = [], noMoney = [];
+  S.games.filter(g => g.iso && g.iso <= today && g.iso >= since).sort((a, b) => b.iso.localeCompare(a.iso)).forEach(g => {
     const t = gameTeams(g.id), past = g.iso < today || (AV.settings ? avStarted({ game_iso: g.iso }) : false);
-    if (past && t && t.status === 'confirmed' && !hasScore(t)) item('⚽', 'var(--bg-accent)', `Score needed: ${dashShort(g.iso)}`, 'Teams were confirmed', 'Add score', `dashOpenLog(${g.id})`);
-    if (past && !S.money.games.some(m => m.gameId === g.id)) item('🧾', 'var(--surface-1)', `Money not tracked: ${dashShort(g.iso)}`, `${g.playingIds.length} played`, 'Track', "goTab('money')");
+    if (past && t && t.status === 'confirmed' && !hasScore(t)) noScore.push(g);
+    if (past && !S.money.games.some(m => m.gameId === g.id)) noMoney.push(g);
   });
+  if (noScore.length) item('⚽', 'var(--bg-accent)', noScore.length === 1 ? `Score needed: ${dashShort(noScore[0].iso)}` : `Scores needed: ${noScore.length} games`,
+    noScore.length === 1 ? 'Teams were confirmed' : noScore.slice(0, 3).map(g => dashShort(g.iso)).join(', ') + (noScore.length > 3 ? '…' : ''), 'Add score', `dashOpenLog(${noScore[0].id})`);
+  if (noMoney.length) item('🧾', 'var(--surface-1)', noMoney.length === 1 ? `Money not tracked: ${dashShort(noMoney[0].iso)}` : `Money not tracked: ${noMoney.length} games`,
+    noMoney.length === 1 ? `${noMoney[0].playingIds.length} played` : `Latest ${dashShort(noMoney[0].iso)}, oldest ${dashShort(noMoney[noMoney.length - 1].iso)}`, 'Track', "goTab('money')");
   const next = dashNext();
   if (next) {
     const t = gameTeams(next.id);
@@ -3807,7 +3825,7 @@ function dashTodos() {
 }
 function dashTodoCard() {
   const todos = dashTodos();
-  return `<div class="card dash-todo"><h3 class="dash-h">✅ To do <small>${todos.length ? todos.length + ' thing' + (todos.length === 1 ? '' : 's') : ''}</small></h3>${todos.length
+  return `<div class="card dash-todo da-todo"><h3 class="dash-h">✅ To do <small>${todos.length ? todos.length + ' thing' + (todos.length === 1 ? '' : 's') : ''}</small></h3>${todos.length
     ? todos.map(t => `<div class="dash-item"><span class="ic" style="background:${t.bg}">${t.ic}</span><span class="tx">${esc(t.text)}<small>${esc(t.sub)}</small></span><button class="btn xs" onclick="${t.act}">${t.label}</button></div>`).join('')
     : '<div class="dash-clear"><div>🎉</div><strong>All caught up</strong><p class="hint">Scores in, money tracked, nobody owes.</p></div>'}</div>`;
 }
@@ -3820,7 +3838,7 @@ function dashNextCard() {
     const missing = S.players.filter(p => avGuar(p, r.day) && !ins.some(a => Number(a.player_id) === p.id));
     const left = avCloseDate(r) - Date.now();
     const tags = p => `${avGuar(p, r.day) ? '<span class="badge b-guar">Guar</span>' : ''}${rn.includes(p.id) ? '<span class="badge b-guar">→Next</span>' : ''}${latePenalty(p.id) ? '<span class="badge b-late">Late last time</span>' : ''}`;
-    return `<div class="card dash-next"><h3 class="dash-h">⚽ ${esc(avLongDate(r.game_iso))} <span class="badge ${r.status === 'open' ? 'b-thu' : 'b-guar'}">${r.status === 'open' ? `Availability open${left > 0 ? ` · ${Math.floor(left / 36e5)}h ${Math.floor(left / 6e4) % 60}m left` : ''}` : 'Waiting for you to confirm'}</span></h3>
+    return `<div class="card dash-next da-next"><h3 class="dash-h">⚽ ${esc(avLongDate(r.game_iso))} <span class="badge ${r.status === 'open' ? 'b-thu' : 'b-guar'}">${r.status === 'open' ? `Availability open${left > 0 ? ` · ${Math.floor(left / 36e5)}h ${Math.floor(left / 6e4) % 60}m left` : ''}` : 'Waiting for you to confirm'}</span></h3>
       <p class="hint">⏰ ${esc(avKick())} · 📍 ${esc(AV.settings.venue || '')}${avMode() === 'trial' ? ' · Trial' : ''}</p>
       <div class="dash-cols"><div>
         <div class="av-stats"><div class="i"><b>${ins.length}</b>In</div><div class="o"><b>${ans.length - ins.length}</b>Out</div><div class="n"><b>${none}</b>No answer</div></div>
@@ -3840,7 +3858,7 @@ function dashNextCard() {
   if (g) {
     const t = gameTeams(g.id), m = S.money.games.find(x => x.gameId === g.id), today = g.iso === isoToday(), wa = WA[g.day] || WA.mon;
     const tile = (ok, label, warn) => `<div class="${ok ? 'i' : warn ? 'w' : 'n'}"><b>${ok ? '✓' : '–'}</b>${label}</div>`;
-    return `<div class="card dash-next"><h3 class="dash-h">⚽ ${today ? `Tonight ${esc(wa.time)}` : esc(avLongDate(g.iso))} <span class="badge ${today ? 'b-thu' : 'b-guar'}">${today ? 'Game day' : 'Squad picked'}</span></h3>
+    return `<div class="card dash-next da-next"><h3 class="dash-h">⚽ ${today ? `Tonight ${esc(wa.time)}` : esc(avLongDate(g.iso))} <span class="badge ${today ? 'b-thu' : 'b-guar'}">${today ? 'Game day' : 'Squad picked'}</span></h3>
       <p class="hint">${today ? esc(isoToDate(g.iso).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })) + ' · ' : ''}${g.playingIds.length} playing${g.reserveIds.length ? ` · ${g.reserveIds.length} reserve${g.reserveIds.length === 1 ? '' : 's'}` : ''} · 📍 ${esc(wa.venue)}</p>
       <div class="av-stats dash-check">${tile(true, 'Squad')}${tile(t && t.status === 'confirmed', t ? (t.status === 'confirmed' ? 'Teams' : 'Teams (draft)') : 'Teams', !!t)}${tile(!!m, 'Money', false)}</div>
       ${t && t.status === 'confirmed' && !sameSet([...t.t1, ...t.t2], g.playingIds) ? '<div class="notice" style="display:block">The squad changed after the teams were confirmed: check them.</div>' : ''}
@@ -3848,7 +3866,7 @@ function dashNextCard() {
       <div class="tactions" style="margin-top:10px"><button class="btn sm primary" onclick="teamsOpenGame(${g.id})">${t ? 'Teams' : 'Pick teams'} →</button><button class="btn sm" onclick="goTab('history'); waToggleLog(${dashGameIdx(g)})"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>${m ? '' : `<button class="btn sm" onclick="goTab('money')">Track money</button>`}</div></div>`;
   }
   const n = AV.settings && avMode() !== 'off' ? avNextOpening() : null;
-  return `<div class="card dash-next"><h3 class="dash-h">⚽ Next game</h3>${n
+  return `<div class="card dash-next da-next"><h3 class="dash-h">⚽ Next game</h3>${n
     ? `<p class="hint">${esc(avLongDate(n.iso))}. Availability opens ${esc(dashShort(n.open))} at ${esc(avClock(AV.settings.open_time))}. Nothing to do yet.</p><div class="tactions" style="margin-top:8px"><button class="btn sm" onclick="avAct('avail_open',{day:'${n.day}'},'Opened.')">Open now</button></div>`
     : `<p class="hint">No game booked yet.</p><div class="tactions" style="margin-top:8px"><button class="btn sm primary" onclick="goTab('game')">Run game</button></div>`}</div>`;
 }
@@ -3857,7 +3875,7 @@ function dashMoneyCard() {
   const per = new Map();
   debts.forEach(d => { const x = per.get(d.pid) || { amt: 0, n: 0 }; x.amt += d.amt; x.n++; per.set(d.pid, x); });
   const most = [...per.entries()].sort((a, b) => b[1].amt - a[1].amt).slice(0, 3);
-  return `<div class="card"><h3 class="dash-h">💷 Money <button class="btn xs" onclick="goTab('money')">Payments →</button></h3>
+  return `<div class="card da-money"><h3 class="dash-h">💷 Money <button class="btn xs" onclick="goTab('money')">Payments →</button></h3>
     <div class="av-stats"><div class="i"><b>${gbp(t.kitty)}</b>In the kitty</div><div class="o"><b>${gbp(t.owed)}</b>Still owed</div><div class="b"><b>${gbp(credit)}</b>Credit held</div></div>
     <table class="ledger" style="min-width:0"><thead><tr><th>Organiser</th><th class="r">Holds</th><th class="r">Owed to them</th></tr></thead><tbody>${ORGANISERS.map(o => `<tr><td>${esc(o)}</td><td class="r">${gbp(h[o].kitty)}</td><td class="r">${h[o].owed ? gbp(h[o].owed) : '–'}</td></tr>`).join('')}</tbody></table>
     ${most.length ? `<p class="hint" style="margin-top:8px"><strong>Owes most:</strong> ${most.map(([pid, x]) => `${esc(pName(pid))} ${gbp(x.amt)}${x.n > 1 ? ` (${x.n} games)` : ''}`).join(' · ')}</p>` : ''}
@@ -3870,7 +3888,7 @@ function dashActivityCard() {
     const r = AV.rounds.find(x => x.game_iso === a.game_iso);
     return `<div><time>${esc(when(a.answered_at))}</time><span><strong>${esc(pName(Number(a.player_id)))}</strong> ${a.answer === 'in' ? 'is in' : 'is out'} for ${r ? avDayName(r.day) : esc(a.game_iso)}${a.by_organiser ? ' <span class="hint">(by an organiser)</span>' : ''}</span></div>`;
   });
-  return `<div class="card"><h3 class="dash-h">🕒 Recent answers</h3><div class="dash-feed">${rows.join('')}</div></div>`;
+  return `<div class="card da-act"><h3 class="dash-h">🕒 Recent answers</h3><div class="dash-feed">${rows.join('')}</div></div>`;
 }
 function dashGroupCard() {
   if (!pushReady) return '';
@@ -3878,12 +3896,12 @@ function dashGroupCard() {
     dashUsersAt = Date.now();
     pushCall('admin_users', {}).then(d => { dashUsers = d; if (document.getElementById('page-dash').classList.contains('active')) renderDash(); }).catch(() => {});
   }
-  if (!dashUsers) return '<div class="card"><h3 class="dash-h">👥 The group</h3><p class="hint">Loading…</p></div>';
+  if (!dashUsers) return '<div class="card da-group"><h3 class="dash-h">👥 The group</h3><p class="hint">Loading…</p></div>';
   const has = new Set([...dashUsers.devices.map(d => Number(d.player_id)), ...dashUsers.subscriptions.map(s => Number(s.player_id))]);
   const notes = new Set(dashUsers.subscriptions.map(s => Number(s.player_id)));
   const samsung = new Set(dashUsers.devices.filter(d => /Samsung/i.test(d.browser)).map(d => Number(d.player_id)));
   const not = S.players.filter(p => !has.has(p.id));
-  return `<div class="card"><h3 class="dash-h">👥 The group <button class="btn xs" onclick="goTab('users')">App users →</button></h3>
+  return `<div class="card da-group"><h3 class="dash-h">👥 The group <button class="btn xs" onclick="goTab('users')">App users →</button></h3>
     <div class="av-stats"><div class="i"><b>${S.players.filter(p => has.has(p.id)).length}</b>On the app</div><div class="b"><b>${S.players.filter(p => notes.has(p.id)).length}</b>Notifications</div><div class="n"><b>${not.length}</b>Not yet</div></div>
     ${not.length ? `<p class="hint"><strong>Not on the app:</strong> ${not.slice(0, 12).map(p => esc(p.name)).join(', ')}${not.length > 12 ? ` and ${not.length - 12} more` : ''}</p>` : '<p class="hint">Everyone is on the app 🎉</p>'}
     ${samsung.size ? `<p class="hint" style="margin-top:6px"><strong>Samsung Internet:</strong> ${samsung.size} player${samsung.size === 1 ? '' : 's'} (told to use Chrome)</p>` : ''}
@@ -3897,15 +3915,53 @@ function dashCopyInvite(btn) {
   else prompt('Copy this message:', text);
 }
 function dashTurnoutCard() {
-  const today = isoToday(), last = S.games.filter(g => g.iso && g.iso <= today).sort((a, b) => a.iso.localeCompare(b.iso)).slice(-10);
+  const today = isoToday(), last = S.games.filter(g => g.iso && g.iso <= today).sort((a, b) => a.iso.localeCompare(b.iso)).slice(-12);
   if (!last.length) return '';
   const avg = list => list.length ? (list.reduce((s, g) => s + g.playingIds.length, 0) / list.length).toFixed(1) : '–';
   const short = last.filter(g => g.playingIds.length < 10).length, res = last.reduce((s, g) => s + g.reserveIds.length, 0), late = last.reduce((s, g) => s + lateIdsOf(g.id).length, 0);
-  const max = Math.max(BF_SELECT.SQUAD_SIZE, ...last.map(g => g.playingIds.length));
-  return `<div class="card dash-wide"><h3 class="dash-h">📈 Turnout, last ${last.length} game${last.length === 1 ? '' : 's'} <small>average ${avg(last)}${short ? ` · ${short} short` : ''}</small></h3>
-    <div class="dash-spark">${last.map(g => `<i class="${g.playingIds.length < 10 ? 'low' : ''}" style="height:${g.playingIds.length / max * 100}%" title="${esc(dashShort(g.iso))}: ${g.playingIds.length}"></i>`).join('')}</div>
+  // Each bar: players at the bottom, reserves stacked on top, total above
+  const max = Math.max(BF_SELECT.SQUAD_SIZE, ...last.map(g => g.playingIds.length + g.reserveIds.length));
+  return `<div class="card da-turn"><h3 class="dash-h">📈 Turnout, last ${last.length} game${last.length === 1 ? '' : 's'} <small>average ${avg(last)} playing${short ? ` · ${short} short` : ''} · ${res} reserve${res === 1 ? '' : 's'}</small></h3>
+    <div class="dash-spark">${last.map(g => `<div class="tb" title="${esc(dashShort(g.iso))}: ${g.playingIds.length} playing, ${g.reserveIds.length} reserve${g.reserveIds.length === 1 ? '' : 's'}"><b>${g.playingIds.length}${g.reserveIds.length ? '+' + g.reserveIds.length : ''}</b>${g.reserveIds.length ? `<i class="rs" style="height:${g.reserveIds.length / max * 100}%"></i>` : ''}<i class="pl${g.playingIds.length < 10 ? ' low' : ''}" style="height:${g.playingIds.length / max * 100}%"></i></div>`).join('')}</div>
     <div class="dash-sparkl">${last.map(g => `<span>${esc(isoToDate(g.iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))}</span>`).join('')}</div>
-    <p class="hint" style="margin-top:8px">Reserves turned away: ${res} · Late arrivals: ${late} · Monday avg ${avg(last.filter(g => g.day === 'mon'))} · Thursday avg ${avg(last.filter(g => g.day === 'thu'))}</p></div>`;
+    <div class="dash-key"><span><i style="background:var(--border-accent)"></i>Playing</span><span><i style="background:var(--bg-warning);border:0.5px solid var(--text-warning)"></i>Reserves</span><span><i style="background:var(--border-danger)"></i>Under 10 playing</span>
+      <span>· Late arrivals: ${late} · Monday avg ${avg(last.filter(g => g.day === 'mon'))} · Thursday avg ${avg(last.filter(g => g.day === 'thu'))}</span></div></div>`;
+}
+// League table for this year: 3 points a win, 1 a draw, from confirmed teams with a score
+function dashLeagueCard() {
+  const year = isoToday().slice(0, 4), rec = new Map();
+  S.teams.games.filter(t => t.status === 'confirmed' && hasScore(t)).forEach(t => {
+    const g = S.games.find(x => x.id === t.gameId); if (!g || !(g.iso || '').startsWith(year)) return;
+    [1, 2].forEach(n => t['t' + n].forEach(id => {
+      const x = rec.get(id) || { w: 0, d: 0, l: 0, gd: 0 }, us = n === 1 ? t.score1 : t.score2, them = n === 1 ? t.score2 : t.score1;
+      if (us > them) x.w++; else if (us < them) x.l++; else x.d++;
+      x.gd += us - them; rec.set(id, x);
+    }));
+  });
+  const rows = [...rec.entries()].filter(([id]) => S.players.some(p => p.id === id)).map(([id, x]) => ({ id, ...x, p: x.w + x.d + x.l, pts: x.w * 3 + x.d }))
+    .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.w - a.w || pName(a.id).localeCompare(pName(b.id)));
+  return `<div class="card da-league"><h3 class="dash-h">🥇 League (${year}) <button class="btn xs" onclick="goTab('stats')">Player Stats →</button></h3>${rows.length
+    ? `<table class="ledger dash-league" style="min-width:0"><thead><tr><th></th><th>Player</th><th class="r">P</th><th class="r">W</th><th class="r">D</th><th class="r">L</th><th class="r">GD</th><th class="r">Pts</th></tr></thead><tbody>${rows.map((x, i) =>
+        `<tr><td>${i + 1}</td><td>${esc(pName(x.id))}</td><td class="r">${x.p}</td><td class="r">${x.w}</td><td class="r">${x.d}</td><td class="r">${x.l}</td><td class="r">${x.gd > 0 ? '+' : ''}${x.gd}</td><td class="r"><strong>${x.pts}</strong></td></tr>`).join('')}</tbody></table>
+       <p class="hint dash-league-more" style="margin-top:6px"></p>`
+    : '<p class="hint">No scored games yet this year. Add scores in the Game Log and the table fills in.</p>'}</div>`;
+}
+addEventListener('resize', () => { if (document.getElementById('page-dash').classList.contains('active')) dashFitLeague(); });
+// Show only as many league rows as fit beside the Money card (computer) or the top 6 (phone)
+function dashFitLeague() {
+  const el = document.getElementById('dash'), league = el.querySelector('.da-league'), money = el.querySelector('.da-money');
+  if (!league || !money) return;
+  const rows = [...league.querySelectorAll('tbody tr')], more = league.querySelector('.dash-league-more');
+  if (!rows.length) return;
+  const show = n => { rows.forEach((tr, i) => { tr.style.display = i < n ? '' : 'none'; }); if (more) more.textContent = n < rows.length ? `+ ${rows.length - n} more in Player Stats` : ''; };
+  if (!matchMedia('(min-width: 900px)').matches) { show(6); return; }
+  // Fit the league to the height of its row (the Money card, or This season if that's taller)
+  const season = el.querySelector('.da-season'), cards = [league, money, season].filter(Boolean);
+  cards.forEach(c => { c.style.alignSelf = 'start'; });
+  const target = Math.max(money.offsetHeight, season ? season.offsetHeight : 0);
+  let n = rows.length; show(n);
+  while (n > 3 && league.offsetHeight > target) show(--n);
+  cards.forEach(c => { c.style.alignSelf = ''; });
 }
 function dashSeasonCard() {
   const year = isoToday().slice(0, 4);
@@ -3915,15 +3971,18 @@ function dashSeasonCard() {
   S.teams.games.filter(t => t.status === 'confirmed' && hasScore(t)).forEach(t => { const g = S.games.find(x => x.id === t.gameId); if (!g || !(g.iso || '').startsWith(year)) return; [1, 2].forEach(n => t['t' + n].forEach(id => {
     const r = rec.get(id) || { w: 0, n: 0 }, us = n === 1 ? t.score1 : t.score2, them = n === 1 ? t.score2 : t.score1; r.n++; if (us > them) r.w++; rec.set(id, r); })); });
   const best = [...rec.entries()].filter(([, r]) => r.n >= 5).map(([id, r]) => ({ id, pct: Math.round(r.w / r.n * 100) })).sort((a, b) => b.pct - a.pct).slice(0, 3);
-  return `<div class="card"><h3 class="dash-h">🏆 This season (${year})</h3>
+  return `<div class="card da-season"><h3 class="dash-h">🏆 This season (${year})</h3>
     <table class="ledger" style="min-width:0"><thead><tr><th>Most games</th><th class="r"></th></tr></thead><tbody>${most.map(x => `<tr><td>${esc(x.p.name)}</td><td class="r">${x.n}</td></tr>`).join('') || '<tr><td class="hint">No games yet</td><td></td></tr>'}</tbody></table>
     <table class="ledger" style="min-width:0;margin-top:6px"><thead><tr><th>Best win % (5+ scored games)</th><th class="r"></th></tr></thead><tbody>${best.map(x => `<tr><td>${esc(pName(x.id))}</td><td class="r">${x.pct}%</td></tr>`).join('') || '<tr><td class="hint">Needs more scores</td><td></td></tr>'}</tbody></table></div>`;
 }
 function renderDash() {
   const el = document.getElementById('dash');
   if (!el) return;
-  // Phones show the next game first; on a computer the To do list sits on the left
-  el.innerHTML = dashNextCard() + dashTodoCard() + dashMoneyCard() + dashActivityCard() + dashGroupCard() + dashTurnoutCard() + dashSeasonCard();
+  // Phones show the cards in this order; on a computer the grid areas in the CSS place them
+  const act = dashActivityCard();
+  el.classList.toggle('has-act', !!act);
+  el.innerHTML = dashNextCard() + dashTodoCard() + dashGroupCard() + act + dashMoneyCard() + dashLeagueCard() + dashSeasonCard() + dashTurnoutCard();
+  dashFitLeague();
 }
 
 try { const o = localStorage.getItem('fbv3_org'); if (ORGANISERS.includes(o)) document.getElementById('org-select').value = o; } catch (e) {}
