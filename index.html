@@ -99,6 +99,41 @@
   .av-names span { display: block; }
   .av-guar { display: block; margin-top: 10px; background: var(--bg-accent); color: var(--text-accent); }
   .av-orgs label { display: block; font-size: 12px; }
+  .av-stats .b { background: var(--bg-accent); color: var(--text-accent); }
+  .av-stats .w { background: var(--bg-warning); color: var(--text-warning); }
+  /* Organiser dashboard: one column on phones, a grid on computers */
+  .dash-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .dash-h small { font-size: 11px; font-weight: 400; color: var(--text-muted); }
+  .dash-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid var(--border); font-size: 13px; }
+  .dash-item:last-child { border-bottom: none; }
+  .dash-item .ic { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .dash-item .tx { flex: 1; min-width: 0; }
+  .dash-item small { display: block; font-size: 11px; color: var(--text-muted); }
+  .dash-clear { text-align: center; padding: 10px 0 4px; } .dash-clear div { font-size: 26px; }
+  .dash-bar { height: 8px; background: var(--surface-1); border-radius: 6px; overflow: hidden; display: flex; margin: 2px 0 6px; }
+  .dash-bar i { display: block; height: 100%; }
+  .dash-names { columns: 2; column-gap: 12px; font-size: 13px; line-height: 1.75; margin-top: 6px; }
+  .dash-names > span { display: block; break-inside: avoid; }
+  .dash-names em { font-style: normal; color: var(--text-muted); display: inline-block; width: 20px; }
+  .dash-names .res { color: var(--text-danger); }
+  .dash-names .badge { display: inline-block; margin-left: 4px; }
+  .dash-check div b { font-size: 16px; }
+  .dash-feed div { display: flex; gap: 8px; padding: 6px 0; border-bottom: 0.5px solid var(--border); font-size: 13px; }
+  .dash-feed div:last-child { border-bottom: none; }
+  .dash-feed time { color: var(--text-muted); width: 44px; flex-shrink: 0; font-size: 12px; }
+  .dash-spark { display: flex; align-items: flex-end; gap: 5px; height: 60px; margin-top: 6px; }
+  .dash-spark i { flex: 1; background: var(--border-accent); border-radius: 3px 3px 0 0; min-height: 3px; }
+  .dash-spark i.low { background: var(--border-danger); }
+  .dash-sparkl { display: flex; gap: 5px; font-size: 9.5px; color: var(--text-muted); margin-top: 3px; }
+  .dash-sparkl span { flex: 1; text-align: center; overflow: hidden; white-space: nowrap; }
+  @media (min-width: 900px) {
+    body.wide .app { max-width: 1180px; }
+    #dash { display: grid; grid-template-columns: 1.25fr 1fr 1fr; gap: 14px; align-items: start; }
+    #dash .card { margin: 0; }
+    #dash .dash-todo { order: -1; }
+    #dash .dash-next, #dash .dash-wide { grid-column: span 2; }
+    .dash-cols { display: grid; grid-template-columns: 1fr 1.2fr; gap: 18px; }
+  }
   .ok { background: var(--bg-success); color: var(--text-success); border-radius: var(--radius); padding: 10px 14px; font-size: 14px; margin-bottom: 12px; }
   .nav { display: flex; gap: 4px; margin-bottom: 1.5rem; border-bottom: 0.5px solid var(--border); overflow-x: auto; }
   .nb { padding: 8px 16px; font-size: 14px; cursor: pointer; border: none; background: none; color: var(--text-secondary); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .12s; }
@@ -428,6 +463,7 @@
   <div class="bshade" onclick="closeMore()"></div>
   <div class="bsheet" id="bsheet" role="dialog" aria-label="More pages"></div>
   <div class="nav">
+    <button class="nb edit-only" onclick="goTab('dash')">Dashboard</button>
     <button class="nb active edit-only" onclick="goTab('setup')">Setup</button>
     <button class="nb edit-only" onclick="goTab('game')">Run game</button>
     <button class="nb edit-only" onclick="goTab('teams')">Teams</button>
@@ -439,6 +475,11 @@
     <button class="nb" onclick="goTab('money')">Payments</button>
     <button class="nb" id="nb-notify" style="display:none" onclick="goTab('notify')">Notifications</button>
     <button class="nb edit-only" id="nb-users" style="display:none" onclick="goTab('users')">App users</button>
+  </div>
+
+  <!-- DASHBOARD (organisers) -->
+  <div id="page-dash" class="page">
+    <div id="dash"></div>
   </div>
 
   <!-- SETUP -->
@@ -1326,7 +1367,8 @@ function tableMissing(e) {
 let currentDay = null, builtPlaying = [], builtReserves = [], confirmedGameIdx = null;
 
 function goTab(t) {
-  if (appMode === 'view' && ['setup', 'game', 'teams', 'ratings', 'attendance', 'users'].includes(t)) t = 'history';
+  if (appMode === 'view' && ['dash', 'setup', 'game', 'teams', 'ratings', 'attendance', 'users'].includes(t)) t = 'history';
+  document.body.classList.toggle('wide', t === 'dash');
   document.querySelectorAll('.nb').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelector(`.nb[onclick="goTab('${t}')"]`).classList.add('active');
@@ -1341,6 +1383,7 @@ function goTab(t) {
   if (t === 'notify') renderNotify();
   if (t === 'avail') { availRender(); availLoad(); }
   if (t === 'users') renderUsers();
+  if (t === 'dash') { renderDash(); availLoad(); }
 }
 
 function togglePref() {
@@ -2286,13 +2329,13 @@ function enterApp(mode) {
   document.getElementById('modebar-text').textContent = mode === 'edit' ? 'Logged in as an organiser.' : 'View only. Log in on the home page to make changes.';
   document.getElementById('logout-btn').style.display = mode === 'edit' ? '' : 'none';
   buildNav();
-  goTab(mode === 'edit' ? 'setup' : 'history');
+  goTab(mode === 'edit' ? 'dash' : 'history');
   rerenderAll();
 }
 function enterView() { enterApp('view'); }
 // Phone page menu: four pages in the bottom bar, the rest under More. In View mode its three pages all fit in the bar.
-const NAV_ICONS = { setup: 'settings', game: 'ball-football', teams: 'users-group', ratings: 'star', history: 'history', stats: 'chart-bar', attendance: 'calendar-check', money: 'pig-money', notify: 'bell', avail: 'checklist', users: 'device-mobile' };
-const NAV_BAR = ['game', 'teams', 'history', 'money'];
+const NAV_ICONS = { dash: 'layout-dashboard', setup: 'settings', game: 'ball-football', teams: 'users-group', ratings: 'star', history: 'history', stats: 'chart-bar', attendance: 'calendar-check', money: 'pig-money', notify: 'bell', avail: 'checklist', users: 'device-mobile' };
+const NAV_BAR = ['dash', 'game', 'teams', 'money'];
 function navPages() {
   return [...document.querySelectorAll('.nav .nb')].filter(b => (appMode === 'edit' || !b.classList.contains('edit-only')) && b.style.display !== 'none')
     .map(b => ({ id: b.getAttribute('onclick').match(/goTab\('(\w+)'\)/)[1], name: b.textContent }));
@@ -3123,7 +3166,7 @@ renderHistory = function () {
    learns which players have them on. Organisers send them when they confirm a game
    or teams and from Outstanding Payments; payment reminders also go out on a
    schedule (supabase/push-cron.sql). */
-const APP_VERSION = '3.1';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
+const APP_VERSION = '3.2';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
 const PUSH_FN = SUPABASE_URL + '/functions/v1/notify';
 const PUSH_KEY = 'fbv3_push';   // this phone only: { playerId, endpoint, prefs, hideCard }
 const PUSH_KINDS = [['availability', 'Availability', 'When it opens, and if you play'], ['squad', 'Squad picked', 'Playing or reserve'], ['teams', 'Teams confirmed', 'Your team and bibs'],
@@ -3410,7 +3453,7 @@ teamsConfirm = function () {
 };
 const _pushRenderSquad = renderSquad; renderSquad = function () { _pushRenderSquad(); renderPushSquadOpt(); };
 const _pushRenderFront = renderFront; renderFront = function () { _pushRenderFront(); renderPushCard(); };
-const _pushRerenderAll = rerenderAll; rerenderAll = function () { _pushRerenderAll(); if (document.getElementById('page-notify').classList.contains('active')) renderNotify(); if (AV.settings) availRender(); };
+const _pushRerenderAll = rerenderAll; rerenderAll = function () { _pushRerenderAll(); if (document.getElementById('page-notify').classList.contains('active')) renderNotify(); if (AV.settings) availRender(); if (document.getElementById('page-dash').classList.contains('active')) renderDash(); };
 
 /* ---- SELF-SERVICE AVAILABILITY AND APP USERS ----
    Organisers switch it Off, Trial (organisers only) or On under Setup. When it's on,
@@ -3702,14 +3745,186 @@ function availRender() {
   document.getElementById('avail-org').innerHTML = isLoggedIn() ? avOrgCard() : '';
   const set = document.getElementById('avail-settings'), open = !!document.querySelector('#av-set-box:not([hidden])');
   set.innerHTML = avSettingsCard();
+  if (document.getElementById('page-dash').classList.contains('active')) renderDash();
   if (open) { const box = document.getElementById('av-set-box'), b = document.querySelector('[aria-controls=av-set-box]'); if (box && b) { box.hidden = false; b.textContent = 'Hide'; b.setAttribute('aria-expanded', 'true'); } }
 }
 // Keep it fresh while someone is looking at it
 setInterval(() => {
   if (document.hidden || avMode() === 'off') return;
   const active = (document.querySelector('.page.active') || {}).id;
-  if (document.body.classList.contains('on-front') || active === 'page-avail' || active === 'page-game') availLoad();
+  if (document.body.classList.contains('on-front') || active === 'page-avail' || active === 'page-game' || active === 'page-dash') availLoad();
 }, 30000);
+
+/* ---- ORGANISER DASHBOARD ----
+   The first page organisers see: what needs doing, the next game, money, the group,
+   turnout and this season. Everything comes from data the app already has; each
+   button jumps to the page that does the job. */
+let dashUsers = null, dashUsersAt = 0;
+const dashGameIdx = g => S.games.indexOf(g);
+const dashShort = iso => iso ? isoToDate(iso).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : '';
+function dashOpenLog(gameId) {
+  goTab('history');
+  const i = S.games.findIndex(g => g.id === gameId), body = document.getElementById(`log-body-${i}`);
+  if (body && !body.classList.contains('open')) toggleLog(i);
+  if (body) body.scrollIntoView({ block: 'center' });
+}
+// The game to focus on: an upcoming saved game, else the next Monday or Thursday
+function dashNext() {
+  const today = isoToday(), g = S.games.filter(x => x.iso && x.iso >= today).sort((a, b) => a.iso.localeCompare(b.iso))[0];
+  return g || null;
+}
+function dashTodos() {
+  const out = [], today = isoToday(), r = AV.settings && avMode() !== 'off' ? avRound() : null;
+  const item = (ic, bg, text, sub, label, act) => out.push({ ic, bg, text, sub, label, act });
+  if (r && (r.status === 'open' || r.status === 'held')) {
+    const ins = avAnswersFor(r.game_iso).filter(a => a.answer === 'in');
+    const missing = S.players.filter(p => avGuar(p, r.day) && !ins.some(a => Number(a.player_id) === p.id));
+    if (r.status === 'held') item('📋', 'var(--bg-accent)', `${avDayName(r.day)} squad waiting for you to confirm`, `${avPreview(r).playing.length} would play`, 'Check', "goTab('game')");
+    if (missing.length) item('⭐', 'var(--bg-warning)', `${missing.length} guaranteed player${missing.length === 1 ? " hasn't" : "s haven't"} said in`, missing.map(p => p.name).join(', '), 'Nudge', `avAct('avail_nudge',{gameIso:'${r.game_iso}'},x=>'Nudged '+(x.players||0)+'.')`);
+  }
+  const since = avAddDays(today, -45);
+  S.games.filter(g => g.iso && g.iso <= today && g.iso >= since).forEach(g => {
+    const t = gameTeams(g.id), past = g.iso < today || (AV.settings ? avStarted({ game_iso: g.iso }) : false);
+    if (past && t && t.status === 'confirmed' && !hasScore(t)) item('⚽', 'var(--bg-accent)', `Score needed: ${dashShort(g.iso)}`, 'Teams were confirmed', 'Add score', `dashOpenLog(${g.id})`);
+    if (past && !S.money.games.some(m => m.gameId === g.id)) item('🧾', 'var(--surface-1)', `Money not tracked: ${dashShort(g.iso)}`, `${g.playingIds.length} played`, 'Track', "goTab('money')");
+  });
+  const next = dashNext();
+  if (next) {
+    const t = gameTeams(next.id);
+    if (t && t.status === 'draft') item('👕', 'var(--bg-warning)', `Teams still a draft: ${dashShort(next.iso)}`, 'Not on the front page yet', 'Teams', `teamsOpenGame(${next.id})`);
+    else if (t && t.status === 'confirmed' && !sameSet([...t.t1, ...t.t2], next.playingIds)) item('🔁', 'var(--bg-warning)', `Squad changed since teams were confirmed`, dashShort(next.iso), 'Teams', `teamsOpenGame(${next.id})`);
+  }
+  const debts = debtsOwed();
+  if (debts.length) {
+    const people = new Set(debts.map(d => d.pid)), total = debts.reduce((s, d) => s + d.amt, 0);
+    const oldest = debts[0] && debts[0].g.iso ? Math.round((isoToDate(today) - isoToDate(debts[0].g.iso)) / 864e5) : null;
+    item('💷', 'var(--bg-danger)', `${gbp(total)} still owed`, `${people.size} player${people.size === 1 ? '' : 's'}${oldest !== null ? ` · oldest ${oldest} day${oldest === 1 ? '' : 's'}` : ''}`, pushReady ? 'Remind' : 'View', pushReady ? 'pushRemind()' : "goTab('money')");
+  }
+  const last = S.games.filter(g => g.iso && g.iso <= today).sort((a, b) => b.iso.localeCompare(a.iso))[0];
+  if (last && last.iso >= avAddDays(today, -1) && !lateIdsOf(last.id).length && (last.iso < today || (AV.settings && avStarted({ game_iso: last.iso }))))
+    item('⏰', 'var(--bg-pro)', `Anyone late on ${dashShort(last.iso)}?`, 'Optional', 'Game Log', `dashOpenLog(${last.id})`);
+  return out;
+}
+function dashTodoCard() {
+  const todos = dashTodos();
+  return `<div class="card dash-todo"><h3 class="dash-h">✅ To do <small>${todos.length ? todos.length + ' thing' + (todos.length === 1 ? '' : 's') : ''}</small></h3>${todos.length
+    ? todos.map(t => `<div class="dash-item"><span class="ic" style="background:${t.bg}">${t.ic}</span><span class="tx">${esc(t.text)}<small>${esc(t.sub)}</small></span><button class="btn xs" onclick="${t.act}">${t.label}</button></div>`).join('')
+    : '<div class="dash-clear"><div>🎉</div><strong>All caught up</strong><p class="hint">Scores in, money tracked, nobody owes.</p></div>'}</div>`;
+}
+function dashNextCard() {
+  const r = AV.settings && avMode() !== 'off' ? avRound() : null;
+  // Availability open or waiting: live counts and the squad if it closed now
+  if (r && (r.status === 'open' || r.status === 'held')) {
+    const ans = avAnswersFor(r.game_iso), ins = ans.filter(a => a.answer === 'in'), none = Math.max(0, S.players.length - ans.length);
+    const { playing, reserves } = avPreview(r), rn = S.reserveNext, total = Math.max(1, S.players.length);
+    const missing = S.players.filter(p => avGuar(p, r.day) && !ins.some(a => Number(a.player_id) === p.id));
+    const left = avCloseDate(r) - Date.now();
+    const tags = p => `${avGuar(p, r.day) ? '<span class="badge b-guar">Guar</span>' : ''}${rn.includes(p.id) ? '<span class="badge b-guar">→Next</span>' : ''}${latePenalty(p.id) ? '<span class="badge b-late">Late last time</span>' : ''}`;
+    return `<div class="card dash-next"><h3 class="dash-h">⚽ ${esc(avLongDate(r.game_iso))} <span class="badge ${r.status === 'open' ? 'b-thu' : 'b-guar'}">${r.status === 'open' ? `Availability open${left > 0 ? ` · ${Math.floor(left / 36e5)}h ${Math.floor(left / 6e4) % 60}m left` : ''}` : 'Waiting for you to confirm'}</span></h3>
+      <p class="hint">⏰ ${esc(avKick())} · 📍 ${esc(AV.settings.venue || '')}${avMode() === 'trial' ? ' · Trial' : ''}</p>
+      <div class="dash-cols"><div>
+        <div class="av-stats"><div class="i"><b>${ins.length}</b>In</div><div class="o"><b>${ans.length - ins.length}</b>Out</div><div class="n"><b>${none}</b>No answer</div></div>
+        <div class="dash-bar"><i style="width:${ins.length / total * 100}%;background:var(--border-success)"></i><i style="width:${(ans.length - ins.length) / total * 100}%;background:var(--border-danger)"></i></div>
+        <p class="hint">${BF_SELECT.SQUAD_SIZE} places${reserves.length ? ` · ${reserves.length} would be reserve${reserves.length === 1 ? '' : 's'}` : playing.length < BF_SELECT.SQUAD_SIZE ? ` · ${BF_SELECT.SQUAD_SIZE - playing.length} short` : ''}</p>
+        ${missing.length ? `<div class="notice" style="display:block;margin-top:8px">⭐ ${missing.map(p => esc(p.name)).join(', ')} ${missing.length === 1 ? 'is' : 'are'} guaranteed but ${missing.length === 1 ? "hasn't" : "haven't"} said in.</div>` : ''}
+        <div class="tactions" style="margin-top:8px">
+          <button class="btn sm" onclick="avAct('avail_nudge',{gameIso:'${r.game_iso}'},x=>'Nudged '+(x.players||0)+'.')">🔔 Nudge ${none}</button>
+          ${r.status === 'held' ? `<button class="btn sm primary" onclick="avAct('avail_confirm',{gameIso:'${r.game_iso}'},'Squad saved and announced.')">Confirm and announce</button>` : `<button class="btn sm" onclick="if(confirm('Close availability now and pick the squad?'))avAct('avail_close',{gameIso:'${r.game_iso}'},x=>x.held?'Squad picked. Confirm it on Run game.':'Squad picked and announced.')">Close now</button>`}
+          <button class="btn sm" onclick="goTab('game')">Answer for a player</button>
+        </div></div>
+      <div><div class="sh" style="margin-top:0">${r.status === 'held' ? 'Squad to confirm' : 'If it closed now'}</div>
+        <div class="dash-names">${playing.map((p, i) => `<span><em>${i + 1}</em>${esc(p.name)}${tags(p)}</span>`).join('')}${reserves.map(p => `<span class="res"><em>R</em>${esc(p.name)}${tags(p)}</span>`).join('') || (playing.length ? '' : '<span class="hint">Nobody yet</span>')}</div></div></div>
+      ${avNote ? `<p class="hint" style="margin-top:6px">${esc(avNote)}</p>` : ''}</div>`;
+  }
+  const g = dashNext();
+  if (g) {
+    const t = gameTeams(g.id), m = S.money.games.find(x => x.gameId === g.id), today = g.iso === isoToday(), wa = WA[g.day] || WA.mon;
+    const tile = (ok, label, warn) => `<div class="${ok ? 'i' : warn ? 'w' : 'n'}"><b>${ok ? '✓' : '–'}</b>${label}</div>`;
+    return `<div class="card dash-next"><h3 class="dash-h">⚽ ${today ? `Tonight ${esc(wa.time)}` : esc(avLongDate(g.iso))} <span class="badge ${today ? 'b-thu' : 'b-guar'}">${today ? 'Game day' : 'Squad picked'}</span></h3>
+      <p class="hint">${today ? esc(isoToDate(g.iso).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })) + ' · ' : ''}${g.playingIds.length} playing${g.reserveIds.length ? ` · ${g.reserveIds.length} reserve${g.reserveIds.length === 1 ? '' : 's'}` : ''} · 📍 ${esc(wa.venue)}</p>
+      <div class="av-stats dash-check">${tile(true, 'Squad')}${tile(t && t.status === 'confirmed', t ? (t.status === 'confirmed' ? 'Teams' : 'Teams (draft)') : 'Teams', !!t)}${tile(!!m, 'Money', false)}</div>
+      ${t && t.status === 'confirmed' && !sameSet([...t.t1, ...t.t2], g.playingIds) ? '<div class="notice" style="display:block">The squad changed after the teams were confirmed: check them.</div>' : ''}
+      <div class="dash-names">${g.playingIds.map((id, i) => `<span><em>${i + 1}</em>${esc(pName(id))}</span>`).join('')}${g.reserveIds.map(id => `<span class="res"><em>R</em>${esc(pName(id))}</span>`).join('')}</div>
+      <div class="tactions" style="margin-top:10px"><button class="btn sm primary" onclick="teamsOpenGame(${g.id})">${t ? 'Teams' : 'Pick teams'} →</button><button class="btn sm" onclick="goTab('history'); waToggleLog(${dashGameIdx(g)})"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>${m ? '' : `<button class="btn sm" onclick="goTab('money')">Track money</button>`}</div></div>`;
+  }
+  const n = AV.settings && avMode() !== 'off' ? avNextOpening() : null;
+  return `<div class="card dash-next"><h3 class="dash-h">⚽ Next game</h3>${n
+    ? `<p class="hint">${esc(avLongDate(n.iso))}. Availability opens ${esc(dashShort(n.open))} at ${esc(avClock(AV.settings.open_time))}. Nothing to do yet.</p><div class="tactions" style="margin-top:8px"><button class="btn sm" onclick="avAct('avail_open',{day:'${n.day}'},'Opened.')">Open now</button></div>`
+    : `<p class="hint">No game booked yet.</p><div class="tactions" style="margin-top:8px"><button class="btn sm primary" onclick="goTab('game')">Run game</button></div>`}</div>`;
+}
+function dashMoneyCard() {
+  const t = moneyTotals(), h = moneyHoldings(), credit = S.money.credit.reduce((s, x) => s + x.amount, 0), debts = debtsOwed();
+  const per = new Map();
+  debts.forEach(d => { const x = per.get(d.pid) || { amt: 0, n: 0 }; x.amt += d.amt; x.n++; per.set(d.pid, x); });
+  const most = [...per.entries()].sort((a, b) => b[1].amt - a[1].amt).slice(0, 3);
+  return `<div class="card"><h3 class="dash-h">💷 Money <button class="btn xs" onclick="goTab('money')">Payments →</button></h3>
+    <div class="av-stats"><div class="i"><b>${gbp(t.kitty)}</b>In the kitty</div><div class="o"><b>${gbp(t.owed)}</b>Still owed</div><div class="b"><b>${gbp(credit)}</b>Credit held</div></div>
+    <table class="ledger" style="min-width:0"><thead><tr><th>Organiser</th><th class="r">Holds</th><th class="r">Owed to them</th></tr></thead><tbody>${ORGANISERS.map(o => `<tr><td>${esc(o)}</td><td class="r">${gbp(h[o].kitty)}</td><td class="r">${h[o].owed ? gbp(h[o].owed) : '–'}</td></tr>`).join('')}</tbody></table>
+    ${most.length ? `<p class="hint" style="margin-top:8px"><strong>Owes most:</strong> ${most.map(([pid, x]) => `${esc(pName(pid))} ${gbp(x.amt)}${x.n > 1 ? ` (${x.n} games)` : ''}`).join(' · ')}</p>` : ''}
+    ${pushReady && pushCount([...per.keys()]) ? `<div class="tactions" style="margin-top:8px"><button class="btn sm primary" onclick="pushRemind()">🔔 Send reminders (${pushCount([...per.keys()])})</button></div>` : ''}</div>`;
+}
+function dashActivityCard() {
+  if (!AV.settings || avMode() === 'off' || !AV.answers.length) return '';
+  const when = t => { const d = new Date(t); return d.toDateString() === new Date().toDateString() ? d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString('en-GB', { weekday: 'short' }); };
+  const rows = [...AV.answers].sort((a, b) => b.answered_at.localeCompare(a.answered_at)).slice(0, 6).map(a => {
+    const r = AV.rounds.find(x => x.game_iso === a.game_iso);
+    return `<div><time>${esc(when(a.answered_at))}</time><span><strong>${esc(pName(Number(a.player_id)))}</strong> ${a.answer === 'in' ? 'is in' : 'is out'} for ${r ? avDayName(r.day) : esc(a.game_iso)}${a.by_organiser ? ' <span class="hint">(by an organiser)</span>' : ''}</span></div>`;
+  });
+  return `<div class="card"><h3 class="dash-h">🕒 Recent answers</h3><div class="dash-feed">${rows.join('')}</div></div>`;
+}
+function dashGroupCard() {
+  if (!pushReady) return '';
+  if (!dashUsers || Date.now() - dashUsersAt > 5 * 6e4) {
+    dashUsersAt = Date.now();
+    pushCall('admin_users', {}).then(d => { dashUsers = d; if (document.getElementById('page-dash').classList.contains('active')) renderDash(); }).catch(() => {});
+  }
+  if (!dashUsers) return '<div class="card"><h3 class="dash-h">👥 The group</h3><p class="hint">Loading…</p></div>';
+  const has = new Set([...dashUsers.devices.map(d => Number(d.player_id)), ...dashUsers.subscriptions.map(s => Number(s.player_id))]);
+  const notes = new Set(dashUsers.subscriptions.map(s => Number(s.player_id)));
+  const samsung = new Set(dashUsers.devices.filter(d => /Samsung/i.test(d.browser)).map(d => Number(d.player_id)));
+  const not = S.players.filter(p => !has.has(p.id));
+  return `<div class="card"><h3 class="dash-h">👥 The group <button class="btn xs" onclick="goTab('users')">App users →</button></h3>
+    <div class="av-stats"><div class="i"><b>${S.players.filter(p => has.has(p.id)).length}</b>On the app</div><div class="b"><b>${S.players.filter(p => notes.has(p.id)).length}</b>Notifications</div><div class="n"><b>${not.length}</b>Not yet</div></div>
+    ${not.length ? `<p class="hint"><strong>Not on the app:</strong> ${not.slice(0, 12).map(p => esc(p.name)).join(', ')}${not.length > 12 ? ` and ${not.length - 12} more` : ''}</p>` : '<p class="hint">Everyone is on the app 🎉</p>'}
+    ${samsung.size ? `<p class="hint" style="margin-top:6px"><strong>Samsung Internet:</strong> ${samsung.size} player${samsung.size === 1 ? '' : 's'} (told to use Chrome)</p>` : ''}
+    <div class="tactions" style="margin-top:8px"><button class="btn sm" onclick="dashCopyInvite(this)">Copy invite message</button></div></div>`;
+}
+function dashCopyInvite(btn) {
+  const link = location.origin + location.pathname;
+  const text = `⚽️ Brent Football is on an app now: say if you're playing, see the squad and teams, and get notified.\n\n1. Open ${link}\n2. Android: open it in Chrome and tap Install app. iPhone: open it in Safari, tap Share, then Add to Home Screen.\n3. Open the app, choose your name and turn on notifications.`;
+  const done = () => { btn.textContent = 'Copied ✓'; setTimeout(() => { btn.textContent = 'Copy invite message'; }, 2000); };
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done).catch(() => prompt('Copy this message:', text));
+  else prompt('Copy this message:', text);
+}
+function dashTurnoutCard() {
+  const today = isoToday(), last = S.games.filter(g => g.iso && g.iso <= today).sort((a, b) => a.iso.localeCompare(b.iso)).slice(-10);
+  if (!last.length) return '';
+  const avg = list => list.length ? (list.reduce((s, g) => s + g.playingIds.length, 0) / list.length).toFixed(1) : '–';
+  const short = last.filter(g => g.playingIds.length < 10).length, res = last.reduce((s, g) => s + g.reserveIds.length, 0), late = last.reduce((s, g) => s + lateIdsOf(g.id).length, 0);
+  const max = Math.max(BF_SELECT.SQUAD_SIZE, ...last.map(g => g.playingIds.length));
+  return `<div class="card dash-wide"><h3 class="dash-h">📈 Turnout, last ${last.length} game${last.length === 1 ? '' : 's'} <small>average ${avg(last)}${short ? ` · ${short} short` : ''}</small></h3>
+    <div class="dash-spark">${last.map(g => `<i class="${g.playingIds.length < 10 ? 'low' : ''}" style="height:${g.playingIds.length / max * 100}%" title="${esc(dashShort(g.iso))}: ${g.playingIds.length}"></i>`).join('')}</div>
+    <div class="dash-sparkl">${last.map(g => `<span>${esc(isoToDate(g.iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))}</span>`).join('')}</div>
+    <p class="hint" style="margin-top:8px">Reserves turned away: ${res} · Late arrivals: ${late} · Monday avg ${avg(last.filter(g => g.day === 'mon'))} · Thursday avg ${avg(last.filter(g => g.day === 'thu'))}</p></div>`;
+}
+function dashSeasonCard() {
+  const year = isoToday().slice(0, 4);
+  const apps = new Map(); S.games.filter(g => g.iso && g.iso.startsWith(year)).forEach(g => g.playingIds.forEach(id => apps.set(id, (apps.get(id) || 0) + 1)));
+  const most = S.players.map(p => ({ p, n: (apps.get(p.id) || 0) + (year === '2026' ? legacyOf(p.name).y2026 : 0) })).filter(x => x.n).sort((a, b) => b.n - a.n).slice(0, 3);
+  const rec = new Map();
+  S.teams.games.filter(t => t.status === 'confirmed' && hasScore(t)).forEach(t => { const g = S.games.find(x => x.id === t.gameId); if (!g || !(g.iso || '').startsWith(year)) return; [1, 2].forEach(n => t['t' + n].forEach(id => {
+    const r = rec.get(id) || { w: 0, n: 0 }, us = n === 1 ? t.score1 : t.score2, them = n === 1 ? t.score2 : t.score1; r.n++; if (us > them) r.w++; rec.set(id, r); })); });
+  const best = [...rec.entries()].filter(([, r]) => r.n >= 5).map(([id, r]) => ({ id, pct: Math.round(r.w / r.n * 100) })).sort((a, b) => b.pct - a.pct).slice(0, 3);
+  return `<div class="card"><h3 class="dash-h">🏆 This season (${year})</h3>
+    <table class="ledger" style="min-width:0"><thead><tr><th>Most games</th><th class="r"></th></tr></thead><tbody>${most.map(x => `<tr><td>${esc(x.p.name)}</td><td class="r">${x.n}</td></tr>`).join('') || '<tr><td class="hint">No games yet</td><td></td></tr>'}</tbody></table>
+    <table class="ledger" style="min-width:0;margin-top:6px"><thead><tr><th>Best win % (5+ scored games)</th><th class="r"></th></tr></thead><tbody>${best.map(x => `<tr><td>${esc(pName(x.id))}</td><td class="r">${x.pct}%</td></tr>`).join('') || '<tr><td class="hint">Needs more scores</td><td></td></tr>'}</tbody></table></div>`;
+}
+function renderDash() {
+  const el = document.getElementById('dash');
+  if (!el) return;
+  // Phones show the next game first; on a computer the To do list sits on the left
+  el.innerHTML = dashNextCard() + dashTodoCard() + dashMoneyCard() + dashActivityCard() + dashGroupCard() + dashTurnoutCard() + dashSeasonCard();
+}
 
 try { const o = localStorage.getItem('fbv3_org'); if (ORGANISERS.includes(o)) document.getElementById('org-select').value = o; } catch (e) {}
 loadState();

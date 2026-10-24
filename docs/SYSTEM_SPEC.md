@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Document version** | 3.1 |
-| **Release** | Production Release 3.1 |
+| **Document version** | 3.2 |
+| **Release** | Production Release 3.2 |
 | **Status** | Released |
 | **Date** | 24 October 2026 |
 | **Application** | `index.html` (repository root), published with GitHub Pages |
@@ -54,6 +54,7 @@ If you aren't sure, treat it as minor unless it changes the data model or a core
 | 2.7 | 24 Oct 2026 | A football badge shows in the status bar for each notification. In Samsung Internet, the app advises installing from Chrome for notifications, with an Open in Chrome button. |
 | 3.0 | 24 Oct 2026 | **Self-service availability** behind an Off / Trial / On switch. Players say in or out. It opens Tuesday (Thursday games) or Friday (Monday games) at 9am and closes at 9pm, then the squad is picked with the Run game rules, saved and announced. Drop-outs move reserves up, and late joiners fill gaps. Guaranteed players must say in. Late flags are organiser-only. New **App users** page, first-time welcome and Who are you? cards, and an Availability notification type. |
 | 3.1 | 24 Oct 2026 | The notify function carries its own copy of the selection rules, so Supabase can deploy it. |
+| 3.2 | 24 Oct 2026 | Organiser **Dashboard**, the first page after logging in: next game, to-do list, money, the group, turnout and this season. The organisers' phone bar is now Dashboard, Run game, Teams, Payments and More. |
 
 ---
 
@@ -105,11 +106,12 @@ The repository also contains an unrelated starter app (`server.js`, `public/`, S
 
 | Page | Organiser | Viewer | Phone bottom bar |
 |---|---|---|---|
+| Dashboard | ✓ | | Bar (first) |
 | Setup | ✓ | | More |
 | Run game | ✓ | | Bar |
 | Teams | ✓ | | Bar |
 | Ratings | ✓ | | More |
-| Game Log | ✓ | ✓ | Bar |
+| Game Log | ✓ | ✓ | More (in the bar for viewers) |
 | Player Stats | ✓ | ✓ | More (in the bar for viewers) |
 | Attendance | ✓ | | More |
 | Payments | ✓ | ✓ | Bar |
@@ -118,7 +120,7 @@ The repository also contains an unrelated starter app (`server.js`, `public/`, S
 | App users | ✓ | | More |
 
 - **Phone bottom bar:**
-  - Organisers get four buttons with icons (Run game, Teams, Game Log, Payments) and **More**. More slides up a sheet with Setup, Ratings, Player Stats and Attendance. While one of those pages is open, the More button shows its name.
+  - Organisers get four buttons with icons (Dashboard, Run game, Teams, Payments) and **More**. More slides up a sheet with the other pages (Setup, Ratings, Availability, Game Log, Player Stats, Attendance, Notifications and App users). While one of those pages is open, the More button shows its name.
   - Viewers get their three pages in the bar, with no More.
 - **Desktop:** one row of tabs with every page available to the user.
 - Buttons inside pages that jump elsewhere, such as **Go to Teams**, keep the menu in step.
@@ -312,6 +314,17 @@ Shown on the front page and on the **Availability** page, but only when Self-ser
   - whether the app is set up (installed or in a browser), and the browser and platform;
   - whether notifications are on, and which kinds;
   - when they were last seen.
+
+### 6.13 Dashboard (organisers)
+
+The first page after logging in. It's a grid on a computer and one column on a phone, with the next game first on a phone.
+- **Next game:**
+  - **While availability is open:** live counts, time left, guaranteed players who haven't said in, and the squad "if it closed now". Buttons: Nudge, Close now (or Confirm and announce when held), and Answer for a player.
+  - **Once the squad is saved:** a checklist (Squad, Teams, Money), the squad, and buttons for Pick teams, WhatsApp and Track money. On the day it's titled "Tonight".
+  - **When nothing is open:** when availability opens next, with Open now.
+- **To do:** a confirmed squad waiting, guaranteed players not in, missing scores, money not tracked, draft or changed teams, money owed, and late arrivals (optional). Each has a button. "All caught up" when there's nothing.
+- **Money:** kitty, owed, credit, each organiser's holdings, who owes most, and Send reminders.
+- **Recent answers** (availability), **The group** (app and notification counts, who's not on the app, Copy invite message), **Turnout** for the last 10 games, and **This season** (most games, best win %).
 
 ## 7. Business rules
 
