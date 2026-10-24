@@ -3,11 +3,11 @@
 | | |
 |---|---|
 | **Document** | Solution Design Document (SDD) |
-| **Version** | 1.3 |
-| **Release** | Production Release 1.3 |
+| **Version** | 2.0 |
+| **Release** | Production Release 2.0 |
 | **Status** | Approved for production |
 | **Date** | 24 October 2026 |
-| **System** | Football Organisation App (`index.html`, GitHub Pages and Supabase) |
+| **System** | Brent Football (Football Organisation App: `index.html`, GitHub Pages, Supabase and the `notify` Edge Function) |
 | **Repository** | `nealpatel87np/FootballApp` |
 | **Companion document** | [`docs/SYSTEM_SPEC.md`](SYSTEM_SPEC.md): page-by-page functional specification |
 
@@ -67,6 +67,7 @@ If you aren't sure, treat the change as **minor** unless it changes the data mod
 | 1.1 | 23 Oct 2026 | Organisers with Claude Code | Added explicit Data API `grant` statements to every SQL script, after Supabase's change to grants for new tables (30 Oct 2026). New tables must include them (13.3). No app change. |
 | 1.2 | 23 Oct 2026 | Organisers with Claude Code | Installable app: named **Brent Football** (page title and heading), with app icon, web app manifest and service worker for home-screen install and opening offline. |
 | 1.3 | 24 Oct 2026 | Organisers with Claude Code | **Availability message** card on Run game (hidden until Show) builds the pre-game WhatsApp availability message for Monday or Thursday (19.1). No data change. |
+| 2.0 | 24 Oct 2026 | Organisers with Claude Code | **Push notifications** (7.5): "Who are you?" opt-in, Notifications page with per-type choices, squad, teams, payment-reminder and credit-used notifications, daily automatic reminders. New `notify` Edge Function, two new closed tables (`push_subscriptions`, `push_config`) and a schedule. |
 
 ### 1.4 Approval
 
@@ -181,6 +182,7 @@ Until October 2026 this was all managed in a spreadsheet with manual WhatsApp me
 | FR-16 | Read-only View mode for players. Organiser mode behind a password. | Must | 10 |
 | FR-17 | Export and import all data, and export a CSV game log. | Should | 7.3.9 |
 | FR-18 | Show the next game, its teams or squad, and the kitty on a front page. | Must | 7.3.1 |
+| FR-19 | Let each player turn on push notifications on their phone and choose which kinds they get. Notify players when the squad or teams are confirmed, when they owe money (by organiser and automatically the day after a game) and when credit is used. | Should | 7.5 |
 
 ### 4.2 Non-functional requirements
 
@@ -227,6 +229,11 @@ flowchart LR
   GH[GitHub repository] -- Actions: deploy on push to main --> PAGES[GitHub Pages]
   PAGES -- serves --> APP
   CDN[jsDelivr CDN<br/>supabase-js · Tabler icons] -- scripts and fonts --> APP
+  APP -- HTTPS JSON --> FN[notify Edge Function<br/>on Supabase]
+  FN -- service role --> DB
+  FN -- Web Push, VAPID --> PUSH[Phones' push services<br/>Google · Apple · Samsung]
+  PUSH -- notification --> P
+  CRON[pg_cron daily 10:00 UTC] -- pg_net --> FN
 ```
 
 ### 5.3 Capability map
@@ -274,6 +281,7 @@ flowchart TB
 | Database | Supabase (PostgreSQL 15+) with PostgREST | Row Level Security on, open policies |
 | Local persistence | Web Storage (`localStorage`) | Full data copy and the sync baseline |
 | Installable app | Web app manifest (`manifest.webmanifest`), service worker (`sw.js`), icons (`icons/`) | Home-screen install as Brent Football; network first, cached copy when offline |
+| Notifications | Web Push (VAPID), Supabase Edge Function `notify` (Deno, `web-push@3.6.7`), `pg_cron` and `pg_net` for the daily reminder | Free tier |
 | Hosting | GitHub Pages | Deployed by GitHub Actions on push to `main` |
 | Source control | Git or GitHub | Pull request per change |
 
@@ -311,6 +319,7 @@ flowchart LR
 | **Payments** | Outstanding payments and credit | `debtsOwed`, `oweClear`, `creditAdd`, `applyCredit`, `renderOwes` |
 | **WhatsApp** | Message text, copy, open | `waText`, `teamsText`, `waCopy`, `teamsCopy`, `waOpen` |
 | **Export and import** | JSON file, share, text, CSV, import | `exportFile`, `exportLogCSV`, `applyImport` |
+| **Notifications** | Opt-in, choices, sending, front card, Notifications page | `pushLoadStatus`, `pushTurnOn`, `pushUpdate`, `pushTurnOff`, `pushSquad`, `pushTeams`, `pushRemind`, `pushCreditUsed`, `renderNotify`, `renderPushCard` |
 
 ### 7.2 State model
 
@@ -485,6 +494,63 @@ kitty(org) = opening(org) + Σ toKitty of games org organised − Σ spends org 
 - **Matching:** figures are matched by player name, ignoring capitals.
 - **Read-only:** the legacy figures are only read when rendering Attendance. They are never written to `S` or the database.
 
+### 7.5 Push notifications (release 2.0)
+
+#### 7.5.1 Overview
+
+Players get notifications on their phones through the standard **Web Push** system, with no app store. It works on:
+- Android: Chrome, Samsung Internet and other browsers;
+- iPhone (iOS 16.4 or later), when Brent Football has been added to the Home Screen.
+
+Three parts work together:
+
+| Part | Where | Role |
+|---|---|---|
+| Page | `index.html` | "Get notified" card, Notifications page, and the organiser's send points |
+| Service worker | `sw.js` | Shows each notification and opens the app on the right page when it's tapped |
+| `notify` Edge Function | `supabase/functions/notify/index.ts` (Deno, on Supabase) | Holds the notification keys, saves phones, encrypts and sends notifications, and runs the daily reminder |
+
+**Identity:** each phone is linked to one player through "Who are you?". There's no sign-in (ADR-15).
+
+#### 7.5.2 Turning on and sending
+
+```mermaid
+sequenceDiagram
+  participant P as Player's phone
+  participant F as notify function
+  participant DB as push tables
+  participant PS as Phone's push service
+  P->>F: status
+  F->>DB: read keys (made on first run), who has notifications on
+  F-->>P: public key, player ids
+  P->>P: Who are you? + phone permission + subscribe(public key)
+  P->>F: subscribe (subscription, player id, choices)
+  F->>DB: save phone
+  Note over P,F: Later, an organiser confirms the squad
+  P->>F: send [{playerId, kind, title, body, url}]
+  F->>DB: phones for those players, filtered by their choices
+  F->>PS: encrypted notification (VAPID-signed)
+  PS-->>P: notification shown by sw.js
+  F->>DB: delete phones the push service says are gone (404/410)
+```
+
+#### 7.5.3 Notification types
+
+| Kind | Sent when | Default | Text |
+|---|---|---|---|
+| `squad` | Organiser confirms a game with **Notify the squad** ticked (on by default) | On | Playing: "⚽ Monday squad is out: You're playing. Mon 26 Oct, 6:30 PM, Harrow Powerleague." Reserves: "You're a reserve this time. You're first in for the next game." |
+| `teams` | Organiser confirms teams with **Notify the players** ticked (on by default) | On | "👕 Teams are out: You're on Team 2 (bibs). Kick-off 6:30 PM." |
+| `payments` | Organiser taps **Send reminders** on Outstanding Payments; also automatically at 10:00 UTC the day after a tracked game (`push-cron.sql`) | On | "💷 Payment due: You owe £8.50 for Mon 26 Oct. Pay Kev." Several games are listed, with each organiser's share when more than one. |
+| `credit` | A game's money starts being tracked and the player's credit pays for it | Off | "💷 Credit used: £8.50 of your credit paid for Mon 26 Oct. £11.50 left." |
+| `test` | Player taps **Send a test notification** | Always | "Test notification. You're all set." |
+
+Rules:
+- **Recipients:** only players who have notifications on and that kind switched on receive it. The page filters first (it knows which players have notifications on), and the function filters again by each phone's choices.
+- **Tapping a notification:** it opens the app. Payment and credit notifications open Payments, even if the app is already open.
+- **Daily reminder:** it uses the UK date of "yesterday". It only covers games whose money was tracked by then.
+- **Limits:** the function sends at most 200 messages per call. It clips titles to 80 characters and bodies to 300. Links must be relative to the app (`./…`).
+- **Not set up:** if the function isn't deployed, the Notifications page, the front card and all send options stay hidden.
+
 ---
 
 ## 8. Data design
@@ -524,6 +590,10 @@ Relationships are held as id arrays (`playing_ids`, `paid_ids` and so on) rather
 | `player_skills` | `player_id` bigint | attack, defence, fitness, goalkeeping int 1–10, position text, keeper bool | `skills.sql` |
 | `game_late` | `game_id` bigint | player_ids bigint[] | `late.sql` |
 | `player_credit` | `player_id` bigint | amount_p int | `credit.sql` |
+| `push_subscriptions` | `endpoint` text | player_id bigint, p256dh text, auth text, prefs jsonb (squad, teams, payments, credit), updated_at timestamptz | `push.sql` |
+| `push_config` | `id` int (= 1) | public_key text, private_key text (VAPID keys, made by the function on first run) | `push.sql` |
+
+The two push tables are the only ones **closed to the page**: RLS is on with no policies and `anon` has no grants, so only the `notify` function (service role) can use them.
 
 **Ids** are generated in the browser from `Date.now()` at creation.
 
@@ -543,6 +613,7 @@ Relationships are held as id arrays (`playing_ids`, `paid_ids` and so on) rather
 | `fbv3_org` | Default organiser |
 | `fbv3_whatsapp` | Time and venue for each day type, pitch-booked tick |
 | `fbv3_show_opening`, `fbv3_show_split` | Display preferences |
+| `fbv3_push` | This phone's notifications: player id, push address, choices, and whether the front card was dismissed |
 
 ### 8.4 Data lifecycle
 
@@ -565,6 +636,9 @@ Relationships are held as id arrays (`playing_ids`, `paid_ids` and so on) rather
 | Supabase | `supabase-js` v2 over HTTPS (PostgREST): `select`, `upsert`, `delete … in(…)` | Publishable key in the page. Errors are classified as "table missing" (`42P01`, `PGRST205`), "access refused" (`42501`) or other. |
 | WhatsApp | `https://wa.me/?text=…` opened in a new tab, plus the Clipboard API with a select-text fallback | No API keys. Works with whichever WhatsApp the device has. |
 | Web Share | `navigator.share` for exporting data | Falls back to download or copy. |
+| `notify` Edge Function | `POST {SUPABASE_URL}/functions/v1/notify` with JSON `{action}`: `status`, `subscribe`, `unsubscribe`, `send`, `daily`. JWT verification is off (the page has no sign-in). CORS open. | The function uses the service role key provided by Supabase. No secrets are set by hand. |
+| Web Push | `web-push` encrypts each notification (aes128gcm) and signs it with VAPID (subject: the app's address) for the phone's push service | Gone phones (404/410) are deleted. Time to live is 24 hours. |
+| Schedule | `pg_cron` job `brent-football-payment-reminders` calls the function through `pg_net` every day at 10:00 UTC | Set up by `push-cron.sql`. |
 | CDN | jsDelivr for `supabase-js` and the Tabler icon font | If the CDN fails, the database is unavailable (the device copy is still used) and icons are missing. |
 
 ---
@@ -587,10 +661,13 @@ Relationships are held as id arrays (`playing_ids`, `paid_ids` and so on) rather
 | Password guessed from the hash | SHA-256 only, no salt | Accepted. It's a convenience gate, not authentication. |
 | Script injection via names or notes | All stored text is escaped (`esc`) before rendering | Low |
 | Lost data from a stale device | Diff sync never deletes unseen rows. Backup taken before import. | Low |
+| Someone sends fake notifications to the group through the open `notify` function | Messages only go to players who opted in. Lengths are clipped, links are limited to the app, and players can turn notifications off. | **Accepted**, as for ADR-04. Real sign-in (roadmap) would close it. |
+| Someone picks another player in "Who are you?" | They only receive that player's notifications. The player can see it under Not you? | Accepted. |
+| Notification keys or phone addresses leak | Kept in closed tables. The page never sees them. | Low |
 
 ### 10.3 Personal data
 
-The app stores **first names or nicknames**, attendance, ratings, scores and payment status only. There are no contact details, payment cards or passwords for players. Ratings are hidden from viewers in the UI but can be read via the API (known limitation).
+The app stores **first names or nicknames**, attendance, ratings, scores and payment status only. There are no contact details, payment cards or passwords for players. With notifications on, a phone's push address is stored against the player's id in a closed table. Ratings are hidden from viewers in the UI but can be read via the API (known limitation).
 
 ---
 
@@ -657,6 +734,12 @@ Run each of these once in the Supabase SQL Editor. All are idempotent.
 
 All six had been run in production by release 1.0.
 
+For release 2.0, also:
+
+7. `supabase/push.sql`: the two closed push tables.
+8. Deploy the `notify` Edge Function. In the Supabase dashboard, go to **Edge Functions → Deploy a new function → Via Editor**, name it `notify`, paste `supabase/functions/notify/index.ts` and deploy. Then turn off **Verify JWT** in the function's settings.
+9. `supabase/push-cron.sql`: the daily payment reminder. It needs the `pg_cron` and `pg_net` extensions.
+
 Each script also grants the page (`anon` and `authenticated` roles) select, insert, update and delete on its tables. Supabase stops granting this automatically for tables created from 30 October 2026, so **any new table added in a later release must include the same `grant` line in its script**, or the page gets "permission denied" for it. Re-running the scripts on the existing database is harmless.
 
 ---
@@ -691,6 +774,8 @@ Visual changes are reviewed through screenshots or interactive mock-ups before d
 | Messages | 12 and 1 reserve, 12 and 2 reserves, no reserves, 10 players | The correct sentence and Reserve or Reserves heading. |
 | Navigation | Phone and desktop, view and edit modes | Correct menu and pages. More sheet opens and closes. No sideways scroll. |
 | Sync | A feature's table is missing | That feature stays on the device with a notice. Other features still save. |
+| Notifications | Function tested in Deno against a mock database and a mock push service that decrypts what it receives | Keys made once. Phones saved and removed. Choices respected. Unsafe links reset to `./`. Gone phones deleted. Daily reminder only for unpaid players of yesterday's tracked games. |
+| Notifications | App in Chromium with the real function, end to end | Front card, Notifications page in View mode, choices, test, squad, teams, reminders and credit-used notifications, tap opens Payments, Turn off. Nothing shows when the function isn't set up. |
 
 ---
 
@@ -709,6 +794,9 @@ The sync status line under the page title shows "Up to date", "Saving…", "Save
 | "Could not reach the database" | Offline, or Supabase paused or unavailable | Keep using the app. Changes send when back online. On the free tier, resume the project in Supabase if it's paused. |
 | Icons missing | CDN blocked | Reload. The app still works. |
 | Wrong data after an import | Bad import file | Re-import from the `fbv3_backup` copy, or from an earlier export. |
+| Notifications page missing | The `notify` function isn't deployed or can't be reached | Follow 13.3 steps 7–9. Check the function's logs in Supabase. |
+| Notifications don't arrive on iPhone | Not opened from the Home Screen, or iOS older than 16.4 | Add to Home Screen, open it from there, then turn notifications on. |
+| "Notifications are blocked" | The phone's permission was refused | Allow notifications for Brent Football in the phone's settings, then turn them on again. |
 | A new player's legacy figures don't show | Name doesn't match `LEGACY_APPS` | Rename the player to match the Legacy Player Data list exactly. |
 
 ### 15.3 Backup and recovery
@@ -736,6 +824,10 @@ The sync status line under the page title shows "Up to date", "Saving…", "Save
 | ADR-11 | Fully paid games hidden from the Games to-do list | Focus on what needs action; totals unchanged | History is behind "Show paid games" |
 | ADR-12 | Phone bottom bar with More; desktop tab row | Thumb reach and app-like on phones; all pages visible on desktop | Two navigation renderings to maintain |
 | ADR-13 | Player Stats counts only scored games; Attendance counts all | Stats reflect results; attendance reflects turnout | Two different "Played" figures, by design |
+| ADR-14 | Notifications use Web Push from the installed web app, not a store app | Free, no store reviews, updates stay automatic, works on Android and iPhone | iPhone users must add it to the Home Screen first |
+| ADR-15 | "Who are you?" links a phone to a player, with no sign-in | Simplest for the group; matches the existing access model | Anyone could choose another name (accepted, 10.2) |
+| ADR-16 | Phones and keys live in closed tables, used only by the `notify` function | The page can't leak push addresses or the private key | The page learns only which players have notifications on |
+| ADR-17 | The function makes its own VAPID keys on first run | No secrets to create or paste during setup | Losing `push_config` means every phone must turn notifications on again |
 
 ---
 
@@ -749,6 +841,8 @@ The sync status line under the page title shows "Up to date", "Saving…", "Save
 | R-04 | Two organisers edit the same game at once | Low | Low | Last write wins per row. Edits are small and frequent. |
 | R-05 | Attendance table widens every year | Low | Certain | Merge older years into one column (planned minor change around 2029). |
 | R-06 | Renaming a player breaks the legacy link | Low | Low | Documented in the runbook. |
+| R-07 | Open `notify` function could be used to send unwanted notifications | Low | Low | Accepted (10.2). Players can turn them off. Sign-in on the roadmap. |
+| R-08 | Push services or Supabase change their rules | Medium | Low | Standard Web Push. The function is small and documented. |
 | I-01 | README's opening section still describes the old SQLite starter app | Low | | Tidy in a minor release. |
 
 ---
@@ -762,8 +856,8 @@ Candidates, each to be versioned under section 1.1:
   - real sign-in with Supabase Auth and organiser-only write policies;
   - suggested rating changes from results;
   - player of the match;
-  - part-payments and credit held by an organiser;
-  - push or WhatsApp reminders for outstanding payments.
+  - part-payments and credit held by an organiser.
+- **2.x:** more notification types (game cancelled, a place opening up for reserves, score is in).
 
 ---
 
@@ -851,7 +945,8 @@ Neal, Kev and Gav. They're listed in `ORGANISERS` in the code. Adding one is a m
 |---|---|
 | `index.html` | The application |
 | `manifest.webmanifest`, `sw.js`, `icons/` | Installable app: name, icon, splash colours and offline copy |
-| `supabase/*.sql` | Database setup scripts |
+| `supabase/*.sql` | Database setup scripts (`push.sql` and `push-cron.sql` for notifications) |
+| `supabase/functions/notify/index.ts` | The `notify` Edge Function |
 | `.github/workflows/static.yml` | Pages deployment |
 | `docs/SOLUTION_DESIGN.md` | This document |
 | `docs/SYSTEM_SPEC.md` | Functional specification |

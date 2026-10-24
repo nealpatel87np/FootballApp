@@ -1,7 +1,8 @@
 // Service worker for the installable app. The page always tries the network
 // first, so every deploy reaches people straight away; the cached copy is only
 // used when there's no signal. Database requests are never cached.
-const CACHE = 'brent-football-v1';
+// It also shows push notifications and opens the app when one is tapped.
+const CACHE = 'brent-football-v2';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png'];
 const CDN = 'https://cdn.jsdelivr.net/';
 
@@ -27,4 +28,24 @@ self.addEventListener('fetch', e => {
       return res;
     }).catch(() => caches.match(req, { ignoreSearch: own }).then(hit => hit || (req.mode === 'navigate' ? caches.match('index.html') : Response.error())))
   );
+});
+
+// Push notifications sent by the "notify" Edge Function: { title, body, url, tag }
+self.addEventListener('push', e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (err) { d = { body: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'Brent Football', {
+    body: d.body || '', icon: 'icons/icon-192.png', tag: d.tag || undefined, data: { url: d.url || './' }
+  }));
+});
+
+// Tapping a notification opens the app (or brings it to the front) on the right page
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = new URL((e.notification.data && e.notification.data.url) || './', self.registration.scope).href;
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+    const win = list.find(w => w.url.startsWith(self.registration.scope));
+    if (!win) return self.clients.openWindow(url);
+    return (win.url === url ? Promise.resolve(win) : win.navigate(url)).then(w => (w || win).focus()).catch(() => win.focus());
+  }));
 });

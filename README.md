@@ -33,7 +33,7 @@ This project is a very simple football app that stores player data in a local SQ
 - `data/football.db` - database file created automatically
 
 ## Football organisation page
-The design is documented in [`docs/SOLUTION_DESIGN.md`](docs/SOLUTION_DESIGN.md) (Solution Design Document) and [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md) (functional specification). Both include the versioning policy. Current release: **1.3**.
+The design is documented in [`docs/SOLUTION_DESIGN.md`](docs/SOLUTION_DESIGN.md) (Solution Design Document) and [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md) (functional specification). Both include the versioning policy. Current release: **2.0**.
 
 Every file in `supabase/` grants the page access to its tables. Supabase no longer does this automatically for tables created from 30 October 2026, so any new table needs the same `grant` line.
 
@@ -102,8 +102,34 @@ The page can be installed on a phone as **Brent Football**, with its own icon on
 
 It opens full screen with no address bar, and shows the last data even with no signal. It's the same site, so every update reaches the app automatically. The icon files are in `icons/`, and `manifest.webmanifest` and `sw.js` make it installable.
 
+### Push notifications
+Players can get notifications on their phone from the installed app. They're told when they're picked or are a reserve, which team they're on, and when they owe money.
+
+- **Turning on:** on the front page, the **Get notified** card asks **Who are you?** Choose your name and tap **Turn on notifications**, then allow them when the phone asks. The **Notifications** page has the same option, plus choices for each kind:
+  - Squad picked, Teams confirmed and Payment reminders are on by default.
+  - Credit used is off by default.
+  - The page also has a test button, **Not you?** and **Turn off**.
+- **iPhone:** first add Brent Football to your Home Screen from Safari (Share → Add to Home Screen) and open it from there. iOS 16.4 or later is needed.
+- **Organisers:**
+  - **Notify the squad** is ticked on Run game when you confirm a game.
+  - **Notify the players** is ticked on Teams when you confirm teams.
+  - **Send reminders** on Outstanding Payments sends a reminder to everyone who owes and has notifications on.
+  - When credit pays for a game, that player is told automatically.
+  - Every day at 10:00 UTC (10am in winter, 11am in summer), anyone who hasn't paid for a tracked game played the day before gets a reminder.
+- Tapping a payment notification opens Payments.
+
+**Setup (once):** until this is done, the Notifications page and options don't appear.
+1. Run `supabase/push.sql` in the Supabase SQL Editor.
+2. Deploy the Edge Function:
+   1. In the Supabase dashboard, open **Edge Functions → Deploy a new function → Via Editor**.
+   2. Name it `notify`, paste the whole of `supabase/functions/notify/index.ts`, and press **Deploy**.
+   3. Open the function's **Settings**, turn off **Verify JWT** (also called "Enforce JWT verification"), and save.
+3. Run `supabase/push-cron.sql` in the SQL Editor for the automatic daily reminders. If it says the extensions can't be created, turn on **pg_cron** and **pg_net** under **Database → Extensions**, then run it again.
+
+There's no key to create or paste: the function makes its own notification keys the first time it runs. The phones and keys are kept in tables the page can't read. As with the rest of the app, there's no sign-in, so anyone could pick another name under "Who are you?".
+
 ### Moving around
-On a phone, use the bar at the bottom of the screen: Run game, Teams, Game Log and Payments, with **More** for Setup, Ratings, Player Stats and Attendance. On a computer the pages are a row of tabs along the top. In View mode only Game Log, Player Stats and Payments are shown.
+On a phone, use the bar at the bottom of the screen: Run game, Teams, Game Log and Payments, with **More** for Setup, Ratings, Player Stats and Attendance. On a computer the pages are a row of tabs along the top. In View mode only Game Log, Player Stats and Payments are shown, plus Notifications once they are set up.
 
 The **Payments** tab (called Money before) holds Outstanding Payments, credit, the kitty, games and the ledger.
 
