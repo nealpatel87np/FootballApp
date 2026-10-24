@@ -1,4 +1,4 @@
-# Football Organisation App: Solution Design Document
+# Brent Football: Solution Design Document
 
 | | |
 |---|---|
@@ -7,7 +7,7 @@
 | **Release** | Production Release 3.2 |
 | **Status** | Approved for production |
 | **Date** | 24 October 2026 |
-| **System** | Brent Football (Football Organisation App: `index.html`, GitHub Pages, Supabase and the `notify` Edge Function) |
+| **System** | Brent Football: the web app (`index.html`, `selection.js`, `sw.js`) on GitHub Pages, the Supabase database, the `notify` Edge Function and two scheduled jobs |
 | **Repository** | `nealpatel87np/FootballApp` |
 | **Companion document** | [`docs/SYSTEM_SPEC.md`](SYSTEM_SPEC.md): page-by-page functional specification |
 
@@ -77,13 +77,13 @@ If you aren't sure, treat the change as **minor** unless it changes the data mod
 | 2.7 | 24 Oct 2026 | Organisers with Claude Code | Status bar badge (`icons/badge-96.png`, white football) on every notification. In Samsung Internet, the Get notified card and the Notifications page advise installing from Chrome, with an **Open in Chrome** link (Android intent). Samsung Internet delivered pushes but the phone didn't pop them up; Chrome works. |
 | 3.0 | 24 Oct 2026 | Organisers with Claude Code | **Self-service availability** (7.6): players say in or out, availability opens and closes on a timetable, and the squad is picked and saved automatically with the shared selection rules (`selection.js`). It sits behind an Off / Trial / On switch (off by default). **App users** page for organisers. New tables `availability_settings`, `availability_rounds`, `availability_answers`, `app_devices`. A 15-minute schedule. New Availability notification type. First-time welcome, install and "Who are you?" cards. |
 | 3.1 | 24 Oct 2026 | Organisers with Claude Code | Supabase refused to bundle the function because it imported `selection.js` from the website. The rules are now copied into the function between `BEGIN selection.js` and `END selection.js` markers, and the file is self-contained again. |
-| 3.2 | 24 Oct 2026 | Organisers with Claude Code | **Organiser dashboard** (7.7), the first page after logging in. It has: Next game, To do, Money, Recent answers, The group, Turnout and This season. It's a grid on computers and one column on phones. The organisers' phone bar becomes Dashboard, Run game, Teams, Payments and More. No database change. |
+| 3.2 | 24 Oct 2026 | Organisers with Claude Code | **Organiser dashboard** (7.7), the first page after logging in. It has: Next game, To do, Money, Recent answers, The group, Turnout and This season. It's a grid on computers and one column on phones. The organisers' phone bar becomes Dashboard, Run game, Teams, Payments and More. No database change. Full review of this document for 3.2: earlier sections brought up to date (scope, constraints, architecture, data, security, operations, roadmap, defaults and glossary). |
 
 ### 1.4 Approval
 
 | Role | Name | Decision |
 |---|---|---|
-| Product owner and organiser | Neal | Approved (production release 1.0) |
+| Product owner and organiser | Neal | Approved release 1.0, and each later release up to 3.2 when it was deployed |
 | Organiser | Kev | |
 | Organiser | Gav | |
 
@@ -93,12 +93,13 @@ If you aren't sure, treat the change as **minor** unless it changes the data mod
 
 ### 2.1 Purpose
 
-This document describes **how** the Football Organisation App is designed and built: its architecture, components, data, integrations, security, and how it's deployed and supported. It's the reference for anyone changing, running or reviewing the system.
+This document describes **how** Brent Football (first released as the Football Organisation App) is designed and built: its architecture, components, data, integrations, security, and how it's deployed and supported. It's the reference for anyone changing, running or reviewing the system.
 
 ### 2.2 Scope
 
 **In scope:**
-- the organisation web app (`index.html`) and its Supabase database
+- the web app (`index.html`, the shared selection rules in `selection.js`, the service worker `sw.js`, the manifest and icons), installable on phones as Brent Football
+- the Supabase database, the `notify` Edge Function, and the two scheduled jobs (daily payment reminders, 15-minute availability check)
 - its build and deployment pipeline (GitHub Pages)
 - the SQL setup scripts in `supabase/`
 - appearance data brought over from the old spreadsheet
@@ -107,7 +108,9 @@ This document describes **how** the Football Organisation App is designed and bu
 - the unrelated starter app in the same repository (`server.js`, `public/`, SQLite)
 - venue booking
 - online payment processing
-- player accounts
+- player accounts and sign-in (players pick their name with "Who are you?")
+- app store versions (the app is installed from the browser)
+- travel and weather updates (mocked up in October 2026, deferred; see the roadmap)
 
 ### 2.3 Audience
 
@@ -121,6 +124,7 @@ This document describes **how** the Football Organisation App is designed and bu
 | Functional specification | `docs/SYSTEM_SPEC.md` |
 | User guide | `README.md` ("Football organisation page") |
 | Database setup scripts | `supabase/*.sql` |
+| Edge Function | `supabase/functions/notify/index.ts` |
 | Deployment workflow | `.github/workflows/static.yml` |
 
 ### 2.5 Definitions
@@ -135,11 +139,12 @@ See the glossary in Appendix 19.5.
 
 The group plays twice a week, on **Monday** and **Thursday** evenings, typically 5-a-side or 6-a-side with up to 12 players. Three organisers (Neal, Kev, Gav) take turns running games, collecting £8.50 per player and paying for the pitch (£80). Any surplus goes into a shared **kitty**, spent on footballs, kit and socials.
 
-Until October 2026 this was all managed in a spreadsheet with manual WhatsApp messages. That made it hard to:
+Until October 2026 this was all managed in a spreadsheet, a WhatsApp availability poll and manual WhatsApp messages. That made it hard to:
 - be fair about who gets a place when more than 12 want to play;
 - balance teams;
 - track who has paid and who owes;
-- keep history.
+- keep history;
+- reach players quickly when the squad, teams or money changed.
 
 ### 3.2 Objectives
 
@@ -151,13 +156,15 @@ Until October 2026 this was all managed in a spreadsheet with manual WhatsApp me
 | OBJ-4 | Know at any time who owes money, how much is in the kitty and who holds it. |
 | OBJ-5 | Keep a long-term record of games, scores, appearances and statistics, including the spreadsheet history. |
 | OBJ-6 | Work well on a phone, cost nothing to run and need no server administration. |
+| OBJ-7 | Tell players what affects them (picked, team, money owed) directly on their phone, and let them say whether they're playing without an organiser collecting answers. |
+| OBJ-8 | Give organisers one place that shows what needs doing. |
 
 ### 3.3 Stakeholders
 
 | Stakeholder | Interest |
 |---|---|
 | Organisers (Neal, Kev, Gav) | Run games, manage money, maintain data. Full access. |
-| Players | See the next game, teams, stats and what they owe. Read-only access. |
+| Players | See the next game, teams, stats and what they owe; say in or out for the next game (when self-service availability is On); choose their notifications. Otherwise read-only. |
 
 ### 3.4 Success measures
 
@@ -165,6 +172,7 @@ Until October 2026 this was all managed in a spreadsheet with manual WhatsApp me
 - Teams take under one minute.
 - Outstanding money is visible at a glance.
 - No double counting between the spreadsheet history and the app.
+- With self-service availability On, the squad is announced at closing time with no organiser work.
 
 ---
 
@@ -194,8 +202,8 @@ Until October 2026 this was all managed in a spreadsheet with manual WhatsApp me
 | FR-18 | Show the next game, its teams or squad, and the kitty on a front page. | Must | 7.3.1 |
 | FR-19 | Let each player turn on push notifications on their phone and choose which kinds they get. Notify players when the squad or teams are confirmed, when they owe money (by organiser and automatically the day after a game) and when credit is used. | Should | 7.5 |
 | FR-20 | Behind an organiser switch (Off / Trial / On), let players say in or out for the next game in the app, open and close availability on a timetable, and pick, save and announce the squad automatically with the Run game rules. Handle drop-outs and late joiners until kick-off. | Should | 7.6 |
-| FR-22 | Give organisers a dashboard of what needs doing, the next game, money, the group, turnout and this season, with a button to each job. | Should | 7.7 |
 | FR-21 | Show organisers which players have set up the app, on which browser, and which notifications they have on. | Should | 7.6.4 |
+| FR-22 | Give organisers a dashboard of what needs doing, the next game, money, the group, turnout and this season, with a button to each job. | Should | 7.7 |
 
 ### 4.2 Non-functional requirements
 
@@ -205,15 +213,16 @@ Until October 2026 this was all managed in a spreadsheet with manual WhatsApp me
 | NFR-02 | **Availability:** opens and shows the last data even when the database is unreachable. Changes made offline are sent later. |
 | NFR-03 | **Data integrity:** a device with stale data must never delete rows it hasn't seen. Concurrent edits resolve per row. |
 | NFR-04 | **Cost:** no running costs. Free tiers of GitHub Pages and Supabase. |
-| NFR-05 | **Maintainability:** a single file with no build step. Plain JavaScript. |
+| NFR-05 | **Maintainability:** no build step. Plain JavaScript in one page (`index.html`) plus the shared `selection.js`; one small server function. |
 | NFR-06 | **Resilience to setup gaps:** each feature's data degrades to device-only storage if its table hasn't been created, without breaking other features. |
 | NFR-07 | **Performance:** team generation feels instant for squads of up to 14, and stays reasonable up to 20. |
 | NFR-08 | **Accessibility:** labelled controls, visible focus, reduced motion respected, light and dark themes. |
 
 ### 4.3 Constraints
 
-- Static hosting only (GitHub Pages). No server-side code.
-- The database is accessed directly from the browser with a public (publishable) key.
+- The web app is static (GitHub Pages). Server-side logic is limited to one Supabase Edge Function (`notify`) and two `pg_cron` jobs, all on Supabase's free tier.
+- The database is accessed directly from the browser with a public (publishable) key. The function uses the service role, which only Supabase holds.
+- The function is deployed by pasting its code into the Supabase dashboard, so it must be one self-contained file (no imports from other websites).
 - Organisers may edit on different phones at the same time.
 
 ### 4.4 Assumptions
@@ -228,7 +237,9 @@ Until October 2026 this was all managed in a spreadsheet with manual WhatsApp me
 
 ### 5.1 Approach
 
-The solution is a **single-page web application** served as a static file, using **Supabase** (hosted PostgreSQL with an auto-generated REST API) as the shared data store. All business logic runs in the browser. Every device keeps a full copy of the data in `localStorage` and syncs changes to Supabase row by row.
+The solution is a **single-page web application** served as static files and installable on phones, using **Supabase** (hosted PostgreSQL with an auto-generated REST API) as the shared data store. Every device keeps a full copy of the data in `localStorage` and syncs changes to Supabase row by row.
+
+Most business logic runs in the browser. The **`notify` Edge Function** on Supabase does the jobs that can't: it holds the notification keys and sends Web Push notifications, runs the self-service availability timetable (opening, the 9pm close, drop-outs and late joiners), and lists app users. Two `pg_cron` jobs call it on a schedule. The squad selection rules live in `selection.js`, with an exact copy inside the function, so the browser and the server always pick the same squad.
 
 ### 5.2 System context
 
@@ -236,7 +247,7 @@ The solution is a **single-page web application** served as a static file, using
 flowchart LR
   O[Organisers<br/>Neal · Kev · Gav] -- organiser mode --> APP
   P[Players] -- view mode --> APP
-  APP[Football Organisation App<br/>index.html in the browser]
+  APP[Brent Football<br/>installed web app]
   APP -- REST via supabase-js --> DB[(Supabase<br/>PostgreSQL)]
   APP -- wa.me link / clipboard --> WA[WhatsApp group]
   GH[GitHub repository] -- Actions: deploy on push to main --> PAGES[GitHub Pages]
@@ -246,19 +257,20 @@ flowchart LR
   FN -- service role --> DB
   FN -- Web Push, VAPID --> PUSH[Phones' push services<br/>Google · Apple · Samsung]
   PUSH -- notification --> P
-  CRON[pg_cron daily 10:00 UTC] -- pg_net --> FN
+  CRON[pg_cron: daily 10:00 UTC reminders<br/>and availability every 15 min] -- pg_net --> FN
 ```
 
 ### 5.3 Capability map
 
 | Capability | Pages |
 |---|---|
-| Player management | Setup, Ratings |
-| Game day | Run game, Teams |
-| Communication | WhatsApp cards on Run game, Teams and Game Log |
+| Organiser overview | Dashboard |
+| Player management | Setup, Ratings, App users |
+| Game day | Run game, Teams, Availability (self-service) |
+| Communication | Push notifications (Notifications page), WhatsApp cards on Run game, Teams and Game Log |
 | Records and insight | Game Log, Player Stats, Attendance |
 | Finance | Payments (Outstanding Payments, Credit, Kitty, Games, Ledger, Split settings) |
-| Access | Front page, View mode, Log in |
+| Access | Front page (with first-time welcome and Who are you?), View mode, Log in |
 
 ---
 
@@ -268,33 +280,48 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-  subgraph Browser["Browser - index.html"]
-    UI[UI layer<br/>pages, navigation, cards]
-    RULES[Business rules<br/>selection · late · team picker · money · credit · stats]
+  subgraph Browser["Browser - index.html + selection.js + sw.js"]
+    UI[UI layer<br/>pages, navigation, cards, dashboard]
+    RULES[Business rules<br/>selection.js · late · team picker · money · credit · stats]
     STATE[State store S<br/>players · games · reserveNext · money · teams]
+    AVS[Availability and notification state<br/>AV · PUSH · ME]
     SYNC[Sync engine<br/>diff · ordered queue · per-feature fallback]
-    LS[(localStorage<br/>fbv3, fbv3_synced, settings)]
+    LS[(localStorage<br/>fbv3, fbv3_synced, settings, fbv3_me, fbv3_push)]
     LEG[Legacy data<br/>LEGACY_APPS constant]
+    SW[Service worker<br/>offline copy · shows pushes]
+  end
+  subgraph Supabase
+    SB[(Tables)]
+    FN[notify Edge Function<br/>push · availability · app users<br/>copy of selection.js]
+    CRON[pg_cron jobs]
   end
   UI <--> RULES
   RULES <--> STATE
   UI --> LEG
   STATE <--> LS
   STATE --> SYNC
-  SYNC <--> SB[(Supabase tables)]
+  SYNC <--> SB
+  UI <--> AVS
+  AVS -- reads rounds and answers --> SB
+  AVS -- actions --> FN
+  FN <--> SB
+  CRON --> FN
+  FN -- Web Push --> SW
 ```
 
 ### 6.2 Technology stack
 
 | Layer | Technology | Version or notes |
 |---|---|---|
-| Presentation | HTML5, CSS (custom properties, grid, flexbox), vanilla JavaScript (ES2020) | Single file, `index.html`, about 3,000 lines |
+| Presentation | HTML5, CSS (custom properties, grid, flexbox), vanilla JavaScript (ES2020) | `index.html` (about 3,950 lines) and `selection.js` (shared squad rules) |
 | Icons | Tabler Icons web font | `@tabler/icons-webfont@2.44.0` (jsDelivr) |
 | Data client | `@supabase/supabase-js` | v2 (jsDelivr UMD build) |
 | Database | Supabase (PostgreSQL 15+) with PostgREST | Row Level Security on, open policies |
 | Local persistence | Web Storage (`localStorage`) | Full data copy and the sync baseline |
 | Installable app | Web app manifest (`manifest.webmanifest`), service worker (`sw.js`), icons (`icons/`) | Home-screen install as Brent Football; network first, cached copy when offline |
-| Notifications | Web Push (VAPID), Supabase Edge Function `notify` (Deno, `web-push@3.6.7`), `pg_cron` and `pg_net` for the daily reminder | Free tier |
+| Server logic | Supabase Edge Function `notify` (Deno, TypeScript, about 520 lines; `web-push@3.6.7`, `supabase-js@2`) | Free tier. Deployed by pasting into the dashboard; Verify JWT off |
+| Notifications | Web Push (VAPID) through the phone's push service | Free |
+| Schedules | `pg_cron` and `pg_net`: daily payment reminders (10:00 UTC) and the availability check (every 15 minutes) | Free tier |
 | Hosting | GitHub Pages | Deployed by GitHub Actions on push to `main` |
 | Source control | Git or GitHub | Pull request per change |
 
@@ -305,15 +332,22 @@ flowchart LR
   DEV[Change branch] -- pull request + merge --> MAIN[main branch]
   MAIN -- static.yml --> ACT[GitHub Actions<br/>upload-pages-artifact]
   ACT --> GHP[GitHub Pages CDN]
-  GHP --> PHONE[Organiser / player browsers]
+  GHP --> PHONE[Organiser / player browsers<br/>and installed apps]
   PHONE <--> SUPA[(Supabase project<br/>hosted Postgres + REST)]
+  PHONE <--> FN[notify Edge Function]
+  PASTE[index.ts pasted in the<br/>Supabase dashboard] --> FN
+  SQL[supabase/*.sql run in<br/>the SQL Editor] --> SUPA
+  SUPA -- pg_cron --> FN
+  FN -- Web Push --> PUSH[Push services] --> PHONE
 ```
+
+The web app deploys automatically on merge. The function and the SQL scripts are applied by hand in the Supabase dashboard when a release needs them (13.3).
 
 ---
 
 ## 7. Component design
 
-### 7.1 Module structure (inside `index.html`)
+### 7.1 Module structure (in `index.html` unless noted)
 
 | Module | Responsibility | Key functions |
 |---|---|---|
@@ -330,7 +364,9 @@ flowchart LR
 | **Stats** | Player stats, attendance, legacy list | `renderStats`, `renderAttendance`, `renderLegacyList`, `legacyOf` |
 | **Money** | Tracking, split, kitty, ledger, spends, settings | `gameSplit`, `moneyHoldings`, `moneyTrack`, `renderMoney`, `moneyAddSpend` |
 | **Payments** | Outstanding payments and credit | `debtsOwed`, `oweClear`, `creditAdd`, `applyCredit`, `renderOwes` |
-| **WhatsApp** | Message text, copy, open | `waText`, `teamsText`, `waCopy`, `teamsCopy`, `waOpen` |
+| **WhatsApp** | Availability, squad and teams messages, copy, open | `pollText`, `waText`, `teamsText`, `waCopy`, `teamsCopy`, `waOpen` |
+| **Installable app** (`sw.js`, manifest) | Offline copy, fresh files on each release, shows push notifications, opens the right page when tapped | `install`, `fetch`, `push` and `notificationclick` handlers |
+| **Server** (`supabase/functions/notify/index.ts`) | Keys and push sending, daily reminders, availability timetable and close, drop-outs and late joiners, app users | `vapid`, `send`, `daily`, `tick`, `openRound`, `closeRound`, `changeAfterClose`, `answerAvail`, `hello`, `adminUsers` |
 | **Export and import** | JSON file, share, text, CSV, import | `exportFile`, `exportLogCSV`, `applyImport` |
 | **Selection rules** (`selection.js`) | Squad order shared by Run game and the function | `orderSquad`, `splitSquad`, `latePenaltyFor` |
 | **Dashboard** | Organiser home page cards | `renderDash`, `dashTodos`, `dashNextCard`, `dashMoneyCard`, `dashGroupCard`, `dashTurnoutCard`, `dashSeasonCard` |
@@ -409,6 +445,8 @@ flowchart LR
   J --> K[Tick paid / Clear<br/>until all paid]
 ```
 
+With self-service availability **On**, the first five steps happen without an organiser: availability opens on Tuesday or Friday, players say in or out, and at 9pm the function picks, saves and announces the squad (7.6). The flow then continues from Teams.
+
 #### 7.3.4 Team lifecycle
 
 ```mermaid
@@ -433,9 +471,10 @@ Players ticked as available are sorted, and the first **12** play:
 2. carried over from last game's reserves (`reserveNext`);
 3. **not** carrying a late penalty, so late players go after everyone else;
 4. available only on this day, then preferring this day, then the rest;
-5. most times in reserve first.
+5. most times in reserve first;
+6. (self-service availability only) whoever said in first.
 
-Organisers can move players by hand before confirming.
+The rules are in `selection.js`, used by Run game and the availability preview, and copied exactly into the `notify` function for the 9pm close. Organisers can move players by hand before confirming.
 
 #### 7.4.2 Reserve guarantee
 
@@ -592,7 +631,7 @@ Players say whether they're in for the next game in the app. At closing time, th
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Open: Tue/Fri 09:00 or Open now
+  [*] --> Open: Tuesday or Friday 9am, or Open now
   Open --> Held: closing time (trial, or auto-announce off)
   Open --> Closed: closing time (on and auto-announce)
   Held --> Closed: Confirm and announce
@@ -671,6 +710,13 @@ erDiagram
   APP_STATE ||--|| PLAYERS : "reserve_next ids"
   MONEY_SETTINGS ||--|| GAME_MONEY : "defaults copied at tracking"
   KITTY_SPENDS }o--|| MONEY_SETTINGS : "paid_by organiser"
+  PLAYERS ||--o{ PUSH_SUBSCRIPTIONS : "phones"
+  PLAYERS ||--o{ APP_DEVICES : "phones (App users)"
+  AVAILABILITY_ROUNDS ||--o{ AVAILABILITY_ANSWERS : "in / out"
+  PLAYERS ||--o{ AVAILABILITY_ANSWERS : answers
+  AVAILABILITY_ROUNDS |o--o| GAMES : "game saved at close"
+  AVAILABILITY_SETTINGS ||--o{ AVAILABILITY_ROUNDS : "timetable and mode"
+  PUSH_CONFIG ||--o{ PUSH_SUBSCRIPTIONS : "keys"
 ```
 
 Relationships are held as id arrays (`playing_ids`, `paid_ids` and so on) rather than foreign keys. That keeps each game one row and makes the browser diffing simple.
@@ -698,7 +744,10 @@ Relationships are held as id arrays (`playing_ids`, `paid_ids` and so on) rather
 | `availability_answers` | (`game_iso`, `player_id`) | answer (in, out), answered_at, by_organiser | `availability.sql` |
 | `app_devices` | `device_id` text | player_id, installed, browser, platform, notifications, last_seen | `availability.sql` |
 
-The two push tables are the only ones **closed to the page**: RLS is on with no policies and `anon` has no grants, so only the `notify` function (service role) can use them.
+**Access by table:**
+- **Open to the page** (read and write): the original tables, money, teams, skills, late, credit and `availability_settings`.
+- **Read-only to the page:** `availability_rounds` and `availability_answers`. Every change goes through the function.
+- **Closed to the page:** `push_subscriptions`, `push_config` and `app_devices`. RLS is on with no policies and `anon` has no grants, so only the `notify` function (service role) can use them.
 
 **Ids** are generated in the browser from `Date.now()` at creation.
 
@@ -728,6 +777,8 @@ The two push tables are the only ones **closed to the page**: RLS is on with no 
 - Records are kept indefinitely.
 - Deleting a game also removes its money record, teams and late marks.
 - Removing a player also removes their ratings, skills, team rules and credit. Their id stays in historical games and shows as "?".
+- Availability rounds and answers are kept as a record of each week. A cancelled round stays as cancelled.
+- Phones are removed from `push_subscriptions` when they turn notifications off, or when the push service says they're gone. `app_devices` rows are kept and show their last-seen time.
 - **Backups:** export from Setup, plus Supabase's own backups.
 
 ### 8.5 Data migration (release 1.0)
@@ -744,7 +795,7 @@ The two push tables are the only ones **closed to the page**: RLS is on with no 
 | Supabase | `supabase-js` v2 over HTTPS (PostgREST): `select`, `upsert`, `delete … in(…)` | Publishable key in the page. Errors are classified as "table missing" (`42P01`, `PGRST205`), "access refused" (`42501`) or other. |
 | WhatsApp | `https://wa.me/?text=…` opened in a new tab, plus the Clipboard API with a select-text fallback | No API keys. Works with whichever WhatsApp the device has. |
 | Web Share | `navigator.share` for exporting data | Falls back to download or copy. |
-| `notify` Edge Function | `POST {SUPABASE_URL}/functions/v1/notify` with JSON `{action}`: `status`, `subscribe`, `unsubscribe`, `send`, `daily`. JWT verification is off (the page has no sign-in). Supabase still requires the project's key, so the page sends the publishable key as `apikey`. CORS open. | The function uses the service role key provided by Supabase. No secrets are set by hand. |
+| `notify` Edge Function | `POST {SUPABASE_URL}/functions/v1/notify` with JSON `{action}`: `status`, `subscribe`, `unsubscribe`, `send`, `daily`, `avail_tick`, `avail_answer`, `avail_open`, `avail_close`, `avail_confirm`, `avail_cancel`, `avail_reopen`, `avail_nudge`, `hello`, `admin_users`. JWT verification is off (the page has no sign-in). Supabase still requires the project's key, so the page sends the publishable key as `apikey`. CORS open. | The function uses the service role key provided by Supabase. No secrets are set by hand. |
 | Web Push | `web-push` encrypts each notification (aes128gcm) and signs it with VAPID (subject: the app's address) for the phone's push service | Gone phones (404/410) are deleted. Time to live is 24 hours. |
 | Availability schedule | `pg_cron` job `brent-football-availability` calls `avail_tick` every 15 minutes | Set up by `availability.sql`. Does nothing while the switch is Off. |
 | Selection rules | The function carries an exact copy of `selection.js` between `BEGIN selection.js` and `END selection.js` markers, because Supabase can't import from other websites | When a rule changes, change both copies and redeploy the function. The release test checks that they match. |
@@ -760,7 +811,9 @@ The two push tables are the only ones **closed to the page**: RLS is on with no 
 | Mode | Entry | Capability |
 |---|---|---|
 | View | "View" on the front page | Read-only UI. Edit controls hidden by CSS (`body.mode-view`). Organiser-only pages blocked in `goTab`. |
-| Organiser | "Log in" with the password, checked against a SHA-256 hash in the page | Full UI. Remembered on the device until "Log out". |
+| Organiser | "Log in" with the password, checked against a SHA-256 hash in the page | Full UI, including Dashboard, App users and the availability settings. Remembered on the device until "Log out". |
+| Player identity | "Who are you?" picked once per phone | Says in or out as that player and receives their notifications. Not authentication (ADR-15). |
+| Trial | Availability switch set to Trial | Self-service availability shows only on logged-in organiser devices, and only organisers are notified. |
 
 ### 10.2 Threats and controls
 
@@ -774,10 +827,12 @@ The two push tables are the only ones **closed to the page**: RLS is on with no 
 | Someone sends fake notifications to the group through the open `notify` function | Messages only go to players who opted in. Lengths are clipped, links are limited to the app, and players can turn notifications off. | **Accepted**, as for ADR-04. Real sign-in (roadmap) would close it. |
 | Someone picks another player in "Who are you?" | They only receive that player's notifications. The player can see it under Not you? | Accepted. |
 | Notification keys or phone addresses leak | Kept in closed tables. The page never sees them. | Low |
+| Someone answers in or out for another player | All answers go through the function and are time-stamped; organisers see who answered and when | Accepted (R-11) |
+| Someone calls `admin_users` and sees who uses the app | It returns only player ids, browser, platform, last seen and notification choices: no push addresses or keys | Accepted. Low-value data. |
 
 ### 10.3 Personal data
 
-The app stores **first names or nicknames**, attendance, ratings, scores and payment status only. There are no contact details, payment cards or passwords for players. With notifications on, a phone's push address is stored against the player's id in a closed table. Ratings are hidden from viewers in the UI but can be read via the API (known limitation).
+The app stores **first names or nicknames**, attendance, ratings, scores and payment status only. There are no contact details, payment cards or passwords for players. With notifications on, a phone's push address is stored against the player's id in a closed table. A phone that has picked "Who are you?" also stores its browser, platform, whether it's installed and when it was last seen (`app_devices`, closed). No full addresses or postcodes are stored. Ratings are hidden from viewers in the UI but can be read via the API (known limitation).
 
 ---
 
@@ -786,11 +841,15 @@ The app stores **first names or nicknames**, attendance, ratings, scores and pay
 - **Navigation:**
   - Phones (720px or less): organisers get a bottom bar with Dashboard, Run game, Teams, Payments and More (a sheet with Setup, Ratings, Availability, Game Log, Player Stats, Attendance, Notifications and App users).
   - Desktop: one row of tabs.
-  - View mode: Game Log, Player Stats and Payments only.
-- **Layout:** one column, at most 680px wide. Cards for sections. Secondary sections (Add player, Export, Import, How each game is split, Legacy Player Data, paid games) start closed behind **Show**.
+  - View mode: Game Log, Player Stats and Payments, plus Availability (when it's On) and Notifications (once set up).
+  - Organisers start on the Dashboard after logging in.
+- **First time on a phone:** a welcome and install card (when availability is On and the app isn't installed), then **Who are you?**, then **Get notified**.
+- **Layout:** one column, at most 680px wide. The Dashboard widens to 1180px with a three-column grid on screens 900px or wider. Cards for sections. Secondary sections (Add player, Export, Import, How each game is split, Legacy Player Data, paid games) start closed behind **Show**.
 - **Feedback:**
   - A sync status line under the title.
   - Notices when a feature's table is missing.
+  - A 🔔 line on Setup saying whether notifications are connected, and why not.
+  - The version number at the bottom of the front page.
   - Confirmation messages after actions such as clearing debts or adding credit.
 - **Visual language:**
   - Light and dark themes from the device setting.
@@ -804,12 +863,12 @@ The app stores **first names or nicknames**, attendance, ratings, scores and pay
 
 | Area | Design |
 |---|---|
-| **Performance** | Rendering is plain DOM string building for small data sets. Team picker: under 50ms for 12 players and about 1s worst case for 20. Startup shows the device copy before any network call. |
-| **Availability** | Static hosting via the GitHub Pages CDN. Offline-tolerant through `localStorage`. The service worker keeps a copy of the page, icons and CDN scripts, so the installed app opens with no signal; it always tries the network first, so each deploy reaches people straight away. Database requests are never cached. Changes queue until the database is reachable. |
+| **Performance** | Rendering is plain DOM string building for small data sets. Team picker: under 50ms for 12 players and about 1s worst case for 20. Startup shows the device copy before any network call. Availability data refreshes every 30 seconds only while the front page, Availability, Run game or Dashboard is open and the switch isn't Off. |
+| **Availability** | Static hosting via the GitHub Pages CDN. Offline-tolerant through `localStorage`. The service worker keeps a copy of the page, icons and CDN scripts, so the installed app opens with no signal; it always tries the network first, so each deploy reaches people straight away. Database requests are never cached. Changes queue until the database is reachable. Notifications, availability answers and App users need the `notify` function; if it can't be reached, those features hide or show a message and the rest of the app works. |
 | **Integrity** | Per-row diffs against a stored baseline. Writes are serialised. The baseline advances per feature group only after success. Last write wins per row. |
 | **Scalability** | Comfortable to several hundred players and a few thousand games. Beyond that, the history list and the full-table fetch would need paging. |
-| **Maintainability** | One file, grouped by feature with comment headers. Each feature's database table is optional and fails safe. The user guide (README), functional spec and this SDD are kept up to date with each release. |
-| **Compatibility** | Current Safari (iOS), Chrome (Android and desktop), Edge and Firefox. |
+| **Maintainability** | One page file grouped by feature with comment headers, plus `selection.js` and one function file. The function's copy of `selection.js` is checked against the original before each release. Each feature's database table is optional and fails safe. The user guide (README), functional spec and this SDD are kept up to date with each release. |
+| **Compatibility** | Current Safari (iOS), Chrome (Android and desktop), Edge and Firefox. Notifications: Chrome on Android and the iPhone home-screen app (iOS 16.4+). Samsung Internet delivers notifications but Samsung phones may not show them, so the app points Samsung users to Chrome. |
 | **Cost** | Free tiers only. |
 
 ---
@@ -820,7 +879,7 @@ The app stores **first names or nicknames**, attendance, ratings, scores and pay
 
 | Environment | Description |
 |---|---|
-| **Development and test** | A branch checkout. Tested in headless Chromium with all network access blocked, using an exported data file, at 375–390px and 1280px wide. This environment never touches live data. |
+| **Development and test** | A branch checkout. The app is tested in headless Chromium with all outside network access blocked, using an exported data file, at 375–390px and 1280px wide. The function runs locally in Deno against a mock database and a mock push service that decrypts what it receives, with a test-only clock (`BF_TEST=1`). This environment never touches live data. |
 | **Production** | GitHub Pages from `main`, plus the production Supabase project. |
 
 There's no separate staging database. Previews are shared as screenshots or interactive mock-ups before release.
@@ -829,7 +888,12 @@ There's no separate staging database. Previews are shared as screenshots or inte
 
 Branch, then test, then a pull request with a description and test notes, then merge to `main`. GitHub Actions (`static.yml`) uploads the repository and deploys Pages, usually in 1–2 minutes. Then tag `vX.Y`.
 
-**Rollback:** revert the merge commit on `main`, which redeploys the previous version. Database scripts only add tables, policies and grants, so a code rollback is safe.
+If the release changes the function or adds SQL, the organiser then applies it in the Supabase dashboard (13.3). Installed apps pick up the new page the next time they open; the version number on the front page confirms it.
+
+**Rollback:**
+- **The web app:** revert the merge commit on `main`, which redeploys the previous version.
+- **The function:** paste the previous version of `index.ts` from GitHub and deploy it.
+- **The database:** scripts only add tables, policies, grants and schedules, so a code rollback is safe. To stop a schedule, use the `cron.unschedule` line at the end of its script. Self-service availability can be switched Off on Setup at any time.
 
 ### 13.3 Database setup scripts
 
@@ -865,7 +929,7 @@ Each script also grants the page (`anon` and `authenticated` roles) select, inse
 
 ### 14.1 Approach
 
-Each change is tested before release with scripted browser tests (Playwright, Chromium):
+Each change is tested before release with scripted browser tests (Playwright, Chromium), and function changes with scripted scenarios in Deno:
 - with an exported copy of real player data;
 - with the network blocked;
 - at phone and desktop widths;
@@ -873,7 +937,7 @@ Each change is tested before release with scripted browser tests (Playwright, Ch
 
 Visual changes are reviewed through screenshots or interactive mock-ups before deployment.
 
-### 14.2 Key test cases (release 1.0 baseline)
+### 14.2 Key test cases
 
 | Area | Case | Expected |
 |---|---|---|
@@ -904,7 +968,10 @@ Visual changes are reviewed through screenshots or interactive mock-ups before d
 
 ### 15.1 Monitoring
 
-The sync status line under the page title shows "Up to date", "Saving…", "Saved to database." or an error. A table-specific notice appears on a page when its table is missing.
+- **Sync:** the status line under the page title shows "Up to date", "Saving…", "Saved to database." or an error. A table-specific notice appears on a page when its table is missing.
+- **Function:** the 🔔 line on Setup says whether the app can reach the `notify` function, and why not. The function's own logs are in Supabase (Edge Functions → notify → Logs), including each 15-minute `avail_tick`.
+- **Phones:** the version number on the front page; the Notifications page shows the phone's push service and confirms when a test notification arrives.
+- **Adoption:** the App users page and the Dashboard's group card.
 
 ### 15.2 Runbook
 
@@ -963,17 +1030,19 @@ The sync status line under the page title shows "Up to date", "Saving…", "Save
 
 | ID | Risk or issue | Impact | Likelihood | Mitigation |
 |---|---|---|---|---|
-| R-01 | Public key allows anyone to change data | Medium | Low | Accepted. Regular exports. Option to add Supabase Auth in 2.0. |
+| R-01 | Public key allows anyone to change data | Medium | Low | Accepted. Regular exports. Sign-in with Supabase Auth is on the roadmap. |
 | R-02 | Supabase free project pauses after inactivity | Medium | Medium | Twice-weekly use keeps it active. Resume in the dashboard. |
 | R-03 | CDN outage stops the database client or icons loading | Low | Low | Device copy still works. Could self-host the scripts. |
 | R-04 | Two organisers edit the same game at once | Low | Low | Last write wins per row. Edits are small and frequent. |
 | R-05 | Attendance table widens every year | Low | Certain | Merge older years into one column (planned minor change around 2029). |
 | R-06 | Renaming a player breaks the legacy link | Low | Low | Documented in the runbook. |
 | R-07 | Open `notify` function could be used to send unwanted notifications | Low | Low | Accepted (10.2). Players can turn them off. Sign-in on the roadmap. |
+| R-08 | Push services or Supabase change their rules | Medium | Low | Standard Web Push. The function is small and documented. Supabase's grant change (1.1) and bundling rules (3.1) were both handled this way. |
+| R-09 | Samsung Internet on Samsung phones doesn't pop up notifications, even when they're delivered (seen on an S26 Ultra) | Medium | High for Samsung users | The app advises installing from Chrome and links straight to it. |
 | R-10 | Two triggers close the same round | Low | Low | The status change happens first and only one call wins. |
 | R-11 | Anyone could answer for another player (no sign-in) | Low | Low | Organisers see who answered and when. Sign-in is on the roadmap. |
-| R-09 | Samsung Internet on Samsung phones doesn't pop up notifications, even when they're delivered (seen on an S26 Ultra) | Medium | High for Samsung users | The app advises installing from Chrome and links straight to it. |
-| R-08 | Push services or Supabase change their rules | Medium | Low | Standard Web Push. The function is small and documented. |
+| R-12 | The two copies of the selection rules drift apart | Medium | Low | The copy is marked BEGIN/END and compared before every release. The equivalence test runs on 2,000 cases. |
+| R-13 | The function isn't redeployed after a release that changes it | Medium | Medium | The release notes say so. The 🔔 line on Setup and the function logs show problems. |
 | I-01 | README's opening section still describes the old SQLite starter app | Low | | Tidy in a minor release. |
 
 ---
@@ -982,13 +1051,22 @@ The sync status line under the page title shows "Up to date", "Saving…", "Save
 
 Candidates, each to be versioned under section 1.1:
 
-- **1.x:** tidy the README; merge older Attendance years; self-host the CDN scripts.
-- **2.0 candidates:**
+Delivered since 1.0: installable app (1.2), push notifications (2.0), self-service availability and App users (3.0), organiser dashboard (3.2).
+
+- **Minor (3.x):**
+  - tidy the README's opening section (I-01);
+  - merge older Attendance years;
+  - self-host the CDN scripts;
+  - more notification types (score is in, reminder before kick-off);
+  - daily payment reminders until paid, skipping players who are in that day's squad (discussed October 2026, left as is for now).
+- **Candidates for 3.x or 4.0:**
+  - **travel and weather:** a 4pm "Getting there" update on game days with live traffic (TomTom), TfL status for Northwick Park and Kenton, road disruptions near the pitch (High School, Gayton Road, HA1 2JG), and optional weather (mocked up, deferred);
+  - an activity log table for the Dashboard (payments marked, squad changes), which would make it 4.0.
+- **Major (4.0 candidates):**
   - real sign-in with Supabase Auth and organiser-only write policies;
   - suggested rating changes from results;
   - player of the match;
   - part-payments and credit held by an organiser.
-- **2.x:** more notification types (game cancelled, a place opening up for reserves, score is in).
 
 ---
 
@@ -1005,6 +1083,8 @@ Candidates, each to be versioned under section 1.1:
 
 Please confirm availability ASAP! The final 12 players will be announced shortly after poll closes. ⚽️🔥
 ```
+
+When self-service availability is **On**, the last line becomes: "Say if you're in on the Brent Football app by {close time} on {opening day}. The final 12 will be announced then. ⚽️🔥", followed by the app's link.
 
 **Squad message:**
 
@@ -1064,7 +1144,12 @@ The reserves block and the "Pitch has been booked" line appear only when they ap
 | Time and venue | 6:30 PM, Harrow Powerleague (per day type, per device) |
 | Recent games shown (Game Log) | 5 |
 | Ledger rows shown | 15 |
-| Phone layout breakpoint | 720px |
+| Phone layout breakpoint | 720px (Dashboard grid from 900px) |
+| Self-service availability | Off. When on: Thursday games open Tuesday, Monday games open Friday, 09:00 to 21:00 UK time, kick-off 18:30, announce automatically |
+| Notification choices | Availability, Squad, Teams and Payments on; Credit used off |
+| Automatic payment reminder | 10:00 UTC the day after a tracked game |
+| Availability refresh in the app | Every 30 seconds while it's on screen |
+| Minimum players before organisers are warned | 10 |
 
 ### 19.3 Organisers
 
@@ -1076,7 +1161,7 @@ Neal, Kev and Gav. They're listed in `ORGANISERS` in the code. Adding one is a m
 |---|---|
 | `index.html` | The application |
 | `manifest.webmanifest`, `sw.js`, `icons/` | Installable app: name, icon, splash colours, offline copy, and the notification badge (`icons/badge-96.png`) |
-| `supabase/*.sql` | Database setup scripts (`push.sql` and `push-cron.sql` for notifications, `availability.sql` for 3.0) |
+| `supabase/*.sql` | Database setup scripts: `policies.sql`, `money.sql`, `teams.sql`, `skills.sql`, `late.sql`, `credit.sql`, `push.sql`, `push-cron.sql`, `availability.sql` |
 | `selection.js` | Squad selection rules shared by the page and the function |
 | `supabase/functions/notify/index.ts` | The `notify` Edge Function |
 | `.github/workflows/static.yml` | Pages deployment |
@@ -1102,3 +1187,12 @@ Neal, Kev and Gav. They're listed in `ORGANISERS` in the code. Adding one is a m
 | Legacy data | Appearance figures from the old spreadsheet (`LEGACY_APPS`) |
 | RLS | Row Level Security (Supabase/PostgreSQL access policies) |
 | ADR | Architecture decision record |
+| Who are you? | The player a phone belongs to, picked once and used for availability and notifications |
+| Availability round | One game's self-service availability: open, held, closed or cancelled |
+| Trial | Availability mode where only organisers see it and are notified, and squads wait for confirmation |
+| Held squad | A squad picked at closing time but not yet saved or announced, waiting for an organiser to confirm |
+| Edge Function | Server code run by Supabase (`notify`) |
+| Web Push / VAPID | The standard way browsers receive notifications, and the key pair that signs them |
+| Service worker | Background script (`sw.js`) that keeps an offline copy and shows notifications |
+| Dashboard | The organisers' home page (7.7) |
+| App users | Organiser page listing which players have set up the app and notifications |
