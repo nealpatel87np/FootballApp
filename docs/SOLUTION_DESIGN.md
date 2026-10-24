@@ -78,7 +78,7 @@ If you aren't sure, treat the change as **minor** unless it changes the data mod
 | 3.0 | 24 Oct 2026 | Organisers with Claude Code | **Self-service availability** (7.6): players say in or out, availability opens and closes on a timetable, and the squad is picked and saved automatically with the shared selection rules (`selection.js`). It sits behind an Off / Trial / On switch (off by default). **App users** page for organisers. New tables `availability_settings`, `availability_rounds`, `availability_answers`, `app_devices`. A 15-minute schedule. New Availability notification type. First-time welcome, install and "Who are you?" cards. |
 | 3.1 | 24 Oct 2026 | Organisers with Claude Code | Supabase refused to bundle the function because it imported `selection.js` from the website. The rules are now copied into the function between `BEGIN selection.js` and `END selection.js` markers, and the file is self-contained again. |
 | 3.2 | 24 Oct 2026 | Organisers with Claude Code | **Organiser dashboard** (7.7), the first page after logging in. It has: Next game, To do, Money, Recent answers, The group, Turnout and This season. It's a grid on computers and one column on phones. The organisers' phone bar becomes Dashboard, Run game, Teams, Payments and More. No database change. Full review of this document for 3.2: earlier sections brought up to date (scope, constraints, architecture, data, security, operations, roadmap, defaults and glossary). |
-| 3.3 | 24 Oct 2026 | Organisers with Claude Code | Dashboard layout. On computers: To do and The group on the left beside Next game (and Recent answers); Money, a new **League** table and This season in one row; Turnout across the full width with reserves stacked on each bar. Cards in a row are the same height, and the league shows as many rows as fit its row. To do groups missing scores and untracked money into one line each. |
+| 3.3 | 24 Oct 2026 | Organisers with Claude Code | Dashboard layout. On computers: To do and The group on the left beside Next game (and Recent answers); Money, a new **League** table and This season in one row; Turnout across the full width with reserves stacked on each bar. Cards in a row are the same height, and the league shows as many rows as fit its row. To do groups missing scores and untracked money into one line each. Document reviewed for 3.3 (requirements, modules, capability map, defaults, decisions, glossary). |
 
 ### 1.4 Approval
 
@@ -204,7 +204,7 @@ Until October 2026 this was all managed in a spreadsheet, a WhatsApp availabilit
 | FR-19 | Let each player turn on push notifications on their phone and choose which kinds they get. Notify players when the squad or teams are confirmed, when they owe money (by organiser and automatically the day after a game) and when credit is used. | Should | 7.5 |
 | FR-20 | Behind an organiser switch (Off / Trial / On), let players say in or out for the next game in the app, open and close availability on a timetable, and pick, save and announce the squad automatically with the Run game rules. Handle drop-outs and late joiners until kick-off. | Should | 7.6 |
 | FR-21 | Show organisers which players have set up the app, on which browser, and which notifications they have on. | Should | 7.6.4 |
-| FR-22 | Give organisers a dashboard of what needs doing, the next game, money, the group, turnout and this season, with a button to each job. | Should | 7.7 |
+| FR-22 | Give organisers a dashboard of what needs doing, the next game, money, the group, a league table for the year, turnout (with reserves) and this season, with a button to each job. | Should | 7.7 |
 
 ### 4.2 Non-functional requirements
 
@@ -269,7 +269,7 @@ flowchart LR
 | Player management | Setup, Ratings, App users |
 | Game day | Run game, Teams, Availability (self-service) |
 | Communication | Push notifications (Notifications page), WhatsApp cards on Run game, Teams and Game Log |
-| Records and insight | Game Log, Player Stats, Attendance |
+| Records and insight | Game Log, Player Stats, Attendance, the Dashboard's League, Turnout and This season |
 | Finance | Payments (Outstanding Payments, Credit, Kitty, Games, Ledger, Split settings) |
 | Access | Front page (with first-time welcome and Who are you?), View mode, Log in |
 
@@ -370,7 +370,7 @@ The web app deploys automatically on merge. The function and the SQL scripts are
 | **Server** (`supabase/functions/notify/index.ts`) | Keys and push sending, daily reminders, availability timetable and close, drop-outs and late joiners, app users | `vapid`, `send`, `daily`, `tick`, `openRound`, `closeRound`, `changeAfterClose`, `answerAvail`, `hello`, `adminUsers` |
 | **Export and import** | JSON file, share, text, CSV, import | `exportFile`, `exportLogCSV`, `applyImport` |
 | **Selection rules** (`selection.js`) | Squad order shared by Run game and the function | `orderSquad`, `splitSquad`, `latePenaltyFor` |
-| **Dashboard** | Organiser home page cards | `renderDash`, `dashTodos`, `dashNextCard`, `dashMoneyCard`, `dashGroupCard`, `dashTurnoutCard`, `dashSeasonCard` |
+| **Dashboard** | Organiser home page cards | `renderDash`, `dashTodos`, `dashNextCard`, `dashMoneyCard`, `dashGroupCard`, `dashLeagueCard`, `dashFitLeague`, `dashTurnoutCard`, `dashSeasonCard` |
 | **Availability** | Player card, organiser card, settings, App users | `availLoad`, `avPlayerCard`, `avOrgCard`, `avSettingsCard`, `avAnswer`, `avAct`, `avHello`, `renderUsers`, `availRender` |
 | **Notifications** | Opt-in, choices, sending, front card, Notifications page | `pushLoadStatus`, `pushTurnOn`, `pushUpdate`, `pushTurnOff`, `pushSquad`, `pushTeams`, `pushRemind`, `pushCreditUsed`, `renderNotify`, `renderPushCard` |
 
@@ -1036,6 +1036,8 @@ Visual changes are reviewed through screenshots or interactive mock-ups before d
 | ADR-19 | The selection rules live in `selection.js`, with an exact copy inside the function | The 9pm close and Run game pick the same squad. Supabase can't import code from the website. | Both copies must change together, which is checked before each release |
 | ADR-20 | All availability changes go through the function. The page can only read rounds and answers. | One place enforces open, closed and kick-off rules and sends notifications | Answering needs the function to be reachable |
 | ADR-21 | Guaranteed players must opt in, and late flags are organiser-only | Agreed with the organisers | Guaranteed players who forget count as out (they're nudged) |
+| ADR-22 | The dashboard is worked out in the page from existing data; no activity log table | No database change, so it shipped as a minor release (3.2, 3.3) | "Recent answers" covers availability only; a full activity feed needs a new table (4.0) |
+| ADR-23 | The league scores players individually: 3 points for their team's win, 1 for a draw, goal difference from their team's score, this calendar year only | Teams change every game, so a player-based table is the fair way to rank | Only games with confirmed teams and a score count; it resets each January |
 
 ---
 
@@ -1163,6 +1165,10 @@ The reserves block and the "Pitch has been booked" line appear only when they ap
 | Automatic payment reminder | 10:00 UTC the day after a tracked game |
 | Availability refresh in the app | Every 30 seconds while it's on screen |
 | Minimum players before organisers are warned | 10 |
+| Dashboard: games in Turnout | Last 12 played |
+| Dashboard: League rows | As many as fit the row on a computer; 6 on a phone |
+| Dashboard: To do look-back for scores and money | 45 days |
+| Dashboard: group card refresh | Every 5 minutes while open |
 
 ### 19.3 Organisers
 
@@ -1208,4 +1214,6 @@ Neal, Kev and Gav. They're listed in `ORGANISERS` in the code. Adding one is a m
 | Web Push / VAPID | The standard way browsers receive notifications, and the key pair that signs them |
 | Service worker | Background script (`sw.js`) that keeps an offline copy and shows notifications |
 | Dashboard | The organisers' home page (7.7) |
+| League | The dashboard's table for the year: P, W, D, L, goal difference and points (3 a win, 1 a draw) per player |
+| GD | Goal difference: goals for minus goals against, from the player's team in each scored game |
 | App users | Organiser page listing which players have set up the app and notifications |
