@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Document version** | 3.0 |
-| **Release** | Production Release 3.0 |
+| **Document version** | 3.1 |
+| **Release** | Production Release 3.1 |
 | **Status** | Released |
 | **Date** | 24 October 2026 |
 | **Application** | `index.html` (repository root), published with GitHub Pages |
@@ -53,6 +53,7 @@ If you aren't sure, treat it as minor unless it changes the data model or a core
 | 2.6 | 24 Oct 2026 | Repeat notifications of the same kind still alert and vibrate, rather than quietly replacing the last one. |
 | 2.7 | 24 Oct 2026 | A football badge shows in the status bar for each notification. In Samsung Internet, the app advises installing from Chrome for notifications, with an Open in Chrome button. |
 | 3.0 | 24 Oct 2026 | **Self-service availability** behind an Off / Trial / On switch. Players say in or out. It opens Tuesday (Thursday games) or Friday (Monday games) at 9am and closes at 9pm, then the squad is picked with the Run game rules, saved and announced. Drop-outs move reserves up, and late joiners fill gaps. Guaranteed players must say in. Late flags are organiser-only. New **App users** page, first-time welcome and Who are you? cards, and an Availability notification type. |
+| 3.1 | 24 Oct 2026 | The notify function carries its own copy of the selection rules, so Supabase can deploy it. |
 
 ---
 
@@ -572,7 +573,7 @@ For notifications (release 2.0):
 For self-service availability (release 3.0):
 
 10. Run `supabase/availability.sql`.
-11. Once the site has published, redeploy the `notify` function with the latest `supabase/functions/notify/index.ts`, keeping Verify JWT off. The feature stays Off until it's switched on under Setup.
+11. Redeploy the `notify` function with the latest `supabase/functions/notify/index.ts`, keeping Verify JWT off. The feature stays Off until it's switched on under Setup.
 
 Each script also grants the page (`anon` and `authenticated` roles) select, insert, update and delete on its tables. Supabase stops granting this automatically for tables created from 30 October 2026, so **any new table added in a later release must include the same `grant` line in its script**, or the page gets "permission denied" for it. Re-running the scripts on the existing database is harmless.
 

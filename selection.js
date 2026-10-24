@@ -1,7 +1,8 @@
 /* Squad selection rules for Brent Football, shared by the page (Run game and the
    availability preview) and the "notify" Edge Function (the 9pm availability close),
-   so both always pick the same squad. Loaded as a plain script in the page and
-   imported by the function; it sets globalThis.BF_SELECT.
+   so both always pick the same squad. Loaded as a plain script in the page; the
+   function has an exact copy (supabase/functions/notify/index.ts, between the
+   BEGIN and END selection.js lines), so change both together. Sets globalThis.BF_SELECT.
 
    Players need: { id, avail, pref, guarMon, guarThu, reserved }. */
 (function (root) {
