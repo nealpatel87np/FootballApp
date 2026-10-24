@@ -2,7 +2,7 @@
 // first, so every deploy reaches people straight away; the cached copy is only
 // used when there's no signal. Database requests are never cached.
 // It also shows push notifications and opens the app when one is tapped.
-const CACHE = 'brent-football-v2';
+const CACHE = 'brent-football-v3';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png'];
 const CDN = 'https://cdn.jsdelivr.net/';
 
@@ -22,8 +22,9 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   const own = url.origin === self.location.origin;
   if (!own && !req.url.startsWith(CDN)) return;   // Supabase and anything else go straight to the network
+  // The app's own files skip the browser's short-term cache, so a new release shows straight away
   e.respondWith(
-    fetch(req).then(res => {
+    (own ? fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }) : fetch(req)).then(res => {
       if (res.ok || res.type === 'opaque') { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
       return res;
     }).catch(() => caches.match(req, { ignoreSearch: own }).then(hit => hit || (req.mode === 'navigate' ? caches.match('index.html') : Response.error())))
