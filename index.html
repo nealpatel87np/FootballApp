@@ -13,6 +13,7 @@
 <meta name="theme-color" content="#1a1a18" media="(prefers-color-scheme: dark)">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="selection.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -44,8 +45,8 @@
   h3 { font-size: 15px; font-weight: 500; margin-bottom: 10px; }
   .card { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 12px; }
   .page { display: none; } .page.active { display: block; }
-  input[type=text], input[type=date], select { width: 100%; padding: 8px 10px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); font-size: 14px; background: var(--surface-2); color: var(--text-primary); margin-top: 4px; }
-  input[type=text]:focus, input[type=date]:focus, select:focus { outline: 2px solid var(--fill-accent); outline-offset: 1px; }
+  input[type=text], input[type=date], input[type=time], input[type=number], select { width: 100%; padding: 8px 10px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); font-size: 14px; background: var(--surface-2); color: var(--text-primary); margin-top: 4px; }
+  input[type=text]:focus, input[type=date]:focus, input[type=time]:focus, input[type=number]:focus, select:focus { outline: 2px solid var(--fill-accent); outline-offset: 1px; }
   label { font-size: 13px; color: var(--text-secondary); display: block; margin-top: 10px; }
   label:first-child { margin-top: 0; }
   .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius); font-size: 14px; cursor: pointer; border: 0.5px solid var(--border-strong); background: transparent; color: var(--text-primary); transition: background .12s; }
@@ -80,6 +81,24 @@
   .err { font-size: 12px; color: var(--text-danger); margin-top: 4px; min-height: 16px; }
   .notice { background: var(--bg-warning); color: var(--text-warning); border-radius: var(--radius); padding: 8px 12px; font-size: 13px; margin-bottom: 12px; }
   a.btn { text-decoration: none; }
+  /* Self-service availability */
+  .av-hi { border: 1.5px solid var(--border-accent); }
+  .av-btns { display: flex; gap: 8px; margin: 10px 0 6px; }
+  .av-btns .btn { flex: 1; justify-content: center; padding: 11px 8px; font-size: 15px; }
+  .av-in { color: var(--text-success); border-color: var(--border-success); }
+  .av-in.on { background: var(--text-success); color: var(--surface-2); border-color: var(--text-success); }
+  .av-out { color: var(--text-danger); border-color: var(--border-danger); }
+  .av-out.on { background: var(--bg-danger); }
+  .av-timer { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; background: var(--surface-1); border-radius: var(--radius); padding: 7px 10px; font-size: 12px; margin-top: 8px; }
+  .av-stats { display: flex; gap: 6px; margin: 8px 0; }
+  .av-stats div { flex: 1; border-radius: var(--radius); padding: 6px 8px; font-size: 11px; background: var(--surface-1); color: var(--text-secondary); }
+  .av-stats b { display: block; font-size: 18px; font-weight: 600; }
+  .av-stats .i { background: var(--bg-success); color: var(--text-success); }
+  .av-stats .o { background: var(--bg-danger); color: var(--text-danger); }
+  .av-names { columns: 2; column-gap: 12px; font-size: 13px; line-height: 1.7; }
+  .av-names span { display: block; }
+  .av-guar { display: block; margin-top: 10px; background: var(--bg-accent); color: var(--text-accent); }
+  .av-orgs label { display: block; font-size: 12px; }
   .ok { background: var(--bg-success); color: var(--text-success); border-radius: var(--radius); padding: 10px 14px; font-size: 14px; margin-bottom: 12px; }
   .nav { display: flex; gap: 4px; margin-bottom: 1.5rem; border-bottom: 0.5px solid var(--border); overflow-x: auto; }
   .nb { padding: 8px 16px; font-size: 14px; cursor: pointer; border: none; background: none; color: var(--text-secondary); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .12s; }
@@ -386,6 +405,8 @@
 
   <!-- FRONT PAGE -->
   <div id="front">
+    <div id="front-install" style="display:none"></div>
+    <div id="front-avail" style="display:none"></div>
     <div class="card" id="front-push" style="display:none"></div>
     <div class="card" id="front-game"></div>
     <div class="card"><div class="money-tiles" id="front-kitty"></div></div>
@@ -411,17 +432,20 @@
     <button class="nb edit-only" onclick="goTab('game')">Run game</button>
     <button class="nb edit-only" onclick="goTab('teams')">Teams</button>
     <button class="nb edit-only" onclick="goTab('ratings')">Ratings</button>
+    <button class="nb" id="nb-avail" style="display:none" onclick="goTab('avail')">Availability</button>
     <button class="nb" onclick="goTab('history')">Game Log</button>
     <button class="nb" onclick="goTab('stats')">Player Stats</button>
     <button class="nb edit-only" onclick="goTab('attendance')">Attendance</button>
     <button class="nb" onclick="goTab('money')">Payments</button>
     <button class="nb" id="nb-notify" style="display:none" onclick="goTab('notify')">Notifications</button>
+    <button class="nb edit-only" id="nb-users" style="display:none" onclick="goTab('users')">App users</button>
   </div>
 
   <!-- SETUP -->
   <div id="page-setup" class="page active">
     <div class="stat" style="margin-bottom:12px"><div class="n" id="setup-count">0</div><div class="l">Players</div></div>
     <p class="hint" id="push-diag" style="margin:-4px 0 12px"></p>
+    <div class="card" id="avail-settings"></div>
     <div class="card">
       <div class="fold-h"><h3>Add player</h3><button class="btn xs" onclick="toggleFold('add-box', this)" aria-expanded="false" aria-controls="add-box">Show</button></div>
       <div id="add-box" hidden>
@@ -498,6 +522,7 @@
   <!-- GAME -->
   <div id="page-game" class="page">
     <div id="step-day">
+      <div id="avail-org"></div>
       <div class="card">
         <h3>Which day are you running?</h3>
         <label for="org-select">Who's organising? When you track this game's money, they collect it and pay for the pitch.</label>
@@ -695,6 +720,14 @@
   </div>
 
   <!-- MONEY -->
+  <div id="page-avail" class="page">
+    <div id="avail-player"></div>
+  </div>
+
+  <div id="page-users" class="page">
+    <div class="card" id="users-card"></div>
+  </div>
+
   <div id="page-notify" class="page">
     <div class="card" id="notify-card"></div>
   </div>
@@ -1293,7 +1326,7 @@ function tableMissing(e) {
 let currentDay = null, builtPlaying = [], builtReserves = [], confirmedGameIdx = null;
 
 function goTab(t) {
-  if (appMode === 'view' && ['setup', 'game', 'teams', 'ratings', 'attendance'].includes(t)) t = 'history';
+  if (appMode === 'view' && ['setup', 'game', 'teams', 'ratings', 'attendance', 'users'].includes(t)) t = 'history';
   document.querySelectorAll('.nb').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelector(`.nb[onclick="goTab('${t}')"]`).classList.add('active');
@@ -1306,6 +1339,8 @@ function goTab(t) {
   if (t === 'stats') renderStats();
   if (t === 'attendance') renderAttendance();
   if (t === 'notify') renderNotify();
+  if (t === 'avail') { availRender(); availLoad(); }
+  if (t === 'users') renderUsers();
 }
 
 function togglePref() {
@@ -1546,14 +1581,8 @@ function buildSquad() {
   const checked = [...document.querySelectorAll('#avail-list input[type=checkbox]:checked')].map(i => +i.value);
   if (!checked.length) { alert('Tick at least one player.'); return; }
   const day = currentDay, rNext = S.reserveNext;
-  const available = S.players.filter(p => checked.includes(p.id));
-  available.sort((a, b) => {
-    const ag = (day === 'mon' ? a.guarMon : a.guarThu) ? 0 : 1, bg = (day === 'mon' ? b.guarMon : b.guarThu) ? 0 : 1; if (ag !== bg) return ag - bg;
-    const ar = rNext.includes(a.id) ? 0 : 1, br = rNext.includes(b.id) ? 0 : 1; if (ar !== br) return ar - br;
-    const al = latePenalty(a.id) ? 1 : 0, bl = latePenalty(b.id) ? 1 : 0; if (al !== bl) return al - bl;   // late last time: picked last
-    const ap = a.avail !== 'both' ? 0 : (a.pref === day ? 1 : 2), bp = b.avail !== 'both' ? 0 : (b.pref === day ? 1 : 2); if (ap !== bp) return ap - bp;
-    return b.reserved - a.reserved;
-  });
+  // Same rules as the availability close (selection.js)
+  const available = BF_SELECT.orderSquad(S.players.filter(p => checked.includes(p.id)), { day, reserveNext: rNext, late: latePenalty });
   builtPlaying = available.slice(0, 12); builtReserves = available.slice(12);
   const rnP = rNext.filter(id => builtPlaying.map(p => p.id).includes(id));
   const rn = document.getElementById('rn-notice');
@@ -2262,7 +2291,7 @@ function enterApp(mode) {
 }
 function enterView() { enterApp('view'); }
 // Phone page menu: four pages in the bottom bar, the rest under More. In View mode its three pages all fit in the bar.
-const NAV_ICONS = { setup: 'settings', game: 'ball-football', teams: 'users-group', ratings: 'star', history: 'history', stats: 'chart-bar', attendance: 'calendar-check', money: 'pig-money', notify: 'bell' };
+const NAV_ICONS = { setup: 'settings', game: 'ball-football', teams: 'users-group', ratings: 'star', history: 'history', stats: 'chart-bar', attendance: 'calendar-check', money: 'pig-money', notify: 'bell', avail: 'checklist', users: 'device-mobile' };
 const NAV_BAR = ['game', 'teams', 'history', 'money'];
 function navPages() {
   return [...document.querySelectorAll('.nav .nb')].filter(b => (appMode === 'edit' || !b.classList.contains('edit-only')) && b.style.display !== 'none')
@@ -2344,11 +2373,7 @@ function gameTeams(gameId) { return S.teams.games.find(t => t.gameId === gameId)
    guaranteed (or carried over from the reserves) for the next game they're
    available for. Once a later game includes them, as playing or reserve, it's cleared. */
 function lateIdsOf(gameId) { const x = S.teams.late.find(y => y.gameId === gameId); return x ? x.ids : []; }
-function latePenalty(playerId) {
-  let last = -1;
-  S.games.forEach((g, i) => { if (lateIdsOf(g.id).includes(playerId)) last = i; });
-  return last !== -1 && !S.games.slice(last + 1).some(g => g.playingIds.includes(playerId) || g.reserveIds.includes(playerId));
-}
+function latePenalty(playerId) { return BF_SELECT.latePenaltyFor(S.games, lateIdsOf)(playerId); }
 function toggleLate(gameId, playerId) {
   let x = S.teams.late.find(y => y.gameId === gameId);
   if (!x) { x = { gameId, ids: [] }; S.teams.late.push(x); }
@@ -3000,7 +3025,9 @@ function pollText() {
     `⚽️ ${weekday} Football`,
     `📅 ${pollShortDate(iso)} | ⏰ ${time}`,
     `📍 ${document.getElementById('poll-venue').value.trim()}`, '',
-    'Please confirm availability ASAP! The final 12 players will be announced shortly after poll closes. ⚽️🔥'
+    avMode() === 'on'
+      ? `Say if you're in on the Brent Football app by ${avClock(AV.settings.close_time)} on ${isoToDate(avOpenIso(pollDay, iso || waNextDate(pollDay))).toLocaleDateString('en-GB', { weekday: 'long' })}. The final 12 will be announced then. ⚽️🔥\n${location.origin + location.pathname}`
+      : 'Please confirm availability ASAP! The final 12 players will be announced shortly after poll closes. ⚽️🔥'
   ].join('\n');
 }
 function pollRefresh() {
@@ -3096,12 +3123,12 @@ renderHistory = function () {
    learns which players have them on. Organisers send them when they confirm a game
    or teams and from Outstanding Payments; payment reminders also go out on a
    schedule (supabase/push-cron.sql). */
-const APP_VERSION = '2.7';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
+const APP_VERSION = '3.0';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
 const PUSH_FN = SUPABASE_URL + '/functions/v1/notify';
 const PUSH_KEY = 'fbv3_push';   // this phone only: { playerId, endpoint, prefs, hideCard }
-const PUSH_KINDS = [['squad', 'Squad picked', 'Playing or reserve'], ['teams', 'Teams confirmed', 'Your team and bibs'],
+const PUSH_KINDS = [['availability', 'Availability', 'When it opens, and if you play'], ['squad', 'Squad picked', 'Playing or reserve'], ['teams', 'Teams confirmed', 'Your team and bibs'],
   ['payments', 'Payment reminders', 'When you owe money'], ['credit', 'Credit used', 'When credit pays for a game']];
-const PUSH_DEFAULTS = { squad: true, teams: true, payments: true, credit: false };
+const PUSH_DEFAULTS = { availability: true, squad: true, teams: true, payments: true, credit: false };
 let PUSH = {};
 try { PUSH = JSON.parse(localStorage.getItem(PUSH_KEY) || '{}') || {}; } catch (e) {}
 let pushReady = null, pushPublicKey = '', pushPlayers = new Set(), pushNote = '', pushTeamsNote = '', pushError = '';
@@ -3150,6 +3177,8 @@ async function pushLoadStatus() {
   pushRerender();
 }
 function pushRerender() {
+  if (typeof availRender === 'function' && AV.settings) availRender();
+  if (pushReady) avHello();
   // Organisers see on Setup whether notifications are connected, and why not
   document.getElementById('push-diag').textContent = pushReady === null ? '' : pushReady
     ? `🔔 Notifications connected · ${pushPlural(pushPlayers.size, 'player')} ${pushPlayers.size === 1 ? 'has' : 'have'} them on.`
@@ -3207,6 +3236,7 @@ async function pushTurnOn(selectId) {
     await pushStep(pushCall('subscribe', { subscription: sub.toJSON(), playerId: pid, prefs }), 20000, "Couldn't save this phone with the notify function. Check your signal and try again.");
     PUSH = { playerId: pid, endpoint: sub.endpoint, prefs }; pushSave();
     pushPlayers.add(pid); pushNote = '';
+    if (ME !== pid) avSetMe(pid); else avHello(true);
   } catch (e) { pushNote = e.message || "Couldn't turn notifications on."; }
   pushRerender();
 }
@@ -3223,7 +3253,7 @@ async function pushUpdate(changes) {
 function pushSetPref(k, on) { pushUpdate({ prefs: { ...PUSH.prefs, [k]: on } }); }
 function pushChangeName() {
   const pid = toId(document.getElementById('notify-who').value);
-  if (pid && pid !== PUSH.playerId) pushUpdate({ playerId: pid });
+  if (pid && pid !== PUSH.playerId) { pushUpdate({ playerId: pid }); avSetMe(pid); }
 }
 async function pushTest() {
   pushNote = 'Sending…'; renderNotify();
@@ -3256,6 +3286,7 @@ async function pushTurnOff() {
     if (endpoint) await pushCall('unsubscribe', { endpoint });
   } catch (e) {}
   PUSH = { prefs: PUSH.prefs, hideCard: true }; pushSave(); pushNote = 'Notifications are off on this phone.';
+  avHello(true);
   pushLoadStatus();
 }
 function pushHideCard() { PUSH.hideCard = true; pushSave(); renderPushCard(); }
@@ -3271,7 +3302,7 @@ function renderPushCard() {
     ? `<p class="hint">Find out when you're playing, which team you're on and if you owe money. On iPhone, add Brent Football to your Home Screen first (Share → Add to Home Screen), then open it from there.</p>
        <div style="margin-top:10px"><button class="btn sm" onclick="pushHideCard()">Not now</button></div>`
     : `<p class="hint">Find out when you're playing, which team you're on and if you owe money, without checking WhatsApp.</p>${pushSamsungNote()}
-       <label for="front-push-who">Who are you?</label><select id="front-push-who">${pushPlayerOptions(null)}</select>
+       ${ME ? `<input type="hidden" id="front-push-who" value="${ME}">` : `<label for="front-push-who">Who are you?</label><select id="front-push-who">${pushPlayerOptions(null)}</select>`}
        <div class="tactions" style="margin-top:10px"><button class="btn primary" onclick="pushTurnOn('front-push-who')"><i class="ti ti-bell"></i> Turn on notifications</button><button class="btn" onclick="pushHideCard()">Not now</button></div>
        ${pushNote ? `<p class="hint" style="margin-top:8px">${esc(pushNote)}</p>` : ''}`);
 }
@@ -3290,7 +3321,7 @@ function renderNotify() {
     html += "<p class=\"hint\">Notifications aren't available right now. Check your signal and try again.</p><p class=\"hint edit-only\" style=\"margin-top:6px\">Organisers: if they've never worked, see \"Push notifications\" in the README to set them up.</p>";
   } else if (!pushOn()) {
     html += `<p class="hint">Get a notification when you're picked, when teams are confirmed and when you owe money.</p>
-      <label for="notify-who">Who are you?</label><select id="notify-who">${pushPlayerOptions(null)}</select>
+      <label for="notify-who">Who are you?</label><select id="notify-who">${pushPlayerOptions(ME)}</select>
       <button class="btn primary" style="margin-top:10px" onclick="pushTurnOn('notify-who')"><i class="ti ti-bell"></i> Turn on notifications</button>${note}`;
   } else {
     const prefs = Object.assign({}, PUSH_DEFAULTS, PUSH.prefs);
@@ -3379,17 +3410,318 @@ teamsConfirm = function () {
 };
 const _pushRenderSquad = renderSquad; renderSquad = function () { _pushRenderSquad(); renderPushSquadOpt(); };
 const _pushRenderFront = renderFront; renderFront = function () { _pushRenderFront(); renderPushCard(); };
-const _pushRerenderAll = rerenderAll; rerenderAll = function () { _pushRerenderAll(); if (document.getElementById('page-notify').classList.contains('active')) renderNotify(); };
+const _pushRerenderAll = rerenderAll; rerenderAll = function () { _pushRerenderAll(); if (document.getElementById('page-notify').classList.contains('active')) renderNotify(); if (AV.settings) availRender(); };
+
+/* ---- SELF-SERVICE AVAILABILITY AND APP USERS ----
+   Organisers switch it Off, Trial (organisers only) or On under Setup. When it's on,
+   availability opens for the next game (Friday for Monday, Tuesday for Thursday),
+   players say in or out, and at closing time the "notify" function picks the squad
+   with the same rules as Run game (selection.js) and saves it. This page reads the
+   settings, rounds and answers, and sends every change through the function. */
+const ME_KEY = 'fbv3_me', DEVICE_KEY = 'fbv3_device', INSTALL_HIDE_KEY = 'fbv3_install_hidden', HELLO_KEY = 'fbv3_hello';
+var ME = null;   // var: other parts of the page may ask before this runs
+try { ME = toId(localStorage.getItem(ME_KEY)); } catch (e) {}
+if (!ME && PUSH.playerId) ME = PUSH.playerId;   // phones that turned on notifications before 3.0
+var AV = { settings: null, rounds: [], answers: [], dbOk: null };
+let avNote = '', avReloaded = false, avInstallEvt = null;
+function avMode() { return (AV && AV.settings && AV.settings.mode) || 'off'; }
+const avVisible = () => avMode() === 'on' || (avMode() === 'trial' && isLoggedIn());
+const avDayName = d => d === 'mon' ? 'Monday' : 'Thursday';
+const avAddDays = (iso, n) => { const d = isoToDate(iso); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const avClock = hm => { const [h, m] = String(hm || '21:00').split(':').map(Number); return `${h % 12 || 12}${m ? ':' + String(m).padStart(2, '0') : ''}${h < 12 ? 'am' : 'pm'}`; };
+const avKick = () => { const [h, m] = String((AV.settings && AV.settings.kickoff_time) || '18:30').split(':').map(Number); return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`; };
+const avLongDate = iso => isoToDate(iso).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+const avOpenIso = (day, gameIso) => avAddDays(gameIso, -((day === 'mon' ? AV.settings.mon_open_days_before : AV.settings.thu_open_days_before) ?? (day === 'mon' ? 3 : 2)));
+const avOrdinal = n => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
+const avGuar = (p, day) => !!p && (day === 'mon' ? p.guarMon : p.guarThu);
+const avAnswersFor = iso => AV.answers.filter(a => a.game_iso === iso);
+const avMine = iso => { const a = avAnswersFor(iso).find(x => Number(x.player_id) === ME); return a ? a.answer : null; };
+const avStarted = r => { const now = new Date(), [h, m] = String(AV.settings.kickoff_time || '18:30').split(':').map(Number), k = isoToDate(r.game_iso); k.setHours(h, m); return now >= k; };
+function avCloseDate(r) { const [h, m] = String(AV.settings.close_time || '21:00').split(':').map(Number), d = isoToDate(avOpenIso(r.day, r.game_iso)); d.setHours(h, m); return d; }
+// The round to show: the earliest upcoming game that isn't cancelled (or a cancelled one if that's all there is)
+function avRound() {
+  const today = isoToday(), up = AV.rounds.filter(r => r.game_iso >= today).sort((a, b) => a.game_iso.localeCompare(b.game_iso));
+  return up.find(r => r.status !== 'cancelled') || up[0] || null;
+}
+// When the next availability opens, if nothing is open yet
+function avNextOpening() {
+  const today = isoToday(), next = ['mon', 'thu'].map(day => {
+    const target = day === 'mon' ? 1 : 4, d = isoToDate(today); d.setDate(d.getDate() + ((target - d.getDay() + 7) % 7));
+    const iso = avAddDays(today, Math.round((d - isoToDate(today)) / 864e5));
+    return { day, iso, open: avOpenIso(day, iso) };
+  }).sort((a, b) => a.iso.localeCompare(b.iso));
+  return next.find(x => x.open >= today && !AV.rounds.some(r => r.game_iso === x.iso)) || null;
+}
+// "If it closed now": the same rules the function uses at closing time
+function avPreview(r) {
+  const ins = avAnswersFor(r.game_iso).filter(a => a.answer === 'in');
+  const at = new Map(ins.map(a => [Number(a.player_id), Date.parse(a.answered_at)]));
+  return BF_SELECT.splitSquad(BF_SELECT.orderSquad(S.players.filter(p => at.has(p.id)), { day: r.day, reserveNext: S.reserveNext, late: latePenalty, answeredAt: at }));
+}
+
+async function availLoad() {
+  if (!sb) { AV.dbOk = false; availRender(); return; }
+  try {
+    const st = await sb.from('availability_settings').select('*').eq('id', 1).maybeSingle();
+    if (st.error) throw st.error;
+    AV.settings = st.data || { mode: 'off' }; AV.dbOk = true;
+    const rr = await sb.from('availability_rounds').select('*').gte('game_iso', avAddDays(isoToday(), -1)).order('game_iso');
+    AV.rounds = rr.data || [];
+    const isos = AV.rounds.map(r => r.game_iso);
+    AV.answers = isos.length ? ((await sb.from('availability_answers').select('*').in('game_iso', isos)).data || []) : [];
+    // A squad the function saved that this phone hasn't loaded yet
+    if (AV.rounds.some(r => r.game_id && !S.games.some(g => g.id === Number(r.game_id))) && !avReloaded) { avReloaded = true; loadState(); }
+  } catch (e) { AV.dbOk = !tableMissing(e) && AV.dbOk; if (!AV.settings) AV.settings = { mode: 'off' }; if (tableMissing(e)) AV.dbOk = false; }
+  availRender();
+}
+async function avAct(action, body, done) {
+  avNote = 'Working…'; availRender();
+  try {
+    const r = await pushCall(action, body);
+    avNote = typeof done === 'function' ? done(r) : (done || 'Done.');
+  } catch (e) { avNote = e.message; }
+  await availLoad();
+  if (AV.rounds.some(r => r.status === 'closed')) loadState();
+}
+function avAnswer(iso, answer, playerId = ME, byOrganiser = false) {
+  const r = AV.rounds.find(x => x.game_iso === iso);
+  if (!byOrganiser && r && r.status === 'closed' && answer === 'out' && !confirm("Drop out of this game? Your place goes to the first reserve.")) return;
+  avAct('avail_answer', { gameIso: iso, playerId, answer, byOrganiser }, answer === 'in' ? 'Saved: in.' : 'Saved: out.');
+}
+function avSetMe(id) {
+  id = toId(id); if (!id) return;
+  ME = id; try { localStorage.setItem(ME_KEY, String(id)); } catch (e) {}
+  avHello(true); availRender(); renderPushCard();
+}
+
+// Tell the function this phone is set up (for App users), at most every 6 hours
+function avBrowser() {
+  const ua = navigator.userAgent;
+  return /SamsungBrowser/i.test(ua) ? 'Samsung Internet' : /EdgA?\//.test(ua) ? 'Edge' : /Firefox|FxiOS/.test(ua) ? 'Firefox' : /CriOS|Chrome/.test(ua) ? 'Chrome' : /Safari/.test(ua) ? 'Safari' : 'Other';
+}
+async function avHello(force) {
+  if (!ME || !pushReady) return;
+  let last = 0; try { last = +localStorage.getItem(HELLO_KEY) || 0; } catch (e) {}
+  if (!force && Date.now() - last < 6 * 36e5) return;
+  let dev = ''; try { dev = localStorage.getItem(DEVICE_KEY) || ''; if (!dev) { dev = 'dev-' + Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem(DEVICE_KEY, dev); } } catch (e) { return; }
+  const platform = pushIos() ? 'iPhone' : /Android/i.test(navigator.userAgent) ? 'Android' : 'Computer';
+  try { await pushCall('hello', { deviceId: dev, playerId: ME, installed: pushInstalled(), browser: avBrowser(), platform, notifications: pushOn() }); localStorage.setItem(HELLO_KEY, String(Date.now())); } catch (e) {}
+}
+addEventListener('beforeinstallprompt', e => { avInstallEvt = e; });
+async function avInstall() {
+  if (avInstallEvt) { try { await avInstallEvt.prompt(); } catch (e) {} avInstallEvt = null; }
+  else alert('In Chrome, tap ⋮ then "Install app". On iPhone, in Safari tap Share then "Add to Home Screen".');
+}
+function avHideInstall() { try { localStorage.setItem(INSTALL_HIDE_KEY, '1'); } catch (e) {} availRender(); }
+
+/* What players see */
+const avOptions = sel => '<option value="">Choose your name…</option>' + [...S.players].sort((a, b) => a.name.localeCompare(b.name)).map(p => `<option value="${p.id}"${p.id === sel ? ' selected' : ''}>${esc(p.name)}</option>`).join('');
+function avWhoCard(id) {
+  return `<div class="card av-hi"><h3>Who are you?</h3><p class="hint">So we know who's saying in or out. You only do this once on this phone.</p>
+    <select id="${id}" style="margin-top:8px">${avOptions(null)}</select>
+    <div class="tactions" style="margin-top:10px"><button class="btn primary" onclick="avSetMe(document.getElementById('${id}').value)">Continue</button></div>
+    <p class="hint" style="margin-top:8px">Not on the list? Ask Neal, Kev or Gav to add you.</p></div>`;
+}
+function avPlayerCard() {
+  const r = avRound(), p = S.players.find(x => x.id === ME);
+  if (!p) return '';
+  const note = avNote ? `<p class="hint" style="margin-top:8px">${esc(avNote)}</p>` : '';
+  if (!r) {
+    const n = avNextOpening();
+    return `<div class="card"><div class="sh" style="margin-top:0">Next game</div>${n
+      ? `<div class="front-when">${esc(avLongDate(n.iso))}</div><div class="front-facts"><span>⏰ ${esc(avKick())}</span><span>📍 ${esc(AV.settings.venue || '')}</span></div>
+         <div class="av-timer">Availability opens <strong>${esc(isoToDate(n.open).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }))}, ${esc(avClock(AV.settings.open_time))}</strong></div>
+         <p class="hint" style="margin-top:6px">${pushOn() ? "We'll send you a notification when it opens." : 'Turn on notifications to be told when it opens.'}</p>`
+      : '<p class="hint">Nothing open right now.</p>'}</div>`;
+  }
+  const dn = avDayName(r.day), mine = avMine(r.game_iso), closes = avClock(AV.settings.close_time);
+  let html = `<div class="card"><div class="sh" style="margin-top:0">Next game · ${r.status === 'open' ? 'availability open' : r.status === 'held' ? 'availability closed' : r.status === 'closed' ? 'squad picked' : 'cancelled'}</div>
+    <div class="front-when">${esc(avLongDate(r.game_iso))}</div><div class="front-facts"><span>⏰ ${esc(avKick())}</span><span>📍 ${esc(AV.settings.venue || '')}</span></div>`;
+  if (r.status === 'cancelled') return html + `<div class="notice" style="display:block;margin-top:10px">❌ ${dn} is cancelled.</div></div>`;
+  if (avStarted(r)) return html + '<p class="hint" style="margin-top:10px">This game has started.</p></div>';
+  if (r.status === 'open' || r.status === 'held') {
+    if (avGuar(p, r.day) && mine !== 'in') html += `<div class="notice av-guar">⭐ You're on the guaranteed list for ${dn}. Say you're in by ${closes} to keep your place, or you'll count as out.</div>`;
+    html += mine === 'in' ? `<div class="ok" style="margin:10px 0 0">✓ You're <strong>in</strong>, ${esc(p.name)}. ${r.status === 'open' ? `We'll tell you at ${closes} if you're playing or a reserve.` : "We'll tell you when the squad is announced."}</div>`
+      : mine === 'out' ? `<p class="hint" style="margin-top:10px">You've said you're <strong>out</strong>.</p>` : `<p class="hint" style="margin-top:10px">Are you in, <strong>${esc(p.name)}</strong>?</p>`;
+    html += `<div class="av-btns"><button class="btn av-in${mine === 'in' ? ' on' : ''}" onclick="avAnswer('${r.game_iso}','in')" aria-pressed="${mine === 'in'}">✓ I'm in</button><button class="btn av-out${mine === 'out' ? ' on' : ''}" onclick="avAnswer('${r.game_iso}','out')" aria-pressed="${mine === 'out'}">✗ I'm out</button></div>`;
+    if (r.status === 'open') { const left = avCloseDate(r) - Date.now(); html += `<div class="av-timer"><span>${mine ? 'You can change until' : 'Closes'} <strong>${esc(avClock(AV.settings.close_time))}${avCloseDate(r).toDateString() === new Date().toDateString() ? ' tonight' : ' ' + esc(avCloseDate(r).toLocaleDateString('en-GB', { weekday: 'short' }))}</strong></span>${left > 0 ? `<span><strong>${Math.floor(left / 36e5)}h ${Math.floor(left / 6e4) % 60}m</strong> left</span>` : ''}</div>`; }
+    else html += `<p class="hint" style="margin-top:8px">Availability has closed and the squad is being confirmed. You can still change your answer until it's announced.</p>`;
+    const ans = avAnswersFor(r.game_iso), ins = ans.filter(a => a.answer === 'in').sort((a, b) => a.answered_at.localeCompare(b.answered_at));
+    html += `${note}</div><div class="card"><h3>So far</h3><div class="av-stats"><div class="i"><b>${ins.length}</b>In</div><div class="o"><b>${ans.length - ins.length}</b>Out</div><div class="n"><b>${Math.max(0, S.players.length - ans.length)}</b>Not answered</div></div>
+      <div class="av-names">${ins.map(a => `<span>${esc(pName(Number(a.player_id)))}</span>`).join('') || '<span class="hint">Nobody yet</span>'}</div>
+      <p class="hint" style="margin-top:6px">${BF_SELECT.SQUAD_SIZE} places. The squad is picked at ${esc(closes)} using the usual rules, not first come first served.</p></div>`;
+    return html;
+  }
+  // Closed: the squad is saved
+  const g = S.games.find(x => x.id === Number(r.game_id));
+  if (!g) return html + '<p class="hint" style="margin-top:10px">Loading the squad…</p></div>';
+  const ri = g.reserveIds.indexOf(ME);
+  html += g.playingIds.includes(ME) ? `<div class="ok" style="margin:10px 0 0">⚽ You're <strong>playing</strong>, ${esc(p.name)}.</div><div class="av-btns"><button class="btn av-out" onclick="avAnswer('${r.game_iso}','out')">I can't make it any more</button></div><p class="hint">Your place goes to the first reserve and they're told straight away.</p>`
+    : ri !== -1 ? `<div class="notice" style="display:block;margin:10px 0 0">🪑 You're <strong>${avOrdinal(ri + 1)} reserve</strong>. If someone drops out you'll be told straight away.</div><div class="av-btns"><button class="btn av-out" onclick="avAnswer('${r.game_iso}','out')">I can't make it</button></div>`
+    : `<p class="hint" style="margin-top:10px">The squad has been picked. Want to play? Say you're in: you'll be added if there's space, or join the reserves.</p><div class="av-btns"><button class="btn av-in" onclick="avAnswer('${r.game_iso}','in')">✓ I'm in</button></div>`;
+  return html + `${note}<div class="sh">Squad · ${g.playingIds.length}${g.reserveIds.length ? ` + ${g.reserveIds.length} reserve${g.reserveIds.length === 1 ? '' : 's'}` : ''}</div>
+    <div class="front-squad">${g.playingIds.map((id, i) => `<span><em>${i + 1}</em>${esc(pName(id))}</span>`).join('')}</div>
+    ${g.reserveIds.length ? `<p class="hint" style="margin-top:8px">Reserves: ${g.reserveIds.map(id => esc(pName(id))).join(', ')}</p>` : ''}</div>`;
+}
+function avInstallCard() {
+  let hidden = false; try { hidden = localStorage.getItem(INSTALL_HIDE_KEY) === '1'; } catch (e) {}
+  if (avMode() !== 'on' || pushInstalled() || hidden) return '';
+  return `<div class="card av-hi"><h3>👋 Welcome to Brent Football</h3><p class="hint">Say if you're playing, see the squad and teams, and check what you owe.</p>
+    <div class="sh">Install it first (once)</div>
+    <p class="hint"><strong>Android:</strong> tap Install app, or ⋮ → Install app in Chrome.<br><strong>iPhone:</strong> in Safari, tap Share → Add to Home Screen.</p>${pushSamsungNote()}
+    <div class="tactions" style="margin-top:10px">${pushSamsung() ? '' : '<button class="btn primary" onclick="avInstall()">⬇ Install app</button>'}<button class="btn" onclick="avHideInstall()">Continue in the browser</button></div></div>`;
+}
+
+/* What organisers see on Run game */
+function avOrgCard() {
+  if (!AV.dbOk || avMode() === 'off') return '';
+  const r = avRound(), note = avNote ? `<p class="hint" style="margin-top:8px">${esc(avNote)}</p>` : '';
+  let html = `<div class="card"><div class="fold-h"><h3>📋 Self-service availability</h3><span class="badge ${avMode() === 'on' ? 'b-thu' : 'b-guar'}">${avMode() === 'on' ? 'On' : 'Trial'}</span></div>
+    ${avMode() === 'trial' ? '<p class="hint" style="margin-top:6px">Trial: only organisers see this and get its notifications, and squads wait for you to confirm.</p>' : ''}`;
+  if (!r || r.status === 'cancelled') {
+    const n = avNextOpening();
+    html += `${r ? `<div class="notice" style="display:block;margin-top:10px">❌ ${esc(avLongDate(r.game_iso))} is cancelled. <button class="btn xs" onclick="avAct('avail_reopen',{gameIso:'${r.game_iso}'},'Reopened.')">Reopen</button></div>` : ''}
+      <p class="hint" style="margin-top:8px">${n ? `Next: <strong>${esc(avLongDate(n.iso))}</strong>. Opens ${esc(isoToDate(n.open).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }))} at ${esc(avClock(AV.settings.open_time))}.` : 'Nothing scheduled.'}</p>
+      <div class="tactions" style="margin-top:8px"><button class="btn sm" onclick="avAct('avail_open',{day:'mon'},'Monday is open.')">Open Monday now</button><button class="btn sm" onclick="avAct('avail_open',{day:'thu'},'Thursday is open.')">Open Thursday now</button></div>${note}</div>`;
+    return html;
+  }
+  const dn = avDayName(r.day), ans = avAnswersFor(r.game_iso), ins = ans.filter(a => a.answer === 'in'), answered = new Set(ans.map(a => Number(a.player_id)));
+  html += `<div class="sh">${esc(avLongDate(r.game_iso))} · ${r.status === 'open' ? `open, closes ${esc(avClock(AV.settings.close_time))}` : r.status === 'held' ? 'waiting for you to confirm' : 'squad picked'}</div>
+    <div class="av-stats"><div class="i"><b>${ins.length}</b>In</div><div class="o"><b>${ans.length - ins.length}</b>Out</div><div class="n"><b>${S.players.length - answered.size}</b>No answer</div></div>`;
+  if (r.status === 'open' || r.status === 'held') {
+    const missing = S.players.filter(p => avGuar(p, r.day) && !ins.some(a => Number(a.player_id) === p.id));
+    if (missing.length) html += `<div class="notice" style="display:block">⭐ ${missing.length} guaranteed player${missing.length === 1 ? " hasn't" : "s haven't"} said in yet: ${missing.map(p => esc(p.name)).join(', ')}</div>`;
+    const { playing, reserves } = avPreview(r), rn = S.reserveNext;
+    const tags = p => `${avGuar(p, r.day) ? '<span class="badge b-guar">Guaranteed</span>' : ''}${rn.includes(p.id) ? '<span class="badge b-guar">→Next</span>' : ''}${latePenalty(p.id) ? '<span class="badge b-late">Late last time</span>' : ''}`;
+    html += `<div class="sh">${r.status === 'held' ? 'Squad to confirm' : 'If it closed now'}: ${playing.length}${reserves.length ? ` + ${reserves.length} reserve${reserves.length === 1 ? '' : 's'}` : ''}</div>
+      ${playing.map((p, i) => `<div class="row"><span class="num">${i + 1}</span><span class="name">${esc(p.name)}</span>${tags(p)}</div>`).join('')}
+      ${reserves.map(p => `<div class="row"><span class="num">R</span><span class="name">${esc(p.name)}</span>${tags(p)}</div>`).join('')}
+      <div class="tactions" style="margin-top:10px">
+        ${r.status === 'held' ? `<button class="btn primary" onclick="avAct('avail_confirm',{gameIso:'${r.game_iso}'},'Squad saved and announced.')"><i class="ti ti-check"></i> Confirm and announce</button><button class="btn sm" onclick="avAct('avail_reopen',{gameIso:'${r.game_iso}'},'Reopened.')">Reopen</button>`
+          : `<button class="btn sm" onclick="if(confirm('Close availability now and pick the squad?'))avAct('avail_close',{gameIso:'${r.game_iso}'},r=>r.held?'Squad picked. Check it, then Confirm and announce.':'Squad picked and announced.')">Close now</button>`}
+        <button class="btn sm" onclick="avAct('avail_nudge',{gameIso:'${r.game_iso}'},r=>'Nudged '+(r.players||0)+' player'+(r.players===1?'':'s')+' with notifications.')">🔔 Nudge ${S.players.length - answered.size}</button>
+        <button class="btn sm dghost" onclick="if(confirm('Cancel ${dn}? Everyone who said in is told.'))avAct('avail_cancel',{gameIso:'${r.game_iso}'},'Cancelled.')">Cancel this week</button>
+      </div>`;
+  } else {
+    const gi = S.games.findIndex(x => x.id === Number(r.game_id));
+    html += `<div class="ok" style="margin-top:8px">✓ Squad picked${r.closed_at ? ' ' + esc(new Date(r.closed_at).toLocaleString('en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit' })) : ''}. Drop-outs and late joiners update it until kick-off.</div>
+      <div class="tactions">${gi !== -1 ? `<button class="btn sm" onclick="goTab('history'); waToggleLog(${gi})"><i class="ti ti-brand-whatsapp"></i> WhatsApp message</button><button class="btn sm primary" onclick="teamsOpenGame(${Number(r.game_id)})">Pick teams →</button>` : '<span class="hint">Loading the game…</span>'}</div>`;
+  }
+  html += `<div class="sh">Answer for a player</div><div class="pwrow"><select id="av-org-who" aria-label="Player">${avOptions(null).replace('Choose your name…', 'Choose a player…')}</select>
+    <button class="btn sm" onclick="const v=document.getElementById('av-org-who').value; if(v) avAnswer('${r.game_iso}','in',+v,true)">In</button><button class="btn sm" onclick="const v=document.getElementById('av-org-who').value; if(v) avAnswer('${r.game_iso}','out',+v,true)">Out</button></div>${note}</div>`;
+  return html;
+}
+
+/* Organisers: the switch and timetable on Setup */
+function avSettingsCard() {
+  const s = AV.settings || {};
+  if (AV.dbOk === false) return `<h3>Self-service availability</h3><p class="hint" style="margin-top:6px">Not set up yet: run <code>supabase/availability.sql</code> in Supabase and update the notify function (see the README). Until then everything works as before.</p>`;
+  if (!AV.dbOk) return '<h3>Self-service availability</h3><p class="hint">Checking…</p>';
+  const ids = (s.organiser_ids || []).map(Number);
+  const orgSel = (o, i) => { const pre = ids[i] > 0 ? ids[i] : (ids.length ? null : (S.players.find(p => p.name.toLowerCase() === o.toLowerCase()) || {}).id); return `<label>${esc(o)}<select id="av-org-${i}">${avOptions(pre || null).replace('Choose your name…', 'Not set')}</select></label>`; };
+  return `<div class="fold-h"><h3>Self-service availability</h3><span class="badge ${s.mode === 'on' ? 'b-thu' : s.mode === 'trial' ? 'b-guar' : ''}">${s.mode === 'on' ? 'On' : s.mode === 'trial' ? 'Trial' : 'Off'}</span><button class="btn xs" onclick="toggleFold('av-set-box', this)" aria-expanded="false" aria-controls="av-set-box">Show</button></div>
+    <div id="av-set-box" hidden>
+      <p class="hint">Players say in or out in the app, and the squad is picked automatically at closing time with the usual rules.</p>
+      <div class="av-modes">${[['off', 'Off', 'Nothing changes. Run game as now.'], ['trial', 'Trial', 'Only organisers see it and get its notifications. Squads wait for you to confirm.'], ['on', 'On', 'Everyone sees it and is notified.']].map(([v, l, d]) =>
+        `<label class="chklbl"><input type="radio" name="av-mode" value="${v}" ${s.mode === v || (!s.mode && v === 'off') ? 'checked' : ''}> <span><strong>${l}</strong> <span class="hint">· ${d}</span></span></label>`).join('')}</div>
+      <div class="g2" style="gap:10px;margin-top:10px">
+        <div><label>Opens (UK time)</label><input type="time" id="av-open" value="${esc(s.open_time || '09:00')}"></div>
+        <div><label>Closes (UK time)</label><input type="time" id="av-close" value="${esc(s.close_time || '21:00')}"></div>
+        <div><label>Monday game opens (days before)</label><input type="number" min="1" max="6" id="av-mon-days" value="${s.mon_open_days_before ?? 3}"></div>
+        <div><label>Thursday game opens (days before)</label><input type="number" min="1" max="6" id="av-thu-days" value="${s.thu_open_days_before ?? 2}"></div>
+        <div><label>Kick-off</label><input type="time" id="av-kick" value="${esc(s.kickoff_time || '18:30')}"></div>
+        <div><label>Venue</label><input type="text" id="av-venue" value="${esc(s.venue || 'Harrow Powerleague')}"></div>
+      </div>
+      <label class="chklbl"><input type="checkbox" id="av-auto" ${s.auto_announce !== false ? 'checked' : ''}> <span>Announce the squad automatically at closing time <span class="hint">· when off, organisers confirm it first. Trial always waits.</span></span></label>
+      <div class="sh">Organisers' own names</div><p class="hint">They get organiser notifications, and they're the only ones notified in Trial.</p>
+      <div class="g2 av-orgs" style="gap:10px">${ORGANISERS.map(orgSel).join('')}</div>
+      <div class="tactions" style="margin-top:12px"><button class="btn primary" onclick="avSaveSettings()">Save</button><button class="btn" onclick="goTab('users')"><i class="ti ti-device-mobile"></i> App users</button></div>
+      <div id="av-set-msg" class="hint" style="margin-top:6px"></div>
+    </div>`;
+}
+async function avSaveSettings() {
+  const v = id => document.getElementById(id).value, mode = (document.querySelector('input[name=av-mode]:checked') || {}).value || 'off';
+  const row = { id: 1, mode, open_time: v('av-open') || '09:00', close_time: v('av-close') || '21:00',
+    mon_open_days_before: Math.min(6, Math.max(1, +v('av-mon-days') || 3)), thu_open_days_before: Math.min(6, Math.max(1, +v('av-thu-days') || 2)),
+    auto_announce: document.getElementById('av-auto').checked, kickoff_time: v('av-kick') || '18:30', venue: v('av-venue').trim() || 'Harrow Powerleague',
+    organiser_ids: ORGANISERS.map((o, i) => toId(v('av-org-' + i)) || 0) };
+  if (row.open_time >= row.close_time) { document.getElementById('av-set-msg').textContent = 'Closing time must be after opening time.'; return; }
+  if (mode !== 'off' && !row.organiser_ids.some(x => x)) { document.getElementById('av-set-msg').textContent = "Choose at least one organiser's name first."; return; }
+  const { error } = await sb.from('availability_settings').upsert(row);
+  avNote = '';
+  if (error) { document.getElementById('av-set-msg').textContent = "Couldn't save: " + error.message; return; }
+  AV.settings = row; availRender();
+  const box = document.getElementById('av-set-box'); if (box) { box.hidden = false; const b = document.querySelector('[aria-controls=av-set-box]'); if (b) { b.textContent = 'Hide'; b.setAttribute('aria-expanded', 'true'); } }
+  document.getElementById('av-set-msg').textContent = mode === 'off' ? 'Saved. Self-service availability is off.' : mode === 'trial' ? 'Saved. Trial is on: only organisers see it.' : 'Saved. Self-service availability is on for everyone.';
+}
+
+/* Organisers: App users */
+async function renderUsers() {
+  const el = document.getElementById('users-card');
+  el.innerHTML = '<h3>📱 App users</h3><p class="hint">Loading…</p>';
+  if (!pushReady) { el.innerHTML = '<h3>📱 App users</h3><p class="hint">Needs the notify function. See the 🔔 line on Setup.</p>'; return; }
+  let data;
+  try { data = await pushCall('admin_users', {}); } catch (e) { el.innerHTML = `<h3>📱 App users</h3><p class="hint">${esc(e.message)}</p>`; return; }
+  const KIND_SHORT = { availability: 'Avail', squad: 'Squad', teams: 'Teams', payments: 'Pay', credit: 'Credit' };
+  const when = t => { if (!t) return ''; const d = new Date(t); return d.toDateString() === new Date().toDateString() ? 'Today ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); };
+  const rows = S.players.map(p => {
+    const devs = data.devices.filter(d => Number(d.player_id) === p.id), subs = data.subscriptions.filter(s => Number(s.player_id) === p.id);
+    const seen = [...devs.map(d => d.last_seen), ...subs.map(s => s.updated_at)].sort().pop() || '';
+    return { p, devs, subs, seen, has: devs.length || subs.length };
+  }).sort((a, b) => (b.has ? 1 : 0) - (a.has ? 1 : 0) || b.seen.localeCompare(a.seen) || a.p.name.localeCompare(b.p.name));
+  const withApp = rows.filter(r => r.has).length, withNote = rows.filter(r => r.subs.length).length, installed = rows.filter(r => r.devs.some(d => d.installed)).length;
+  el.innerHTML = `<h3>📱 App users</h3>
+    <div class="av-stats" style="margin-top:8px"><div class="i"><b>${withApp}</b>Set up</div><div class="n"><b>${installed}</b>Installed</div><div class="i"><b>${withNote}</b>Notifications on</div><div class="o"><b>${S.players.length - withApp}</b>Not yet</div></div>
+    <div class="tablewrap"><table class="ledger stats" style="min-width:0"><thead><tr><th>Player</th><th>App</th><th>Notifications</th><th class="r">Seen</th></tr></thead><tbody>${rows.map(r =>
+      `<tr><td>${esc(r.p.name)}</td><td>${r.devs.length ? r.devs.map(d => `${d.installed ? '📱 Installed' : '🌐 Browser'}<br><span class="hint">${esc(d.browser)} · ${esc(d.platform)}</span>`).join('<br>') : r.subs.length ? '📱 Yes' : '<span class="hint">–</span>'}</td>
+        <td>${r.subs.length ? r.subs.map(s => `🔔 On <span class="hint">${Object.keys(KIND_SHORT).filter(k => s.prefs[k]).map(k => KIND_SHORT[k]).join(' · ')}</span>`).join('<br>') : r.has ? '<span class="hint">Off</span>' : '<span class="hint">–</span>'}</td>
+        <td class="r hint">${esc(when(r.seen))}</td></tr>`).join('')}</tbody></table></div>
+    <p class="hint" style="margin-top:8px">Phones show up once they've chosen "Who are you?" or turned on notifications. A player can have more than one phone.</p>`;
+}
+
+/* Draw everything availability touches */
+function availRender() {
+  const vis = avVisible();
+  // Pages in the menu
+  const nb = document.getElementById('nb-avail'), nu = document.getElementById('nb-users');
+  const navChange = (nb.style.display !== (vis ? '' : 'none')) || (nu.style.display !== (pushReady ? '' : 'none'));
+  nb.style.display = vis ? '' : 'none'; nu.style.display = pushReady ? '' : 'none';
+  if (navChange && appMode) { const cur = document.querySelector('.page.active').id.replace('page-', ''); buildNav(); markNav(cur); }
+  // Front page
+  const fi = document.getElementById('front-install'), fa = document.getElementById('front-avail');
+  const ins = vis ? avInstallCard() : '';
+  fi.innerHTML = ins; fi.style.display = ins ? '' : 'none';
+  const known = ME && S.players.some(p => p.id === ME);   // a removed player picks again
+  const fav = vis ? (known ? avPlayerCard() : avWhoCard('front-who')) : '';
+  fa.innerHTML = fav; fa.style.display = fav ? '' : 'none';
+  // Once the squad is picked the availability card shows it, so the usual next-game card would repeat it
+  const shown = vis && ME && avRound();
+  document.getElementById('front-game').style.display = shown && shown.status === 'closed' && S.games.some(g => g.id === Number(shown.game_id)) ? 'none' : '';
+  // Availability page, Run game and Setup
+  document.getElementById('avail-player').innerHTML = !vis ? '<div class="card"><p class="hint">Self-service availability is switched off.</p></div>' : known ? avPlayerCard() : avWhoCard('page-who');
+  document.getElementById('avail-org').innerHTML = isLoggedIn() ? avOrgCard() : '';
+  const set = document.getElementById('avail-settings'), open = !!document.querySelector('#av-set-box:not([hidden])');
+  set.innerHTML = avSettingsCard();
+  if (open) { const box = document.getElementById('av-set-box'), b = document.querySelector('[aria-controls=av-set-box]'); if (box && b) { box.hidden = false; b.textContent = 'Hide'; b.setAttribute('aria-expanded', 'true'); } }
+}
+// Keep it fresh while someone is looking at it
+setInterval(() => {
+  if (document.hidden || avMode() === 'off') return;
+  const active = (document.querySelector('.page.active') || {}).id;
+  if (document.body.classList.contains('on-front') || active === 'page-avail' || active === 'page-game') availLoad();
+}, 30000);
 
 try { const o = localStorage.getItem('fbv3_org'); if (ORGANISERS.includes(o)) document.getElementById('org-select').value = o; } catch (e) {}
 loadState();
 document.getElementById('app-version').textContent = 'Brent Football ' + APP_VERSION;
 pushLoadStatus();
+availLoad();
 // Tapping a payment notification opens Payments (the app may already be open)
 function openFromLink() {
-  if (location.hash !== '#money') return;
+  if (location.hash !== '#money' && location.hash !== '#avail') return;
+  const to = location.hash === '#money' ? 'money' : 'avail';
   if (!appMode) enterApp(isLoggedIn() ? 'edit' : 'view');
-  goTab('money'); history.replaceState(null, '', location.pathname + location.search);
+  goTab(to === 'avail' && !avVisible() ? 'history' : to); history.replaceState(null, '', location.pathname + location.search);
 }
 openFromLink();
 addEventListener('hashchange', openFromLink);

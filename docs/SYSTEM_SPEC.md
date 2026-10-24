@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Document version** | 2.7 |
-| **Release** | Production Release 2.7 |
+| **Document version** | 3.0 |
+| **Release** | Production Release 3.0 |
 | **Status** | Released |
 | **Date** | 24 October 2026 |
 | **Application** | `index.html` (repository root), published with GitHub Pages |
@@ -52,6 +52,7 @@ If you aren't sure, treat it as minor unless it changes the data model or a core
 | 2.5 | 24 Oct 2026 | Notifications page: a "Received on this phone" confirmation when a push arrives while it's open, a **Show one on this phone** button, and the phone's push service and version. |
 | 2.6 | 24 Oct 2026 | Repeat notifications of the same kind still alert and vibrate, rather than quietly replacing the last one. |
 | 2.7 | 24 Oct 2026 | A football badge shows in the status bar for each notification. In Samsung Internet, the app advises installing from Chrome for notifications, with an Open in Chrome button. |
+| 3.0 | 24 Oct 2026 | **Self-service availability** behind an Off / Trial / On switch. Players say in or out. It opens Tuesday (Thursday games) or Friday (Monday games) at 9am and closes at 9pm, then the squad is picked with the Run game rules, saved and announced. Drop-outs move reserves up, and late joiners fill gaps. Guaranteed players must say in. Late flags are organiser-only. New **App users** page, first-time welcome and Who are you? cards, and an Availability notification type. |
 
 ---
 
@@ -112,6 +113,8 @@ The repository also contains an unrelated starter app (`server.js`, `public/`, S
 | Attendance | ✓ | | More |
 | Payments | ✓ | ✓ | Bar |
 | Notifications (once set up) | ✓ | ✓ | More (in the bar for viewers) |
+| Availability (when switched on) | ✓ | ✓ (On only) | More (in the bar for viewers) |
+| App users | ✓ | | More |
 
 - **Phone bottom bar:**
   - Organisers get four buttons with icons (Run game, Teams, Game Log, Payments) and **More**. More slides up a sheet with Setup, Ratings, Player Stats and Attendance. While one of those pages is open, the More button shows its name.
@@ -267,6 +270,47 @@ This page appears only once the `notify` function is set up (11.2). It's under *
   - Credit used is sent automatically when tracking a game's money uses someone's credit.
 - **Automatic:** at 10:00 UTC each day, players who haven't paid for a tracked game played the day before get a payment reminder.
 - **Tapping:** tapping a payment or credit notification opens Payments. The others open the front page.
+
+### 6.11 Availability (players, when switched on)
+
+Shown on the front page and on the **Availability** page, but only when Self-service availability is **On** (or **Trial** for logged-in organisers).
+
+- **First time:**
+  1. In a browser, a welcome card explains how to install the app, with **Install app** and **Continue in the browser**. On Samsung Internet it points to Chrome.
+  2. **Who are you?** is picked once per phone.
+  3. The Get notified card follows.
+- **When nothing is open:** the card shows the next game and when its availability opens.
+- **When open:** the card shows the game, then **I'm in** and **I'm out**, the closing time and how long is left, plus counts and the names of players who said in.
+  - Guaranteed players see that they must say in by the closing time, or count as out.
+  - Players never see late flags.
+- **When held** (closed, waiting for an organiser): players can still change their answer until it's announced.
+- **When closed:** players see whether they're playing or which reserve they are (e.g. 2nd).
+  - Players in the squad and reserves can drop out with **I can't make it any more**.
+  - Others can say **I'm in** to be added if there's space, or join the reserves.
+- **Cancelled:** "{day} is cancelled".
+- **After kick-off:** no changes.
+
+### 6.12 Self-service availability for organisers
+
+- **Setup:** the **Self-service availability** card (Show / Hide). It holds:
+  - the Off / Trial / On switch;
+  - opening and closing times, and how many days before each game it opens;
+  - kick-off time and venue;
+  - **Announce automatically**;
+  - each organiser's own player name (used for organiser and trial notifications);
+  - a link to **App users**.
+- **Run game:** a card at the top shows:
+  - in / out / no-answer counts, and guaranteed players who haven't said in;
+  - the squad "if it closed now", with Guaranteed, →Next and Late last time tags;
+  - **Close now**, **Nudge N**, **Cancel this week**, and **Answer for a player** (In or Out);
+  - when held, **Confirm and announce** and **Reopen**;
+  - when closed, **WhatsApp message** and **Pick teams →**;
+  - when nothing is open, **Open Monday now** and **Open Thursday now**.
+- **Availability message:** when the switch is On, the message asks players to answer in the app, with the link.
+- **App users (organisers):** counts and a table showing, for each player:
+  - whether the app is set up (installed or in a browser), and the browser and platform;
+  - whether notifications are on, and which kinds;
+  - when they were last seen.
 
 ## 7. Business rules
 
@@ -458,6 +502,10 @@ See you later. Please be on time for the {time} kick-off
 | `player_credit` | `player_id` | amount_p | `credit.sql` |
 | `push_subscriptions` | `endpoint` | player_id, p256dh, auth, prefs, updated_at | `push.sql` |
 | `push_config` | `id` (= 1) | public_key, private_key | `push.sql` |
+| `availability_settings` | `id` (= 1) | mode, open/close times, days before, auto_announce, kickoff_time, venue, organiser_ids | `availability.sql` |
+| `availability_rounds` | `game_iso` | day, status, game_id, opened_at, closed_at | `availability.sql` |
+| `availability_answers` | `game_iso`, `player_id` | answer, answered_at, by_organiser | `availability.sql` |
+| `app_devices` | `device_id` | player_id, installed, browser, platform, notifications, last_seen | `availability.sql` |
 
 Row Level Security is on for every table, with "anyone can read and write" policies (`policies.sql` for the original three tables, and within each later script). Each script also grants the `anon` and `authenticated` roles access to its tables. The two push tables are the exception: they're closed to the page, and only the `notify` Edge Function can use them.
 
@@ -473,6 +521,8 @@ Row Level Security is on for every table, with "anyone can read and write" polic
 | `fbv3_whatsapp` | Time and venue for each day type, and the pitch-booked tick |
 | `fbv3_show_opening`, `fbv3_show_split` | Whether the starting balances and split settings are shown |
 | `fbv3_push` | This phone's notifications: who it is, its push address, its choices, and whether the Get notified card was dismissed |
+| `fbv3_me` | This phone's "Who are you?" player |
+| `fbv3_device`, `fbv3_hello`, `fbv3_install_hidden` | Device id and last check-in for App users, and whether the install card was dismissed |
 
 ## 10. Saving, sync and data integrity
 
@@ -518,6 +568,11 @@ For notifications (release 2.0):
 7. Run `supabase/push.sql`.
 8. Deploy the Edge Function. In the Supabase dashboard, go to **Edge Functions → Deploy a new function → Via Editor**, name it `notify`, paste `supabase/functions/notify/index.ts` and deploy. Then, in the function's settings, turn off **Verify JWT** and save.
 9. Run `supabase/push-cron.sql` for the daily payment reminders.
+
+For self-service availability (release 3.0):
+
+10. Run `supabase/availability.sql`.
+11. Once the site has published, redeploy the `notify` function with the latest `supabase/functions/notify/index.ts`, keeping Verify JWT off. The feature stays Off until it's switched on under Setup.
 
 Each script also grants the page (`anon` and `authenticated` roles) select, insert, update and delete on its tables. Supabase stops granting this automatically for tables created from 30 October 2026, so **any new table added in a later release must include the same `grant` line in its script**, or the page gets "permission denied" for it. Re-running the scripts on the existing database is harmless.
 
