@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | **Document** | Solution Design Document (SDD) |
-| **Version** | 2.0 |
-| **Release** | Production Release 2.0 |
+| **Version** | 2.1 |
+| **Release** | Production Release 2.1 |
 | **Status** | Approved for production |
 | **Date** | 24 October 2026 |
 | **System** | Brent Football (Football Organisation App: `index.html`, GitHub Pages, Supabase and the `notify` Edge Function) |
@@ -68,6 +68,7 @@ If you aren't sure, treat the change as **minor** unless it changes the data mod
 | 1.2 | 23 Oct 2026 | Organisers with Claude Code | Installable app: named **Brent Football** (page title and heading), with app icon, web app manifest and service worker for home-screen install and opening offline. |
 | 1.3 | 24 Oct 2026 | Organisers with Claude Code | **Availability message** card on Run game (hidden until Show) builds the pre-game WhatsApp availability message for Monday or Thursday (19.1). No data change. |
 | 2.0 | 24 Oct 2026 | Organisers with Claude Code | **Push notifications** (7.5): "Who are you?" opt-in, Notifications page with per-type choices, squad, teams, payment-reminder and credit-used notifications, daily automatic reminders. New `notify` Edge Function, two new closed tables (`push_subscriptions`, `push_config`) and a schedule. |
+| 2.1 | 24 Oct 2026 | Organisers with Claude Code | The daily reminder schedule now sends the publishable key, because Supabase only lets requests reach the function with the project's key. Re-run `push-cron.sql`. |
 
 ### 1.4 Approval
 
@@ -636,9 +637,9 @@ The two push tables are the only ones **closed to the page**: RLS is on with no 
 | Supabase | `supabase-js` v2 over HTTPS (PostgREST): `select`, `upsert`, `delete … in(…)` | Publishable key in the page. Errors are classified as "table missing" (`42P01`, `PGRST205`), "access refused" (`42501`) or other. |
 | WhatsApp | `https://wa.me/?text=…` opened in a new tab, plus the Clipboard API with a select-text fallback | No API keys. Works with whichever WhatsApp the device has. |
 | Web Share | `navigator.share` for exporting data | Falls back to download or copy. |
-| `notify` Edge Function | `POST {SUPABASE_URL}/functions/v1/notify` with JSON `{action}`: `status`, `subscribe`, `unsubscribe`, `send`, `daily`. JWT verification is off (the page has no sign-in). CORS open. | The function uses the service role key provided by Supabase. No secrets are set by hand. |
+| `notify` Edge Function | `POST {SUPABASE_URL}/functions/v1/notify` with JSON `{action}`: `status`, `subscribe`, `unsubscribe`, `send`, `daily`. JWT verification is off (the page has no sign-in). Supabase still requires the project's key, so the page sends the publishable key as `apikey`. CORS open. | The function uses the service role key provided by Supabase. No secrets are set by hand. |
 | Web Push | `web-push` encrypts each notification (aes128gcm) and signs it with VAPID (subject: the app's address) for the phone's push service | Gone phones (404/410) are deleted. Time to live is 24 hours. |
-| Schedule | `pg_cron` job `brent-football-payment-reminders` calls the function through `pg_net` every day at 10:00 UTC | Set up by `push-cron.sql`. |
+| Schedule | `pg_cron` job `brent-football-payment-reminders` calls the function through `pg_net` every day at 10:00 UTC, sending the publishable key as `apikey` | Set up by `push-cron.sql`. |
 | CDN | jsDelivr for `supabase-js` and the Tabler icon font | If the CDN fails, the database is unavailable (the device copy is still used) and icons are missing. |
 
 ---

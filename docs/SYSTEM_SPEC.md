@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Document version** | 2.0 |
-| **Release** | Production Release 2.0 |
+| **Document version** | 2.1 |
+| **Release** | Production Release 2.1 |
 | **Status** | Released |
 | **Date** | 24 October 2026 |
 | **Application** | `index.html` (repository root), published with GitHub Pages |
@@ -45,6 +45,7 @@ If you aren't sure, treat it as minor unless it changes the data model or a core
 | 1.2 | 23 Oct 2026 | The app is named Brent Football and can be installed on the home screen, with its own icon, a green opening screen and full-screen display. It opens with the last data when there's no signal. |
 | 1.3 | 24 Oct 2026 | Run game has an **Availability message** card (hidden until Show) for the pre-game availability message and poll. |
 | 2.0 | 24 Oct 2026 | **Push notifications**: players turn them on with "Who are you?" and choose which kinds they get. They're notified when the squad and teams are confirmed, by payment reminder (from Outstanding Payments, and automatically the morning after a game) and when credit is used. New Notifications page, front-page card, `notify` Edge Function and two new tables. |
+| 2.1 | 24 Oct 2026 | The daily payment reminder schedule sends the project's public key so Supabase lets it reach the function. Re-run `push-cron.sql`. |
 
 ---
 
