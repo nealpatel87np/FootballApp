@@ -33,7 +33,7 @@ This project is a very simple football app that stores player data in a local SQ
 - `data/football.db` - database file created automatically
 
 ## Football organisation page
-The design is documented in [`docs/SOLUTION_DESIGN.md`](docs/SOLUTION_DESIGN.md) (Solution Design Document) and [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md) (functional specification). Both include the versioning policy. Current release: **2.1**.
+The design is documented in [`docs/SOLUTION_DESIGN.md`](docs/SOLUTION_DESIGN.md) (Solution Design Document) and [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md) (functional specification). Both include the versioning policy. Current release: **2.2**.
 
 Every file in `supabase/` grants the page access to its tables. Supabase no longer does this automatically for tables created from 30 October 2026, so any new table needs the same `grant` line.
 
@@ -125,6 +125,8 @@ Players can get notifications on their phone from the installed app. They're tol
    2. Name it `notify`, paste the whole of `supabase/functions/notify/index.ts`, and press **Deploy**.
    3. Open the function's **Settings**, turn off **Verify JWT** (also called "Enforce JWT verification"), and save.
 3. Run `supabase/push-cron.sql` in the SQL Editor for the automatic daily reminders. If it says the extensions can't be created, turn on **pg_cron** and **pg_net** under **Database → Extensions**, then run it again.
+
+If the Notifications page doesn't appear, the 🔔 line at the top of **Setup** says why.
 
 There's no key to create or paste: the function makes its own notification keys the first time it runs. The phones and keys are kept in tables the page can't read. As with the rest of the app, there's no sign-in, so anyone could pick another name under "Who are you?".
 

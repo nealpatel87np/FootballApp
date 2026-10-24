@@ -419,6 +419,7 @@
   <!-- SETUP -->
   <div id="page-setup" class="page active">
     <div class="stat" style="margin-bottom:12px"><div class="n" id="setup-count">0</div><div class="l">Players</div></div>
+    <p class="hint" id="push-diag" style="margin:-4px 0 12px"></p>
     <div class="card">
       <div class="fold-h"><h3>Add player</h3><button class="btn xs" onclick="toggleFold('add-box', this)" aria-expanded="false" aria-controls="add-box">Show</button></div>
       <div id="add-box" hidden>
@@ -3100,7 +3101,7 @@ const PUSH_KINDS = [['squad', 'Squad picked', 'Playing or reserve'], ['teams', '
 const PUSH_DEFAULTS = { squad: true, teams: true, payments: true, credit: false };
 let PUSH = {};
 try { PUSH = JSON.parse(localStorage.getItem(PUSH_KEY) || '{}') || {}; } catch (e) {}
-let pushReady = null, pushPublicKey = '', pushPlayers = new Set(), pushNote = '', pushTeamsNote = '';
+let pushReady = null, pushPublicKey = '', pushPlayers = new Set(), pushNote = '', pushTeamsNote = '', pushError = '';
 const pushSave = () => { try { localStorage.setItem(PUSH_KEY, JSON.stringify(PUSH)); } catch (e) {} };
 const pushCan = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && (location.protocol === 'https:' || location.hostname === 'localhost');
 const pushIos = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -3120,7 +3121,7 @@ function pushKeyBytes(b64) {
 async function pushCall(action, body) {
   const r = await fetch(PUSH_FN, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY }, body: JSON.stringify({ action, ...body }) });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.error || `The notifications service didn't answer (${r.status}).`);
+  if (!r.ok) throw new Error(j.error || j.message || `The notifications service didn't answer (${r.status}).`);
   return j;
 }
 // Is the notify function set up, and who has notifications on?
@@ -3129,10 +3130,18 @@ async function pushLoadStatus() {
   try {
     const j = await pushCall('status', {});
     pushPublicKey = j.publicKey || ''; pushPlayers = new Set((j.playerIds || []).map(Number)); pushReady = !!pushPublicKey;
-  } catch (e) { if (pushReady === null) pushReady = false; }
+    pushError = pushReady ? '' : `the notify function answered, but not with Brent Football's reply (${JSON.stringify(j).slice(0, 120)}). Check its code is supabase/functions/notify/index.ts.`;
+  } catch (e) {
+    if (pushReady === null) pushReady = false;
+    pushError = e instanceof TypeError ? `couldn't reach the notify function (${e.message}). Check it's deployed as "notify" with Verify JWT off.` : e.message;
+  }
   pushRerender();
 }
 function pushRerender() {
+  // Organisers see on Setup whether notifications are connected, and why not
+  document.getElementById('push-diag').textContent = pushReady === null ? '' : pushReady
+    ? `🔔 Notifications connected · ${pushPlural(pushPlayers.size, 'player')} ${pushPlayers.size === 1 ? 'has' : 'have'} them on.`
+    : `🔔 Notifications not connected: ${pushError}`;
   // The Notifications page only appears once the notify function is set up
   const nb = document.getElementById('nb-notify'), show = pushReady ? '' : 'none';
   if (nb.style.display !== show) {
