@@ -3095,7 +3095,7 @@ renderHistory = function () {
    learns which players have them on. Organisers send them when they confirm a game
    or teams and from Outstanding Payments; payment reminders also go out on a
    schedule (supabase/push-cron.sql). */
-const APP_VERSION = '2.5';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
+const APP_VERSION = '2.6';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
 const PUSH_FN = SUPABASE_URL + '/functions/v1/notify';
 const PUSH_KEY = 'fbv3_push';   // this phone only: { playerId, endpoint, prefs, hideCard }
 const PUSH_KINDS = [['squad', 'Squad picked', 'Playing or reserve'], ['teams', 'Teams confirmed', 'Your team and bibs'],
@@ -3227,7 +3227,7 @@ async function pushTest() {
 async function pushLocalTest() {
   try {
     const reg = await navigator.serviceWorker.ready;
-    await reg.showNotification('🔔 Brent Football', { body: 'Local test: this phone can show notifications.', icon: 'icons/icon-192.png', tag: 'local-test' });
+    await reg.showNotification('🔔 Brent Football', { body: 'Local test: this phone can show notifications.', icon: 'icons/icon-192.png', tag: 'local-test', renotify: true, vibrate: [200, 100, 200] });
     pushNote = "Shown. If no notification appeared, the phone is hiding them: check Settings → Apps → Samsung Internet (or your browser) → Notifications.";
   } catch (e) { pushNote = `This phone couldn't show a notification (${e.message}).`; }
   renderNotify();

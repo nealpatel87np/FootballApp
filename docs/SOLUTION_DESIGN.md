@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | **Document** | Solution Design Document (SDD) |
-| **Version** | 2.5 |
-| **Release** | Production Release 2.5 |
+| **Version** | 2.6 |
+| **Release** | Production Release 2.6 |
 | **Status** | Approved for production |
 | **Date** | 24 October 2026 |
 | **System** | Brent Football (Football Organisation App: `index.html`, GitHub Pages, Supabase and the `notify` Edge Function) |
@@ -73,6 +73,7 @@ If you aren't sure, treat the change as **minor** unless it changes the data mod
 | 2.3 | 24 Oct 2026 | Organisers with Claude Code | Turning notifications on gives up with a clear message at whichever step stalls (permission, background helper, the phone's push service, saving the phone) instead of waiting on "Turning on…". Registers the service worker if it's missing. |
 | 2.4 | 24 Oct 2026 | Organisers with Claude Code | Front page shows the app version (`APP_VERSION`). Turning on shows each step as it happens. Permission works with older callback-style browsers. The service worker fetches the app's own files with `no-cache`, so a release isn't held back by GitHub Pages' 10-minute browser cache. |
 | 2.5 | 24 Oct 2026 | Organisers with Claude Code | Delivery checks on the Notifications page: the service worker tells an open app when a push arrives (and whether it was shown), **Show one on this phone** displays a local notification, and the page shows the phone's push service and the version. The test reports how many phones it was sent to. |
+| 2.6 | 24 Oct 2026 | Organisers with Claude Code | Notifications use `renotify` and a vibration pattern, so a repeat with the same tag still alerts. Runbook covers Samsung showing site notifications silently. |
 
 ### 1.4 Approval
 
@@ -801,6 +802,7 @@ The sync status line under the page title shows "Up to date", "Saving…", "Save
 | Wrong data after an import | Bad import file | Re-import from the `fbv3_backup` copy, or from an earlier export. |
 | Notifications page missing | The `notify` function isn't deployed, has the wrong code, or can't be reached | Read the 🔔 status line on Setup. Check the function's Code tab starts with the Brent Football header, then follow 13.3 steps 7–9. |
 | Notifications don't arrive on iPhone | Not opened from the Home Screen, or iOS older than 16.4 | Add to Home Screen, open it from there, then turn notifications on. |
+| "Received… (shown)" but no banner | Android shows the site's notifications silently (Samsung's default for website channels) | Long-press the notification in the panel → Settings → **Alert** and **Show as pop-up**; or Settings → Apps → Samsung Internet → Notifications → the site's category. |
 | "Notifications are blocked" | The phone's permission was refused | Allow notifications for Brent Football in the phone's settings, then turn them on again. |
 | A new player's legacy figures don't show | Name doesn't match `LEGACY_APPS` | Rename the player to match the Legacy Player Data list exactly. |
 

@@ -2,7 +2,7 @@
 // first, so every deploy reaches people straight away; the cached copy is only
 // used when there's no signal. Database requests are never cached.
 // It also shows push notifications and opens the app when one is tapped.
-const CACHE = 'brent-football-v4';
+const CACHE = 'brent-football-v5';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png'];
 const CDN = 'https://cdn.jsdelivr.net/';
 
@@ -37,7 +37,7 @@ self.addEventListener('push', e => {
   try { d = e.data ? e.data.json() : {}; } catch (err) { d = { body: e.data ? e.data.text() : '' }; }
   e.waitUntil(Promise.all([
     self.registration.showNotification(d.title || 'Brent Football', {
-      body: d.body || '', icon: 'icons/icon-192.png', tag: d.tag || undefined, data: { url: d.url || './' }
+      body: d.body || '', icon: 'icons/icon-192.png', tag: d.tag || undefined, renotify: !!d.tag, vibrate: [200, 100, 200], data: { url: d.url || './' }
     }).then(() => 'shown', err => 'not shown: ' + (err && err.message)),
     self.clients.matchAll({ type: 'window', includeUncontrolled: true })
   ]).then(([shown, list]) => list.forEach(w => w.postMessage({ type: 'push-received', title: d.title || '', shown }))));   // lets an open app confirm it arrived
