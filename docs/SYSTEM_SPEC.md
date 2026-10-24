@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Document version** | 1.3 |
-| **Release** | Production Release 1.3 |
+| **Document version** | 2.0 |
+| **Release** | Production Release 2.0 |
 | **Status** | Released |
 | **Date** | 24 October 2026 |
 | **Application** | `index.html` (repository root), published with GitHub Pages |
@@ -44,6 +44,7 @@ If you aren't sure, treat it as minor unless it changes the data model or a core
 | 1.1 | 23 Oct 2026 | Every SQL script now grants the page access to its tables through the Data API, as Supabase requires for tables created from 30 Oct 2026. No app change. |
 | 1.2 | 23 Oct 2026 | The app is named Brent Football and can be installed on the home screen, with its own icon, a green opening screen and full-screen display. It opens with the last data when there's no signal. |
 | 1.3 | 24 Oct 2026 | Run game has an **Availability message** card (hidden until Show) for the pre-game availability message and poll. |
+| 2.0 | 24 Oct 2026 | **Push notifications**: players turn them on with "Who are you?" and choose which kinds they get. They're notified when the squad and teams are confirmed, by payment reminder (from Outstanding Payments, and automatically the morning after a game) and when credit is used. New Notifications page, front-page card, `notify` Edge Function and two new tables. |
 
 ---
 
@@ -103,6 +104,7 @@ The repository also contains an unrelated starter app (`server.js`, `public/`, S
 | Player Stats | ✓ | ✓ | More (in the bar for viewers) |
 | Attendance | ✓ | | More |
 | Payments | ✓ | ✓ | Bar |
+| Notifications (once set up) | ✓ | ✓ | More (in the bar for viewers) |
 
 - **Phone bottom bar:**
   - Organisers get four buttons with icons (Run game, Teams, Game Log, Payments) and **More**. More slides up a sheet with Setup, Ratings, Player Stats and Attendance. While one of those pages is open, the More button shows its name.
@@ -119,6 +121,7 @@ The repository also contains an unrelated starter app (`server.js`, `public/`, S
 - Shows the **confirmed teams** for that game if there are any. Otherwise it shows the numbered squad and the reserves.
 - Shows kitty tiles: **In the kitty** and **Still owed**.
 - Has **View** and **Log in** buttons. Log in opens a password box.
+- Shows a **Get notified** card at the top until notifications are on or dismissed on that phone (6.10).
 
 ### 6.2 Setup (organisers)
 
@@ -237,6 +240,25 @@ Sections, from top to bottom:
 5. **How each game is split**, at the bottom and closed until **Show** is tapped:
    - the price per player, pitch cost and admin share;
    - **Starting balances** for each organiser, also closed until tapped.
+
+### 6.10 Notifications (everyone)
+
+This page appears only once the `notify` function is set up (11.2). It's under **More** for organisers, and in the bottom bar for viewers.
+- **Before turning on:** choose **Who are you?** and tap **Turn on notifications**. The phone asks for permission once.
+- **Once on:** the page says "Notifications are on for {name} on this phone" and offers:
+  - choices for **Squad picked**, **Teams confirmed**, **Payment reminders** (all on by default) and **Credit used** (off by default);
+  - **Send a test notification**;
+  - **Not you?**, to change the name;
+  - **Turn off notifications**.
+- **iPhone:** notifications only work in the app added to the Home Screen. Safari explains this instead.
+- **Front page:** players who haven't turned notifications on see a **Get notified** card with the same name choice. **Not now** hides it on that phone.
+- **Organisers sending:**
+  - Run game has **Notify the squad** before Confirm game. It's on by default and shows how many have notifications on. Playing players get "You're playing" with the date, time and venue. Reserves get "You're a reserve this time. You're first in for the next game."
+  - Teams has **Notify the players** before Confirm teams. Each player gets their team, and whether it wears the bibs.
+  - Outstanding Payments has **Send reminders (N)**. Each player who owes gets the total, the games and who to pay.
+  - Credit used is sent automatically when tracking a game's money uses someone's credit.
+- **Automatic:** at 10:00 UTC each day, players who haven't paid for a tracked game played the day before get a payment reminder.
+- **Tapping:** tapping a payment or credit notification opens Payments. The others open the front page.
 
 ## 7. Business rules
 
@@ -426,8 +448,10 @@ See you later. Please be on time for the {time} kick-off
 | `player_skills` | `player_id` | attack, defence, fitness, goalkeeping (1–10), position (auto/def/att/any), keeper | `skills.sql` |
 | `game_late` | `game_id` | player_ids[] | `late.sql` |
 | `player_credit` | `player_id` | amount_p | `credit.sql` |
+| `push_subscriptions` | `endpoint` | player_id, p256dh, auth, prefs, updated_at | `push.sql` |
+| `push_config` | `id` (= 1) | public_key, private_key | `push.sql` |
 
-Row Level Security is on for every table, with "anyone can read and write" policies (`policies.sql` for the original three tables, and within each later script). Each script also grants the `anon` and `authenticated` roles access to its tables.
+Row Level Security is on for every table, with "anyone can read and write" policies (`policies.sql` for the original three tables, and within each later script). Each script also grants the `anon` and `authenticated` roles access to its tables. The two push tables are the exception: they're closed to the page, and only the `notify` Edge Function can use them.
 
 ### 9.2 Browser storage (`localStorage`)
 
@@ -440,6 +464,7 @@ Row Level Security is on for every table, with "anyone can read and write" polic
 | `fbv3_org` | Last organiser chosen on Run game |
 | `fbv3_whatsapp` | Time and venue for each day type, and the pitch-booked tick |
 | `fbv3_show_opening`, `fbv3_show_split` | Whether the starting balances and split settings are shown |
+| `fbv3_push` | This phone's notifications: who it is, its push address, its choices, and whether the Get notified card was dismissed |
 
 ## 10. Saving, sync and data integrity
 
@@ -479,6 +504,12 @@ Run each of these once in the Supabase SQL Editor. All are safe to run again.
 6. `supabase/credit.sql`
 
 All six had been run on the production database by release 1.0.
+
+For notifications (release 2.0):
+
+7. Run `supabase/push.sql`.
+8. Deploy the Edge Function. In the Supabase dashboard, go to **Edge Functions → Deploy a new function → Via Editor**, name it `notify`, paste `supabase/functions/notify/index.ts` and deploy. Then, in the function's settings, turn off **Verify JWT** and save.
+9. Run `supabase/push-cron.sql` for the daily payment reminders.
 
 Each script also grants the page (`anon` and `authenticated` roles) select, insert, update and delete on its tables. Supabase stops granting this automatically for tables created from 30 October 2026, so **any new table added in a later release must include the same `grant` line in its script**, or the page gets "permission denied" for it. Re-running the scripts on the existing database is harmless.
 

@@ -385,6 +385,7 @@
 
   <!-- FRONT PAGE -->
   <div id="front">
+    <div class="card" id="front-push" style="display:none"></div>
     <div class="card" id="front-game"></div>
     <div class="card"><div class="money-tiles" id="front-kitty"></div></div>
     <div class="front-actions">
@@ -412,6 +413,7 @@
     <button class="nb" onclick="goTab('stats')">Player Stats</button>
     <button class="nb edit-only" onclick="goTab('attendance')">Attendance</button>
     <button class="nb" onclick="goTab('money')">Payments</button>
+    <button class="nb" id="nb-notify" style="display:none" onclick="goTab('notify')">Notifications</button>
   </div>
 
   <!-- SETUP -->
@@ -566,6 +568,7 @@
         <div id="wa-msg" class="hint" style="margin:6px 0 0"></div>
       </div>
       <p class="hint"><i class="ti ti-info-circle"></i> Adjust the squad before confirming.</p>
+      <label class="chklbl" id="push-squad-row" style="display:none;margin:0 0 12px"><input type="checkbox" id="push-squad" checked> <span>Notify the squad <span class="hint" id="push-squad-n"></span></span></label>
       <div style="display:flex;gap:10px">
         <button class="btn" onclick="backToAvail()"><i class="ti ti-arrow-left"></i> Back</button>
         <button class="btn primary" onclick="confirmGame()"><i class="ti ti-check"></i> Confirm game</button>
@@ -689,6 +692,10 @@
   </div>
 
   <!-- MONEY -->
+  <div id="page-notify" class="page">
+    <div class="card" id="notify-card"></div>
+  </div>
+
   <div id="page-money" class="page">
     <div id="money-notice" class="notice" style="display:none"></div>
     <div class="owe-shortcuts" id="owe-shortcuts"></div>
@@ -1295,6 +1302,7 @@ function goTab(t) {
   if (t === 'ratings') renderRatings();
   if (t === 'stats') renderStats();
   if (t === 'attendance') renderAttendance();
+  if (t === 'notify') renderNotify();
 }
 
 function togglePref() {
@@ -1761,7 +1769,7 @@ function saveManualGame() {
   for (let i = 0; i < S.games.length; i++) { const gt = gameTime(S.games[i]); if (!isNaN(gt) && gt > t) { at = i; break; } }
   S.games.splice(at, 0, game);
   if (confirmedGameIdx !== null && at <= confirmedGameIdx) confirmedGameIdx++;
-  if (org) { S.money.games.push(newGameMoney(game.id, org)); applyCredit(game.id); }
+  if (org) { S.money.games.push(newGameMoney(game.id, org)); pushCreditUsed(game.id, applyCredit(game.id)); }
 
   S.players.forEach(p => {
     if (playingIds.includes(p.id)) p.played++;
@@ -1961,7 +1969,7 @@ function applyCredit(gameId) {
   if (!m || !g) return used;
   g.playingIds.forEach(pid => {
     const c = creditOf(pid);
-    if (!m.paidIds.includes(pid) && c >= m.price) { m.paidIds.push(pid); setCredit(pid, c - m.price); used.push(pName(pid)); }
+    if (!m.paidIds.includes(pid) && c >= m.price) { m.paidIds.push(pid); setCredit(pid, c - m.price); used.push(pid); }
   });
   return used;
 }
@@ -1981,7 +1989,7 @@ function renderOwes() {
         const mine = debts.filter(d => d.pid === pid);
         return `<div class="owe-person"><div class="top"><span class="nm">${esc(pName(pid))}</span><span class="amt">${gbp(total(pid))}</span>${mine.length > 1 ? `<button class="btn xs owe-clear" onclick="oweClearAll(${pid})">✓ Clear all</button>` : ''}</div>
           ${mine.map(d => `<div class="owe-game"><span class="d">${esc(d.g.date)} ${whoBadge(d.m.org)}</span><span class="v">${gbp(d.amt)}</span><button class="btn xs owe-clear" onclick="oweClear(${d.g.id},${pid})">✓ Clear</button></div>`).join('')}</div>`;
-      }).join('') || '<p class="owe-empty">Everyone\'s paid up 🎉</p>');
+      }).join('') || '<p class="owe-empty">Everyone\'s paid up 🎉</p>') + pushRemindButton(people);
   } else {
     credits.sort((a, b) => b.amount - a.amount || pName(a.playerId).localeCompare(pName(b.playerId)));
     const price = S.money.settings.price;
@@ -2163,7 +2171,8 @@ function moneyTrack(gameId) {
   let org = ORGANISERS[0]; try { org = localStorage.getItem('fbv3_org') || org; } catch (e) {}
   S.money.games.push(newGameMoney(gameId, org));
   const used = applyCredit(gameId);
-  if (used.length) moneyToast = `Paid from credit: ${used.join(', ')}.`;
+  if (used.length) moneyToast = `Paid from credit: ${used.map(pName).join(', ')}.`;
+  pushCreditUsed(gameId, used);
   moneyOpenGame = gameId; save(); renderMoney();
 }
 function moneyUntrack(gameId) {
@@ -2250,10 +2259,10 @@ function enterApp(mode) {
 }
 function enterView() { enterApp('view'); }
 // Phone page menu: four pages in the bottom bar, the rest under More. In View mode its three pages all fit in the bar.
-const NAV_ICONS = { setup: 'settings', game: 'ball-football', teams: 'users-group', ratings: 'star', history: 'history', stats: 'chart-bar', attendance: 'calendar-check', money: 'pig-money' };
+const NAV_ICONS = { setup: 'settings', game: 'ball-football', teams: 'users-group', ratings: 'star', history: 'history', stats: 'chart-bar', attendance: 'calendar-check', money: 'pig-money', notify: 'bell' };
 const NAV_BAR = ['game', 'teams', 'history', 'money'];
 function navPages() {
-  return [...document.querySelectorAll('.nav .nb')].filter(b => appMode === 'edit' || !b.classList.contains('edit-only'))
+  return [...document.querySelectorAll('.nav .nb')].filter(b => (appMode === 'edit' || !b.classList.contains('edit-only')) && b.style.display !== 'none')
     .map(b => ({ id: b.getAttribute('onclick').match(/goTab\('(\w+)'\)/)[1], name: b.textContent }));
 }
 function buildNav() {
@@ -2515,8 +2524,9 @@ function renderTeamsPage() {
       <div id="teams-wa-msg" class="hint" style="margin:6px 0 0"></div>
     </div>
     ${locked
-      ? `<div class="ok"><i class="ti ti-check"></i> Teams confirmed. They show on the front page, and you can add the score in the Game Log after the game.</div><button class="btn" onclick="teamsUnconfirm()"><i class="ti ti-edit"></i> Change teams</button>`
+      ? `<div class="ok"><i class="ti ti-check"></i> Teams confirmed. They show on the front page, and you can add the score in the Game Log after the game.</div>${pushTeamsNote ? `<p class="hint" style="margin:-4px 0 10px">🔔 ${esc(pushTeamsNote)}</p>` : ''}<button class="btn" onclick="teamsUnconfirm()"><i class="ti ti-edit"></i> Change teams</button>`
       : `<p class="hint">The draft is saved and the other organisers can see it here, but it isn't on the front page until you confirm.</p>
+         ${pushReady ? `<label class="chklbl" style="margin:0 0 12px"><input type="checkbox" id="push-teams" checked> <span>Notify the players <span class="hint">(${pushCount([...t.t1, ...t.t2])} have notifications on)</span></span></label>` : ''}
          <div class="tactions"><button class="btn primary" style="padding:12px" onclick="teamsConfirm()"><i class="ti ti-check"></i> Confirm teams</button><button class="btn dghost" onclick="teamsDiscard()">Discard draft</button></div>`}`;
   el.innerHTML = html;
 }
@@ -3077,8 +3087,254 @@ renderHistory = function () {
   _waRenderHistory();
 };
 
+/* ---- PUSH NOTIFICATIONS ----
+   Each phone turns notifications on for one player ("Who are you?"). The "notify"
+   Edge Function keeps the list of phones and sends the notifications; the page only
+   learns which players have them on. Organisers send them when they confirm a game
+   or teams and from Outstanding Payments; payment reminders also go out on a
+   schedule (supabase/push-cron.sql). */
+const PUSH_FN = SUPABASE_URL + '/functions/v1/notify';
+const PUSH_KEY = 'fbv3_push';   // this phone only: { playerId, endpoint, prefs, hideCard }
+const PUSH_KINDS = [['squad', 'Squad picked', 'Playing or reserve'], ['teams', 'Teams confirmed', 'Your team and bibs'],
+  ['payments', 'Payment reminders', 'When you owe money'], ['credit', 'Credit used', 'When credit pays for a game']];
+const PUSH_DEFAULTS = { squad: true, teams: true, payments: true, credit: false };
+let PUSH = {};
+try { PUSH = JSON.parse(localStorage.getItem(PUSH_KEY) || '{}') || {}; } catch (e) {}
+let pushReady = null, pushPublicKey = '', pushPlayers = new Set(), pushNote = '', pushTeamsNote = '';
+const pushSave = () => { try { localStorage.setItem(PUSH_KEY, JSON.stringify(PUSH)); } catch (e) {} };
+const pushCan = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && (location.protocol === 'https:' || location.hostname === 'localhost');
+const pushIos = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const pushInstalled = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const pushOn = () => !!(PUSH.endpoint && PUSH.playerId);
+const pushCount = ids => ids.filter(id => pushPlayers.has(id)).length;
+const pushPlural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+function pushShortDate(iso) {
+  if (!iso) return '';
+  const dt = isoToDate(iso);
+  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dt.getDay()] + ' ' + dt.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][dt.getMonth()];
+}
+function pushKeyBytes(b64) {
+  const s = atob((b64 + '='.repeat((4 - b64.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from(s, c => c.charCodeAt(0));
+}
+async function pushCall(action, body) {
+  const r = await fetch(PUSH_FN, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY }, body: JSON.stringify({ action, ...body }) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || `The notifications service didn't answer (${r.status}).`);
+  return j;
+}
+// Is the notify function set up, and who has notifications on?
+async function pushLoadStatus() {
+  if (SUPABASE_URL.includes('YOUR-PROJECT')) { pushReady = false; return; }
+  try {
+    const j = await pushCall('status', {});
+    pushPublicKey = j.publicKey || ''; pushPlayers = new Set((j.playerIds || []).map(Number)); pushReady = !!pushPublicKey;
+  } catch (e) { if (pushReady === null) pushReady = false; }
+  pushRerender();
+}
+function pushRerender() {
+  // The Notifications page only appears once the notify function is set up
+  const nb = document.getElementById('nb-notify'), show = pushReady ? '' : 'none';
+  if (nb.style.display !== show) {
+    nb.style.display = show;
+    if (appMode) { const cur = document.querySelector('.page.active').id.replace('page-', ''); buildNav(); markNav(cur); }
+  }
+  if (document.body.classList.contains('on-front')) renderPushCard();
+  if (document.getElementById('page-notify').classList.contains('active')) renderNotify();
+  if (document.getElementById('page-teams').classList.contains('active')) renderTeamsPage();
+  if (document.getElementById('page-money').classList.contains('active')) renderOwes();
+  renderPushSquadOpt();
+}
+const pushPlayerOptions = sel => '<option value="">Choose your name…</option>' +
+  [...S.players].sort((a, b) => a.name.localeCompare(b.name)).map(p => `<option value="${p.id}"${p.id === sel ? ' selected' : ''}>${esc(p.name)}</option>`).join('');
+
+// This phone: turn on, change player or preferences, test, turn off
+async function pushSubscription() {
+  const reg = await navigator.serviceWorker.ready;
+  return (await reg.pushManager.getSubscription()) || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: pushKeyBytes(pushPublicKey) });
+}
+async function pushTurnOn(selectId) {
+  const pid = toId(document.getElementById(selectId).value);
+  if (!pid) { pushNote = 'Choose your name first.'; pushRerender(); return; }
+  pushNote = 'Turning on…'; pushRerender();
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') throw new Error(perm === 'denied'
+      ? "Notifications are blocked for Brent Football. Allow them in your phone's settings for this app, then try again."
+      : 'Notifications were not allowed. Tap Turn on notifications to try again.');
+    const sub = await pushSubscription(), prefs = Object.assign({}, PUSH_DEFAULTS, PUSH.prefs);
+    await pushCall('subscribe', { subscription: sub.toJSON(), playerId: pid, prefs });
+    PUSH = { playerId: pid, endpoint: sub.endpoint, prefs }; pushSave();
+    pushPlayers.add(pid); pushNote = '';
+  } catch (e) { pushNote = e.message || "Couldn't turn notifications on."; }
+  pushRerender();
+}
+async function pushUpdate(changes) {
+  const before = { ...PUSH, prefs: { ...PUSH.prefs } };
+  Object.assign(PUSH, changes); pushSave();
+  try {
+    const sub = await pushSubscription();
+    await pushCall('subscribe', { subscription: sub.toJSON(), playerId: PUSH.playerId, prefs: PUSH.prefs });
+    PUSH.endpoint = sub.endpoint; pushSave(); pushNote = 'Saved.';
+  } catch (e) { PUSH = before; pushSave(); pushNote = "Couldn't save that. Check your signal and try again."; }
+  pushLoadStatus();
+}
+function pushSetPref(k, on) { pushUpdate({ prefs: { ...PUSH.prefs, [k]: on } }); }
+function pushChangeName() {
+  const pid = toId(document.getElementById('notify-who').value);
+  if (pid && pid !== PUSH.playerId) pushUpdate({ playerId: pid });
+}
+async function pushTest() {
+  pushNote = 'Sending…'; renderNotify();
+  try {
+    const r = await pushCall('send', { messages: [{ playerId: PUSH.playerId, kind: 'test', title: '🔔 Brent Football', body: "Test notification. You're all set.", url: './', tag: 'test' }] });
+    pushNote = r.sent ? 'Sent. It should arrive in a few seconds.' : "Nothing was sent. Turn notifications off and on again.";
+  } catch (e) { pushNote = e.message; }
+  renderNotify();
+}
+async function pushTurnOff() {
+  try {
+    const reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
+    const endpoint = (sub && sub.endpoint) || PUSH.endpoint;
+    if (sub) await sub.unsubscribe();
+    if (endpoint) await pushCall('unsubscribe', { endpoint });
+  } catch (e) {}
+  PUSH = { prefs: PUSH.prefs, hideCard: true }; pushSave(); pushNote = 'Notifications are off on this phone.';
+  pushLoadStatus();
+}
+function pushHideCard() { PUSH.hideCard = true; pushSave(); renderPushCard(); }
+
+// The "Get notified" card on the front page
+function renderPushCard() {
+  const el = document.getElementById('front-push');
+  const iosAdd = pushIos() && !pushInstalled() && !pushCan();
+  const show = pushReady && !pushOn() && !PUSH.hideCard && (iosAdd || (pushCan() && Notification.permission !== 'denied'));
+  el.style.display = show ? '' : 'none';
+  if (!show) return;
+  el.innerHTML = `<h3>🔔 Get notified</h3>` + (iosAdd
+    ? `<p class="hint">Find out when you're playing, which team you're on and if you owe money. On iPhone, add Brent Football to your Home Screen first (Share → Add to Home Screen), then open it from there.</p>
+       <div style="margin-top:10px"><button class="btn sm" onclick="pushHideCard()">Not now</button></div>`
+    : `<p class="hint">Find out when you're playing, which team you're on and if you owe money, without checking WhatsApp.</p>
+       <label for="front-push-who">Who are you?</label><select id="front-push-who">${pushPlayerOptions(null)}</select>
+       <div class="tactions" style="margin-top:10px"><button class="btn primary" onclick="pushTurnOn('front-push-who')"><i class="ti ti-bell"></i> Turn on notifications</button><button class="btn" onclick="pushHideCard()">Not now</button></div>
+       ${pushNote ? `<p class="hint" style="margin-top:8px">${esc(pushNote)}</p>` : ''}`);
+}
+
+// The Notifications page
+function renderNotify() {
+  const el = document.getElementById('notify-card');
+  const note = pushNote ? `<p class="hint" style="margin-top:8px">${esc(pushNote)}</p>` : '';
+  let html = '<h3>🔔 Notifications</h3>';
+  if (!pushCan()) {
+    html += pushIos() && !pushInstalled()
+      ? '<p class="hint">On iPhone, notifications only work in the installed app. In Safari, tap Share → Add to Home Screen, then open Brent Football from your home screen and come back here.</p>'
+      : "<p class=\"hint\">This browser can't show notifications. On Android use Chrome or Samsung Internet; on iPhone use the app added to your Home Screen.</p>";
+  } else if (pushReady === null) html += '<p class="hint">Checking…</p>';
+  else if (!pushReady) {
+    html += "<p class=\"hint\">Notifications aren't available right now. Check your signal and try again.</p><p class=\"hint edit-only\" style=\"margin-top:6px\">Organisers: if they've never worked, see \"Push notifications\" in the README to set them up.</p>";
+  } else if (!pushOn()) {
+    html += `<p class="hint">Get a notification when you're picked, when teams are confirmed and when you owe money.</p>
+      <label for="notify-who">Who are you?</label><select id="notify-who">${pushPlayerOptions(null)}</select>
+      <button class="btn primary" style="margin-top:10px" onclick="pushTurnOn('notify-who')"><i class="ti ti-bell"></i> Turn on notifications</button>${note}`;
+  } else {
+    const prefs = Object.assign({}, PUSH_DEFAULTS, PUSH.prefs);
+    html += `<div class="ok" style="font-size:13px;padding:8px 12px">✓ Notifications are on for <strong>${esc(pName(PUSH.playerId))}</strong> on this phone.</div>
+      <div class="sh" style="margin-top:4px">Notify me about</div>
+      ${PUSH_KINDS.map(([k, label, sub]) => `<label class="chklbl"><input type="checkbox" ${prefs[k] ? 'checked' : ''} onchange="pushSetPref('${k}', this.checked)"> <span>${label} <span class="hint">· ${sub}</span></span></label>`).join('')}
+      <div class="tactions" style="margin-top:12px"><button class="btn" onclick="pushTest()"><i class="ti ti-send"></i> Send a test notification</button></div>${note}
+      <div class="sh">Not you?</div>
+      <div class="pwrow"><select id="notify-who" aria-label="Who are you?">${pushPlayerOptions(PUSH.playerId)}</select><button class="btn" onclick="pushChangeName()">Change name</button></div>
+      <button class="btn dghost" style="margin-top:10px" onclick="pushTurnOff()">Turn off notifications</button>`;
+  }
+  el.innerHTML = html;
+}
+
+// Organisers: what gets sent
+async function pushSend(messages) {
+  messages = messages.filter(m => pushPlayers.has(m.playerId));
+  if (!pushReady || !messages.length) return null;
+  try { return await pushCall('send', { messages }); } catch (e) { return { error: e.message }; }
+}
+const pushResult = r => !r ? '' : r.error ? `Notifications weren't sent: ${r.error}` : `Notified ${pushPlural(r.players, 'player')}.`;
+const pushDayName = g => g.iso ? isoToDate(g.iso).toLocaleDateString('en-GB', { weekday: 'long' }) : (g.day === 'mon' ? 'Monday' : 'Thursday');
+function renderPushSquadOpt() {
+  const row = document.getElementById('push-squad-row');
+  row.style.display = pushReady ? '' : 'none';
+  document.getElementById('push-squad-n').textContent = `(${pushCount([...builtPlaying, ...builtReserves].map(p => p.id))} have notifications on)`;
+}
+async function pushSquad(g) {
+  const wa = WA[g.day] || WA.mon, title = `⚽ ${pushDayName(g)} squad is out`, tag = 'squad-' + g.id;
+  const r = await pushSend([
+    ...g.playingIds.map(id => ({ playerId: id, kind: 'squad', title, body: `You're playing. ${pushShortDate(g.iso)}, ${wa.time}, ${wa.venue}.`, url: './', tag })),
+    ...g.reserveIds.map(id => ({ playerId: id, kind: 'squad', title, body: "You're a reserve this time. You're first in for the next game.", url: './', tag }))]);
+  const el = document.getElementById('done-summary');
+  if (r && el) el.insertAdjacentHTML('beforeend', `<p style="font-size:12px;color:var(--text-secondary);margin-top:6px">🔔 ${esc(pushResult(r))}</p>`);
+}
+async function pushTeams(g, t) {
+  const wa = WA[g.day] || WA.mon, line = n => `You're on Team ${n}${t.bibs === n ? ' (bibs)' : ''}. Kick-off ${wa.time}.`;
+  const msg = (id, n) => ({ playerId: id, kind: 'teams', title: '👕 Teams are out', body: line(n), url: './', tag: 'teams-' + g.id });
+  const r = await pushSend([...t.t1.map(id => msg(id, 1)), ...t.t2.map(id => msg(id, 2))]);
+  pushTeamsNote = pushResult(r);
+  if (document.getElementById('page-teams').classList.contains('active')) renderTeamsPage();
+}
+function pushRemindButton(people) {
+  const n = pushCount(people);
+  if (!pushReady || !people.length) return '';
+  return `<div class="edit-only" style="margin-top:12px"><button class="btn sm" onclick="pushRemind()" ${n ? '' : 'disabled'}><i class="ti ti-bell"></i> Send reminders (${n})</button>
+    <p class="hint" style="margin-top:6px">${n ? 'Sends a payment reminder to each player who owes and has notifications on.' : 'Nobody who owes has notifications on yet.'} Reminders also go out automatically the morning after a game.</p></div>`;
+}
+async function pushRemind() {
+  const debts = debtsOwed(), people = [...new Set(debts.map(d => d.pid))].filter(pid => pushPlayers.has(pid));
+  if (!people.length || !confirm(`Send a payment reminder to ${pushPlural(people.length, 'player')}?`)) return;
+  const r = await pushSend(people.map(pid => {
+    const mine = debts.filter(d => d.pid === pid), total = mine.reduce((s, d) => s + d.amt, 0);
+    const orgs = [...new Set(mine.map(d => d.m.org))];
+    const what = mine.length === 1 ? pushShortDate(mine[0].g.iso) || mine[0].g.date : `${mine.length} games (${mine.map(d => pushShortDate(d.g.iso) || d.g.date).join(', ')})`;
+    const pay = orgs.length === 1 ? `Pay ${orgs[0]}.` : 'Pay ' + orgs.map(o => `${o} ${gbp(mine.filter(d => d.m.org === o).reduce((s, d) => s + d.amt, 0))}`).join(' and ') + '.';
+    return { playerId: pid, kind: 'payments', title: '💷 Payment due', body: `You owe ${gbp(total)} for ${what}. ${pay}`, url: './#money', tag: 'pay' };
+  }));
+  moneyToast = r && r.error ? pushResult(r) : `Reminder sent to ${pushPlural(r ? r.players : 0, 'player')}.`;
+  renderOwes();
+}
+function pushCreditUsed(gameId, used) {
+  const g = S.games.find(x => x.id === gameId), m = moneyRecord(gameId);
+  if (!g || !m || !used.length) return;
+  pushSend(used.map(pid => ({ playerId: pid, kind: 'credit', title: '💷 Credit used',
+    body: `${gbp(m.price)} of your credit paid for ${pushShortDate(g.iso) || g.date}. ${gbp(creditOf(pid))} left.`, url: './#money', tag: 'credit-' + gameId })));
+}
+
+// Hook into the existing flow
+const _pushConfirm = confirmGame;
+confirmGame = function () {
+  const notify = pushReady && document.getElementById('push-squad').checked;
+  _pushConfirm();
+  const g = S.games[confirmedGameIdx];
+  if (notify && g) pushSquad(g);
+};
+const _pushTeamsConfirm = teamsConfirm;
+teamsConfirm = function () {
+  const box = document.getElementById('push-teams'), notify = pushReady && box && box.checked;
+  const g = teamsGame();
+  pushTeamsNote = '';
+  _pushTeamsConfirm();
+  const t = g && gameTeams(g.id);
+  if (notify && t && t.status === 'confirmed') pushTeams(g, t);
+};
+const _pushRenderSquad = renderSquad; renderSquad = function () { _pushRenderSquad(); renderPushSquadOpt(); };
+const _pushRenderFront = renderFront; renderFront = function () { _pushRenderFront(); renderPushCard(); };
+const _pushRerenderAll = rerenderAll; rerenderAll = function () { _pushRerenderAll(); if (document.getElementById('page-notify').classList.contains('active')) renderNotify(); };
+
 try { const o = localStorage.getItem('fbv3_org'); if (ORGANISERS.includes(o)) document.getElementById('org-select').value = o; } catch (e) {}
 loadState();
+pushLoadStatus();
+// Tapping a payment notification opens Payments (the app may already be open)
+function openFromLink() {
+  if (location.hash !== '#money') return;
+  if (!appMode) enterApp(isLoggedIn() ? 'edit' : 'view');
+  goTab('money'); history.replaceState(null, '', location.pathname + location.search);
+}
+openFromLink();
+addEventListener('hashchange', openFromLink);
 
 // Installable app: lets phones add Brent Football to the home screen and open it with no signal
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
