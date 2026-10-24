@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Document version** | 2.2 |
-| **Release** | Production Release 2.2 |
+| **Document version** | 2.3 |
+| **Release** | Production Release 2.3 |
 | **Status** | Released |
 | **Date** | 24 October 2026 |
 | **Application** | `index.html` (repository root), published with GitHub Pages |
@@ -47,6 +47,7 @@ If you aren't sure, treat it as minor unless it changes the data model or a core
 | 2.0 | 24 Oct 2026 | **Push notifications**: players turn them on with "Who are you?" and choose which kinds they get. They're notified when the squad and teams are confirmed, by payment reminder (from Outstanding Payments, and automatically the morning after a game) and when credit is used. New Notifications page, front-page card, `notify` Edge Function and two new tables. |
 | 2.1 | 24 Oct 2026 | The daily payment reminder schedule sends the project's public key so Supabase lets it reach the function. Re-run `push-cron.sql`. |
 | 2.2 | 24 Oct 2026 | Setup shows organisers a 🔔 line saying whether notifications are connected, and why not. |
+| 2.3 | 24 Oct 2026 | Turn on notifications stops with a message saying which step failed, instead of staying on "Turning on…". |
 
 ---
 

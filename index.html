@@ -3158,21 +3158,32 @@ const pushPlayerOptions = sel => '<option value="">Choose your name…</option>'
   [...S.players].sort((a, b) => a.name.localeCompare(b.name)).map(p => `<option value="${p.id}"${p.id === sel ? ' selected' : ''}>${esc(p.name)}</option>`).join('');
 
 // This phone: turn on, change player or preferences, test, turn off
+// Each step gives up with a clear message instead of waiting forever
+const pushStep = (p, ms, msg) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error(msg)), ms))]);
 async function pushSubscription() {
-  const reg = await navigator.serviceWorker.ready;
-  return (await reg.pushManager.getSubscription()) || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: pushKeyBytes(pushPublicKey) });
+  if (!(await navigator.serviceWorker.getRegistration())) await navigator.serviceWorker.register('sw.js');
+  const reg = await pushStep(navigator.serviceWorker.ready, 15000,
+    "The app's background helper didn't start. Close Brent Football fully, open it again and try again.");
+  try {
+    return await pushStep((async () => (await reg.pushManager.getSubscription())
+      || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: pushKeyBytes(pushPublicKey) }))(), 20000,
+      "Your phone's push service didn't answer. This happens in browsers without Google's push service (such as Brave, or phones without Google Play). Try Chrome or Samsung Internet.");
+  } catch (e) {
+    throw e.name === 'AbortError' || e.name === 'NotAllowedError' || e.name === 'InvalidStateError'
+      ? new Error(`Your phone's push service refused (${e.message}). Try Chrome or Samsung Internet, or check notifications are allowed for the browser.`) : e;
+  }
 }
 async function pushTurnOn(selectId) {
   const pid = toId(document.getElementById(selectId).value);
   if (!pid) { pushNote = 'Choose your name first.'; pushRerender(); return; }
   pushNote = 'Turning on…'; pushRerender();
   try {
-    const perm = await Notification.requestPermission();
+    const perm = await pushStep(Notification.requestPermission(), 60000, "The phone didn't ask for permission. Allow notifications for Brent Football in your phone's settings, then try again.");
     if (perm !== 'granted') throw new Error(perm === 'denied'
       ? "Notifications are blocked for Brent Football. Allow them in your phone's settings for this app, then try again."
       : 'Notifications were not allowed. Tap Turn on notifications to try again.');
     const sub = await pushSubscription(), prefs = Object.assign({}, PUSH_DEFAULTS, PUSH.prefs);
-    await pushCall('subscribe', { subscription: sub.toJSON(), playerId: pid, prefs });
+    await pushStep(pushCall('subscribe', { subscription: sub.toJSON(), playerId: pid, prefs }), 20000, "Couldn't save this phone with the notify function. Check your signal and try again.");
     PUSH = { playerId: pid, endpoint: sub.endpoint, prefs }; pushSave();
     pushPlayers.add(pid); pushNote = '';
   } catch (e) { pushNote = e.message || "Couldn't turn notifications on."; }
