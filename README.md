@@ -33,7 +33,7 @@ This project is a very simple football app that stores player data in a local SQ
 - `data/football.db` - database file created automatically
 
 ## Football organisation page
-The design is documented in [`docs/SOLUTION_DESIGN.md`](docs/SOLUTION_DESIGN.md) (Solution Design Document) and [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md) (functional specification). Both include the versioning policy. Current release: **2.6**. The version is shown at the bottom of the front page.
+The design is documented in [`docs/SOLUTION_DESIGN.md`](docs/SOLUTION_DESIGN.md) (Solution Design Document) and [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md) (functional specification). Both include the versioning policy. Current release: **2.7**. The version is shown at the bottom of the front page.
 
 Every file in `supabase/` grants the page access to its tables. Supabase no longer does this automatically for tables created from 30 October 2026, so any new table needs the same `grant` line.
 
@@ -109,6 +109,7 @@ Players can get notifications on their phone from the installed app. They're tol
   - Squad picked, Teams confirmed and Payment reminders are on by default.
   - Credit used is off by default.
   - The page also has a test button, **Not you?** and **Turn off**.
+- **Android:** install the app from **Chrome**. On Samsung phones, notifications from the Samsung Internet version arrive but don't pop up; the app says so and has an **Open in Chrome** button.
 - **iPhone:** first add Brent Football to your Home Screen from Safari (Share → Add to Home Screen) and open it from there. iOS 16.4 or later is needed.
 - **Organisers:**
   - **Notify the squad** is ticked on Run game when you confirm a game.

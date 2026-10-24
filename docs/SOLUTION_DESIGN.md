@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | **Document** | Solution Design Document (SDD) |
-| **Version** | 2.6 |
-| **Release** | Production Release 2.6 |
+| **Version** | 2.7 |
+| **Release** | Production Release 2.7 |
 | **Status** | Approved for production |
 | **Date** | 24 October 2026 |
 | **System** | Brent Football (Football Organisation App: `index.html`, GitHub Pages, Supabase and the `notify` Edge Function) |
@@ -74,6 +74,7 @@ If you aren't sure, treat the change as **minor** unless it changes the data mod
 | 2.4 | 24 Oct 2026 | Organisers with Claude Code | Front page shows the app version (`APP_VERSION`). Turning on shows each step as it happens. Permission works with older callback-style browsers. The service worker fetches the app's own files with `no-cache`, so a release isn't held back by GitHub Pages' 10-minute browser cache. |
 | 2.5 | 24 Oct 2026 | Organisers with Claude Code | Delivery checks on the Notifications page: the service worker tells an open app when a push arrives (and whether it was shown), **Show one on this phone** displays a local notification, and the page shows the phone's push service and the version. The test reports how many phones it was sent to. |
 | 2.6 | 24 Oct 2026 | Organisers with Claude Code | Notifications use `renotify` and a vibration pattern, so a repeat with the same tag still alerts. Runbook covers Samsung showing site notifications silently. |
+| 2.7 | 24 Oct 2026 | Organisers with Claude Code | Status bar badge (`icons/badge-96.png`, white football) on every notification. In Samsung Internet, the Get notified card and the Notifications page advise installing from Chrome, with an **Open in Chrome** link (Android intent). Samsung Internet delivered pushes but the phone didn't pop them up; Chrome works. |
 
 ### 1.4 Approval
 
@@ -849,6 +850,7 @@ The sync status line under the page title shows "Up to date", "Saving…", "Save
 | R-05 | Attendance table widens every year | Low | Certain | Merge older years into one column (planned minor change around 2029). |
 | R-06 | Renaming a player breaks the legacy link | Low | Low | Documented in the runbook. |
 | R-07 | Open `notify` function could be used to send unwanted notifications | Low | Low | Accepted (10.2). Players can turn them off. Sign-in on the roadmap. |
+| R-09 | Samsung Internet on Samsung phones doesn't pop up notifications, even when they're delivered (seen on an S26 Ultra) | Medium | High for Samsung users | The app advises installing from Chrome and links straight to it. |
 | R-08 | Push services or Supabase change their rules | Medium | Low | Standard Web Push. The function is small and documented. |
 | I-01 | README's opening section still describes the old SQLite starter app | Low | | Tidy in a minor release. |
 
@@ -951,7 +953,7 @@ Neal, Kev and Gav. They're listed in `ORGANISERS` in the code. Adding one is a m
 | Path | Purpose |
 |---|---|
 | `index.html` | The application |
-| `manifest.webmanifest`, `sw.js`, `icons/` | Installable app: name, icon, splash colours and offline copy |
+| `manifest.webmanifest`, `sw.js`, `icons/` | Installable app: name, icon, splash colours, offline copy, and the notification badge (`icons/badge-96.png`) |
 | `supabase/*.sql` | Database setup scripts (`push.sql` and `push-cron.sql` for notifications) |
 | `supabase/functions/notify/index.ts` | The `notify` Edge Function |
 | `.github/workflows/static.yml` | Pages deployment |

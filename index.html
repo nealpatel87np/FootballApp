@@ -79,6 +79,7 @@
   .sh { font-size: 11px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin: 14px 0 4px; }
   .err { font-size: 12px; color: var(--text-danger); margin-top: 4px; min-height: 16px; }
   .notice { background: var(--bg-warning); color: var(--text-warning); border-radius: var(--radius); padding: 8px 12px; font-size: 13px; margin-bottom: 12px; }
+  a.btn { text-decoration: none; }
   .ok { background: var(--bg-success); color: var(--text-success); border-radius: var(--radius); padding: 10px 14px; font-size: 14px; margin-bottom: 12px; }
   .nav { display: flex; gap: 4px; margin-bottom: 1.5rem; border-bottom: 0.5px solid var(--border); overflow-x: auto; }
   .nb { padding: 8px 16px; font-size: 14px; cursor: pointer; border: none; background: none; color: var(--text-secondary); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .12s; }
@@ -3095,7 +3096,7 @@ renderHistory = function () {
    learns which players have them on. Organisers send them when they confirm a game
    or teams and from Outstanding Payments; payment reminders also go out on a
    schedule (supabase/push-cron.sql). */
-const APP_VERSION = '2.6';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
+const APP_VERSION = '2.7';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
 const PUSH_FN = SUPABASE_URL + '/functions/v1/notify';
 const PUSH_KEY = 'fbv3_push';   // this phone only: { playerId, endpoint, prefs, hideCard }
 const PUSH_KINDS = [['squad', 'Squad picked', 'Playing or reserve'], ['teams', 'Teams confirmed', 'Your team and bibs'],
@@ -3109,6 +3110,15 @@ const pushCan = () => 'serviceWorker' in navigator && 'PushManager' in window &&
 const pushIos = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const pushInstalled = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const pushOn = () => !!(PUSH.endpoint && PUSH.playerId);
+// Samsung Internet delivers notifications but Samsung phones don't pop them up, so point people to Chrome
+const pushSamsung = () => /SamsungBrowser/i.test(navigator.userAgent);
+function pushSamsungNote() {
+  if (!pushSamsung()) return '';
+  const page = location.host + location.pathname;
+  return `<div class="notice" style="display:block;margin:8px 0 10px">On Samsung phones, notifications from Samsung Internet don't pop up. For notifications, install Brent Football from <strong>Chrome</strong> instead.
+    <div class="tactions" style="margin-top:8px"><a class="btn sm primary" href="intent://${esc(page)}#Intent;scheme=https;package=com.android.chrome;end">Open in Chrome</a></div>
+    <p class="hint" style="margin-top:6px">Or open Chrome and go to ${esc(page)}, then ⋮ → Install app.</p></div>`;
+}
 const pushCount = ids => ids.filter(id => pushPlayers.has(id)).length;
 const pushPlural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 function pushShortDate(iso) {
@@ -3227,7 +3237,7 @@ async function pushTest() {
 async function pushLocalTest() {
   try {
     const reg = await navigator.serviceWorker.ready;
-    await reg.showNotification('🔔 Brent Football', { body: 'Local test: this phone can show notifications.', icon: 'icons/icon-192.png', tag: 'local-test', renotify: true, vibrate: [200, 100, 200] });
+    await reg.showNotification('🔔 Brent Football', { body: 'Local test: this phone can show notifications.', icon: 'icons/icon-192.png', badge: 'icons/badge-96.png', tag: 'local-test', renotify: true, vibrate: [200, 100, 200] });
     pushNote = "Shown. If no notification appeared, the phone is hiding them: check Settings → Apps → Samsung Internet (or your browser) → Notifications.";
   } catch (e) { pushNote = `This phone couldn't show a notification (${e.message}).`; }
   renderNotify();
@@ -3260,7 +3270,7 @@ function renderPushCard() {
   el.innerHTML = `<h3>🔔 Get notified</h3>` + (iosAdd
     ? `<p class="hint">Find out when you're playing, which team you're on and if you owe money. On iPhone, add Brent Football to your Home Screen first (Share → Add to Home Screen), then open it from there.</p>
        <div style="margin-top:10px"><button class="btn sm" onclick="pushHideCard()">Not now</button></div>`
-    : `<p class="hint">Find out when you're playing, which team you're on and if you owe money, without checking WhatsApp.</p>
+    : `<p class="hint">Find out when you're playing, which team you're on and if you owe money, without checking WhatsApp.</p>${pushSamsungNote()}
        <label for="front-push-who">Who are you?</label><select id="front-push-who">${pushPlayerOptions(null)}</select>
        <div class="tactions" style="margin-top:10px"><button class="btn primary" onclick="pushTurnOn('front-push-who')"><i class="ti ti-bell"></i> Turn on notifications</button><button class="btn" onclick="pushHideCard()">Not now</button></div>
        ${pushNote ? `<p class="hint" style="margin-top:8px">${esc(pushNote)}</p>` : ''}`);
@@ -3270,7 +3280,7 @@ function renderPushCard() {
 function renderNotify() {
   const el = document.getElementById('notify-card');
   const note = pushNote ? `<p class="hint" style="margin-top:8px">${esc(pushNote)}</p>` : '';
-  let html = '<h3>🔔 Notifications</h3>';
+  let html = '<h3>🔔 Notifications</h3>' + (pushReady ? pushSamsungNote() : '');
   if (!pushCan()) {
     html += pushIos() && !pushInstalled()
       ? '<p class="hint">On iPhone, notifications only work in the installed app. In Safari, tap Share → Add to Home Screen, then open Brent Football from your home screen and come back here.</p>'
