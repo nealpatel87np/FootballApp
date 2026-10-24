@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Document version** | 2.6 |
-| **Release** | Production Release 2.6 |
+| **Document version** | 2.7 |
+| **Release** | Production Release 2.7 |
 | **Status** | Released |
 | **Date** | 24 October 2026 |
 | **Application** | `index.html` (repository root), published with GitHub Pages |
@@ -51,6 +51,7 @@ If you aren't sure, treat it as minor unless it changes the data model or a core
 | 2.4 | 24 Oct 2026 | The front page shows the version ("Brent Football 2.4"), turning on shows each step, and new releases reach the installed app straight away. |
 | 2.5 | 24 Oct 2026 | Notifications page: a "Received on this phone" confirmation when a push arrives while it's open, a **Show one on this phone** button, and the phone's push service and version. |
 | 2.6 | 24 Oct 2026 | Repeat notifications of the same kind still alert and vibrate, rather than quietly replacing the last one. |
+| 2.7 | 24 Oct 2026 | A football badge shows in the status bar for each notification. In Samsung Internet, the app advises installing from Chrome for notifications, with an Open in Chrome button. |
 
 ---
 
@@ -257,6 +258,7 @@ This page appears only once the `notify` function is set up (11.2). It's under *
   - **Not you?**, to change the name;
   - **Turn off notifications**.
 - **iPhone:** notifications only work in the app added to the Home Screen. Safari explains this instead.
+- **Samsung Internet:** a note advises installing from Chrome, because Samsung phones don't pop up Samsung Internet's notifications. It has an **Open in Chrome** button.
 - **Front page:** players who haven't turned notifications on see a **Get notified** card with the same name choice. **Not now** hides it on that phone.
 - **Organisers sending:**
   - Run game has **Notify the squad** before Confirm game. It's on by default and shows how many have notifications on. Playing players get "You're playing" with the date, time and venue. Reserves get "You're a reserve this time. You're first in for the next game."
