@@ -3,8 +3,8 @@
 // (Supabase Edge Function "notify").
 //
 // The page calls this function to turn notifications on or off for a phone and
-// to send them. A daily schedule (supabase/push-cron.sql) also calls it to send
-// payment reminders the day after a game. The notification keys are made the
+// to send them. A schedule (supabase/push-cron.sql) also calls it to send payment
+// reminders at 12pm UK time every day to anyone who still owes. The notification keys are made the
 // first time it runs and kept in push_config, which the page itself can't read.
 //
 // Deploy: Supabase dashboard -> Edge Functions -> Deploy a new function -> Via
@@ -16,7 +16,7 @@
 //   subscribe   { subscription, playerId, prefs }  save or update this phone
 //   unsubscribe { endpoint }
 //   send        { messages: [{ playerId, kind, title, body, url, tag }] }
-//   daily       payment reminders for yesterday's games (called by the schedule)
+//   daily       12pm UK payment reminders for everyone who owes (called by the schedule; { force: true } skips the time check)
 //   avail_tick  opens and closes availability when due (called every 15 minutes)
 //   avail_answer { gameIso, playerId, answer: 'in' | 'out', byOrganiser }
 //   avail_open { day } · avail_close / avail_confirm / avail_cancel / avail_reopen / avail_nudge { gameIso }
@@ -115,24 +115,38 @@ function shortDate(iso: string) {
 }
 const pounds = (p: number) => '£' + (p / 100).toFixed(2);
 
-// Reminders for anyone who hasn't paid for a tracked game played yesterday (UK time)
-async function daily() {
-  const yesterday = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(new Date(Date.now() - 864e5));
-  const { data: games, error } = await db.from('games').select('id, iso, playing_ids').eq('iso', yesterday);
+// Every day at 12pm UK time: one reminder for each player who owes on any tracked
+// game, with the total, the games and who to pay. The schedule calls at 11:00 and
+// 12:00 UTC and only the call that lands at 12 o'clock UK time sends, so summer
+// time is handled. force skips the time check (for testing or a manual run).
+async function daily(force = false) {
+  const hour = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', hourCycle: 'h23' }).format(testNow ?? new Date());
+  if (!force && hour !== '12') return { skipped: `Not 12pm in the UK (it's ${hour}:00)`, sent: 0, players: 0, removed: 0 };
+  const { data: money, error } = await db.from('game_money').select('game_id, organiser, price_p, paid_ids');
   if (error) throw error;
-  if (!games?.length) return { sent: 0, players: 0, removed: 0 };
-  const { data: money, error: e2 } = await db.from('game_money').select('game_id, organiser, price_p, paid_ids').in('game_id', games.map(g => g.id));
+  if (!money?.length) return { sent: 0, players: 0, removed: 0 };
+  const { data: games, error: e2 } = await db.from('games').select('id, iso, date, playing_ids').in('id', money.map(m => m.game_id));
   if (e2) throw e2;
-  const messages: Msg[] = [];
-  for (const g of games) {
-    const m = (money ?? []).find(x => Number(x.game_id) === Number(g.id));
-    if (!m) continue;   // money not tracked yet
+  // Everything each player still owes, oldest game first
+  const owed = new Map<number, { iso: string; date: string; amount: number; org: string }[]>();
+  for (const m of money) {
+    const g = (games ?? []).find(x => Number(x.id) === Number(m.game_id));
+    if (!g) continue;   // the game was deleted
     const paid = new Set((m.paid_ids ?? []).map(Number));
     for (const pid of (g.playing_ids ?? []).map(Number)) {
       if (paid.has(pid)) continue;
-      messages.push({ playerId: pid, kind: 'payments', title: '💷 Payment due', body: `You owe ${pounds(m.price_p)} for ${shortDate(g.iso)}. Pay ${m.organiser}.`, url: './#money', tag: 'pay-' + g.id });
+      const list = owed.get(pid) ?? [];
+      list.push({ iso: g.iso || '', date: g.iso ? shortDate(g.iso) : String(g.date || ''), amount: Number(m.price_p) || 0, org: m.organiser });
+      owed.set(pid, list);
     }
   }
+  const messages: Msg[] = [...owed.entries()].map(([pid, list]) => {
+    list.sort((a, b) => a.iso.localeCompare(b.iso));
+    const total = list.reduce((s, d) => s + d.amount, 0), orgs = [...new Set(list.map(d => d.org))];
+    const what = list.length === 1 ? list[0].date : `${list.length} games (${list.map(d => d.date).join(', ')})`;
+    const pay = orgs.length === 1 ? `Pay ${orgs[0]}.` : 'Pay ' + orgs.map(o => `${o} ${pounds(list.filter(d => d.org === o).reduce((s, d) => s + d.amount, 0))}`).join(' and ') + '.';
+    return { playerId: pid, kind: 'payments', title: '💷 Payment due', body: `You owe ${pounds(total)} for ${what}. ${pay}`, url: './#money', tag: 'pay-daily' };
+  });
   return send(messages);
 }
 
@@ -495,7 +509,7 @@ Deno.serve(async req => {
         return reply(await send(list.map(m => cleanMessage(m as Record<string, unknown>)).filter((m): m is Msg => !!m)));
       }
       case 'daily':
-        return reply(await daily());
+        return reply(await daily(b.force === true));
       case 'avail_tick':
         return reply(await tick());
       case 'avail_answer': case 'avail_open': case 'avail_close': case 'avail_confirm':

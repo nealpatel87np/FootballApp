@@ -3179,7 +3179,7 @@ renderHistory = function () {
    learns which players have them on. Organisers send them when they confirm a game
    or teams and from Outstanding Payments; payment reminders also go out on a
    schedule (supabase/push-cron.sql). */
-const APP_VERSION = '3.5';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
+const APP_VERSION = '3.6';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
 const PUSH_FN = SUPABASE_URL + '/functions/v1/notify';
 const PUSH_KEY = 'fbv3_push';   // this phone only: { playerId, endpoint, prefs, hideCard }
 const PUSH_KINDS = [['availability', 'Availability', 'When it opens, and if you play'], ['squad', 'Squad picked', 'Playing or reserve'], ['teams', 'Teams confirmed', 'Your team and bibs'],
@@ -3425,7 +3425,7 @@ function pushRemindButton(people) {
   const n = pushCount(people);
   if (!pushReady || !people.length) return '';
   return `<div class="edit-only" style="margin-top:12px"><button class="btn sm" onclick="pushRemind()" ${n ? '' : 'disabled'}><i class="ti ti-bell"></i> Send reminders (${n})</button>
-    <p class="hint" style="margin-top:6px">${n ? 'Sends a payment reminder to each player who owes and has notifications on.' : 'Nobody who owes has notifications on yet.'} Reminders also go out automatically the morning after a game.</p></div>`;
+    <p class="hint" style="margin-top:6px">${n ? 'Sends a payment reminder to each player who owes and has notifications on.' : 'Nobody who owes has notifications on yet.'} Reminders also go out automatically every day at 12pm to anyone who owes.</p></div>`;
 }
 async function pushRemind() {
   const debts = debtsOwed(), people = [...new Set(debts.map(d => d.pid))].filter(pid => pushPlayers.has(pid));

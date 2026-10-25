@@ -33,7 +33,7 @@ This project is a very simple football app that stores player data in a local SQ
 - `data/football.db` - database file created automatically
 
 ## Football organisation page
-The design is documented in [`docs/SOLUTION_DESIGN.md`](docs/SOLUTION_DESIGN.md) (Solution Design Document) and [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md) (functional specification). Both include the versioning policy. Current release: **3.5**. The version is shown at the bottom of the front page.
+The design is documented in [`docs/SOLUTION_DESIGN.md`](docs/SOLUTION_DESIGN.md) (Solution Design Document) and [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md) (functional specification). Both include the versioning policy. Current release: **3.6**. The version is shown at the bottom of the front page.
 
 Every file in `supabase/` grants the page access to its tables. Supabase no longer does this automatically for tables created from 30 October 2026, so any new table needs the same `grant` line.
 
@@ -118,7 +118,7 @@ Players can get notifications on their phone from the installed app. They're tol
   - **Notify the players** is ticked on Teams when you confirm teams.
   - **Send reminders** on Outstanding Payments sends a reminder to everyone who owes and has notifications on.
   - When credit pays for a game, that player is told automatically.
-  - Every day at 10:00 UTC (10am in winter, 11am in summer), anyone who hasn't paid for a tracked game played the day before gets a reminder.
+  - Every day at **12pm** UK time, anyone who still owes on any tracked game gets one reminder with the total, the games and who to pay, until they've paid. Players can switch payment reminders off on the Notifications page.
 - Tapping a payment notification opens Payments.
 
 **Setup (once):** until this is done, the Notifications page and options don't appear.
