@@ -33,7 +33,7 @@ This project is a very simple football app that stores player data in a local SQ
 - `data/football.db` - database file created automatically
 
 ## Football organisation page
-The design is documented in [`docs/SOLUTION_DESIGN.md`](docs/SOLUTION_DESIGN.md) (Solution Design Document) and [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md) (functional specification). Both include the versioning policy. Current release: **3.4**. The version is shown at the bottom of the front page.
+The design is documented in [`docs/SOLUTION_DESIGN.md`](docs/SOLUTION_DESIGN.md) (Solution Design Document) and [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md) (functional specification). Both include the versioning policy. Current release: **3.5**. The version is shown at the bottom of the front page.
 
 Every file in `supabase/` grants the page access to its tables. Supabase no longer does this automatically for tables created from 30 October 2026, so any new table needs the same `grant` line.
 
@@ -99,6 +99,8 @@ The page can be installed on a phone as **Brent Football**, with its own icon on
 
 - **Android:** open the link in Chrome and tap **Install app** when it's offered, or ⋮ → **Install app** / **Add to Home screen**.
 - **iPhone:** open the link in Safari, tap **Share**, then **Add to Home Screen**.
+
+In the browser, the front page shows a **Welcome** card with these steps and an **Install app** button (Chrome on Android) until you install it or tap **Continue in the browser**. The Notifications page also has an **Install the app** section until it's installed.
 
 It opens full screen with no address bar, and shows the last data even with no signal. It's the same site, so every update reaches the app automatically. The icon files are in `icons/`, and `manifest.webmanifest` and `sw.js` make it installable.
 
