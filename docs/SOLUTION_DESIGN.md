@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | **Document** | Solution Design Document (SDD) |
-| **Version** | 3.7 |
-| **Release** | Production Release 3.7 |
+| **Version** | 3.8 |
+| **Release** | Production Release 3.8 |
 | **Status** | Approved for production |
 | **Date** | 24 October 2026 |
 | **System** | Brent Football: the web app (`index.html`, `selection.js`, `sw.js`) on GitHub Pages, the Supabase database, the `notify` Edge Function and two scheduled jobs |
@@ -83,6 +83,7 @@ If you aren't sure, treat the change as **minor** unless it changes the data mod
 | 3.5 | 25 Oct 2026 | Organisers with Claude Code | The welcome install card shows to anyone using the app in a browser, whatever the availability switch (it was On only), until dismissed or installed. The Notifications page always has an **Install the app** section until the app is installed. The Install app button is hidden on iPhone and Samsung Internet, which get steps instead. Installing hides both. The change procedure (1.2) now requires this document to be updated for every release, and `CLAUDE.md` records the rule. |
 | 3.6 | 25 Oct 2026 | Organisers with Claude Code | **Automatic payment reminders** now go out **every day at 12pm UK time** to anyone who still owes on any tracked game, until they've paid. Each player gets one message with the total, the games and who to pay. This replaces the reminder the morning after a game. The schedule now calls at 11:00 and 12:00 UTC, and the function only sends at 12 o'clock UK time, so summer time is handled. Re-run `push-cron.sql` and redeploy the function. |
 | 3.7 | 25 Oct 2026 | Organisers with Claude Code | **Personal greeting** (7.8): a phone that has picked Who are you? shows "Hi {name} 👋" with chips on the front page. Players see their next game, what they owe and their credit; while availability is open, whether they've said in. Organisers on the Dashboard see the time of day, their to-do count and how many are in. **Not you?** changes the name. No database change. |
+| 3.8 | 25 Oct 2026 | Organisers with Claude Code | **Lower Supabase traffic** (12, 13.3): the app re-reads availability every 30 seconds only while a round is open, every 5 minutes otherwise, and straight away when it comes back on screen. The availability schedule runs from 07:00 to 22:45 UTC instead of all day (64 calls a day, down from 96), so opening and closing times must be between 8am and 10:45pm UK time, which Setup checks. A nightly job deletes schedule history older than 7 days. New `supabase/schedule-3.8.sql`, run by hand; no function change. |
 
 ### 1.4 Approval
 
@@ -327,7 +328,7 @@ flowchart TB
 | Installable app | Web app manifest (`manifest.webmanifest`), service worker (`sw.js`), icons (`icons/`) | Home-screen install as Brent Football; network first, cached copy when offline |
 | Server logic | Supabase Edge Function `notify` (Deno, TypeScript, about 520 lines; `web-push@3.6.7`, `supabase-js@2`) | Free tier. Deployed by pasting into the dashboard; Verify JWT off |
 | Notifications | Web Push (VAPID) through the phone's push service | Free |
-| Schedules | `pg_cron` and `pg_net`: payment reminders every day at 12pm UK time (called at 11:00 and 12:00 UTC) and the availability check (every 15 minutes) | Free tier |
+| Schedules | `pg_cron` and `pg_net`: payment reminders every day at 12pm UK time (called at 11:00 and 12:00 UTC) and the availability check (every 15 minutes, 07:00–22:45 UTC), plus a nightly tidy-up of schedule history | Free tier |
 | Hosting | GitHub Pages | Deployed by GitHub Actions on push to `main` |
 | Source control | Git or GitHub | Pull request per change |
 
@@ -631,7 +632,7 @@ Players say whether they're in for the next game in the app. At closing time, th
 **Timetable** (UK time; organisers can change it in the settings):
 - Thursday games open on **Tuesday** at 09:00 and close at 21:00 the same day.
 - Monday games open on **Friday** at the same times.
-- A `pg_cron` job calls `avail_tick` every 15 minutes. The function works out UK time itself, so British Summer Time is handled.
+- A `pg_cron` job calls `avail_tick` every 15 minutes from 07:00 to 22:45 UTC (since 3.8). The function works out UK time itself, so British Summer Time is handled. The window covers 8am to 10:45pm UK time all year, so opening and closing times must be in it; Setup refuses times outside it.
 - Organisers can **Open now** early. A round opened early still closes at the scheduled time.
 
 #### 7.6.2 Round lifecycle
@@ -828,7 +829,8 @@ Relationships are held as id arrays (`playing_ids`, `paid_ids` and so on) rather
 | Web Share | `navigator.share` for exporting data | Falls back to download or copy. |
 | `notify` Edge Function | `POST {SUPABASE_URL}/functions/v1/notify` with JSON `{action}`: `status`, `subscribe`, `unsubscribe`, `send`, `daily`, `avail_tick`, `avail_answer`, `avail_open`, `avail_close`, `avail_confirm`, `avail_cancel`, `avail_reopen`, `avail_nudge`, `hello`, `admin_users`. JWT verification is off (the page has no sign-in). Supabase still requires the project's key, so the page sends the publishable key as `apikey`. CORS open. | The function uses the service role key provided by Supabase. No secrets are set by hand. |
 | Web Push | `web-push` encrypts each notification (aes128gcm) and signs it with VAPID (subject: the app's address) for the phone's push service | Gone phones (404/410) are deleted. Time to live is 24 hours. |
-| Availability schedule | `pg_cron` job `brent-football-availability` calls `avail_tick` every 15 minutes | Set up by `availability.sql`. Does nothing while the switch is Off. |
+| Availability schedule | `pg_cron` job `brent-football-availability` calls `avail_tick` every 15 minutes, 07:00–22:45 UTC | Set up by `availability.sql`; changed by `schedule-3.8.sql`. Does nothing while the switch is Off. |
+| Schedule tidy-up | `pg_cron` job `brent-football-tidy-history` deletes `cron.job_run_details` rows older than 7 days, nightly at 03:30 UTC | Added in 3.8. `pg_net` clears its own responses after 6 hours. |
 | Selection rules | The function carries an exact copy of `selection.js` between `BEGIN selection.js` and `END selection.js` markers, because Supabase can't import from other websites | When a rule changes, change both copies and redeploy the function. The release test checks that they match. |
 | Schedule | `pg_cron` job `brent-football-payment-reminders` calls the function through `pg_net` at 11:00 and 12:00 UTC every day, sending the publishable key as `apikey`. The function only sends on the call that's 12pm in the UK. | Set up by `push-cron.sql`. Re-run it after 3.6 to change the times. |
 | CDN | jsDelivr for `supabase-js` and the Tabler icon font | If the CDN fails, the database is unavailable (the device copy is still used) and icons are missing. |
@@ -894,13 +896,13 @@ The app stores **first names or nicknames**, attendance, ratings, scores and pay
 
 | Area | Design |
 |---|---|
-| **Performance** | Rendering is plain DOM string building for small data sets. Team picker: under 50ms for 12 players and about 1s worst case for 20. Startup shows the device copy before any network call. Availability data refreshes every 30 seconds only while the front page, Availability, Run game or Dashboard is open and the switch isn't Off. |
+| **Performance** | Rendering is plain DOM string building for small data sets. Team picker: under 50ms for 12 players and about 1s worst case for 20. Startup shows the device copy before any network call. Availability data refreshes only while the front page, Availability, Run game or Dashboard is on screen and the switch isn't Off: every 30 seconds while a round is open, every 5 minutes otherwise, and at once when the app comes back on screen. Nothing is fetched while the screen is hidden. |
 | **Availability** | Static hosting via the GitHub Pages CDN. Offline-tolerant through `localStorage`. The service worker keeps a copy of the page, icons and CDN scripts, so the installed app opens with no signal; it always tries the network first, so each deploy reaches people straight away. Database requests are never cached. Changes queue until the database is reachable. Notifications, availability answers and App users need the `notify` function; if it can't be reached, those features hide or show a message and the rest of the app works. |
 | **Integrity** | Per-row diffs against a stored baseline. Writes are serialised. The baseline advances per feature group only after success. Last write wins per row. |
 | **Scalability** | Comfortable to several hundred players and a few thousand games. Beyond that, the history list and the full-table fetch would need paging. |
 | **Maintainability** | One page file grouped by feature with comment headers, plus `selection.js` and one function file. The function's copy of `selection.js` is checked against the original before each release. Each feature's database table is optional and fails safe. The user guide (README), functional spec and this SDD are kept up to date with each release. |
 | **Compatibility** | Current Safari (iOS), Chrome (Android and desktop), Edge and Firefox. Notifications: Chrome on Android and the iPhone home-screen app (iOS 16.4+). Samsung Internet delivers notifications but Samsung phones may not show them, so the app points Samsung users to Chrome. |
-| **Cost** | Free tiers only. |
+| **Cost** | Free tiers only. Estimated Supabase egress for 60 players is about 1–1.5GB a month: about 1GB from opening the app (each open reads the full data, roughly 100–300KB), and the rest from availability refreshes. Even 60 phones open together during a round use about 108MB an hour, and only while the round is open. That's inside the free plan's 5GB. |
 
 ---
 
@@ -952,6 +954,10 @@ For release 3.0, also:
 
 The feature stays **Off** until an organiser changes the switch on Setup.
 
+For release 3.8, also:
+
+12. `supabase/schedule-3.8.sql`: runs the availability check only from 07:00 to 22:45 UTC, and adds the nightly tidy-up of schedule history. It replaces the schedule by name, so it's safe to run again. No function change. (`availability.sql` carries the same schedules for a fresh setup.)
+
 Each script also grants the page (`anon` and `authenticated` roles) select, insert, update and delete on its tables. Supabase stops granting this automatically for tables created from 30 October 2026, so **any new table added in a later release must include the same `grant` line in its script**, or the page gets "permission denied" for it. Re-running the scripts on the existing database is harmless.
 
 ---
@@ -992,6 +998,7 @@ Visual changes are reviewed through screenshots or interactive mock-ups before d
 | Availability | App in Chromium with the real function and mock database | Covered: settings saved to Trial; Open now; organiser answers; guaranteed warning; Who are you?; in and out; Close now, then held, then Confirm; trial hidden from players; On shows the welcome, install and Who are you? cards; late joiner becomes 3rd reserve; App users lists phones. No page errors and no sideways scroll. |
 | Dashboard | App in Chromium at 1280px and 390px with the real function and mock database | Covered: the 3.3 layout (Money, League and This season in one row and the same height, The group under To do, Turnout full width, league trimmed to fit); organisers land on the Dashboard; live counts and guaranteed warning; to-do items (guaranteed, money not tracked, score needed, money owed); Money, Recent answers, Turnout and This season cards. Add score opens that game in the Game Log. Close now then Confirm from the dashboard switches the card to the saved squad. No page errors or sideways scroll. |
 | Greeting (3.7) | App in Chromium at 390px from a saved data file | Lewis sees Playing and You owe £8.50, and Pedro sees 1st reserve and All paid up, on the front page. Neal sees the time of day and to-do count on the Dashboard, and his own chips and credit on the front page. Hidden on other pages and with no name. Not you? clears the name. No page errors or sideways scroll. |
+| Quieter refresh (3.8) | App in Chromium at 390px and 1280px with a fake clock and a fake database counting availability reads | One read on opening. With no round open, none for 5 minutes and then one. With a round open, one every 30 seconds. None while the screen is hidden, and one on coming back. Setup refuses a 7am opening or an 11pm closing and saves a 10:45pm closing. No page errors. |
 | Payment reminders (3.6) | Function in Deno with a test clock against a mock database and push service | Winter: 11:00 UTC sends nothing and 12:00 UTC sends. Summer: 11:00 UTC sends and 12:00 UTC sends nothing. A player owing on two games with two organisers gets one message ("£17.00 for 2 games … Pay Kev £8.50 and Neal £8.50"). Paid players and players with payment reminders off get nothing. `force` skips the time check. Nothing is sent once everyone has paid. |
 | Notifications | App in Chromium with the real function, end to end | Front card, Notifications page in View mode, choices, test, squad, teams, reminders and credit-used notifications, tap opens Payments, Turn off. Nothing shows when the function isn't set up. |
 
@@ -1058,6 +1065,7 @@ Visual changes are reviewed through screenshots or interactive mock-ups before d
 | ADR-21 | Guaranteed players must opt in, and late flags are organiser-only | Agreed with the organisers | Guaranteed players who forget count as out (they're nudged) |
 | ADR-22 | The dashboard is worked out in the page from existing data; no activity log table | No database change, so it shipped as a minor release (3.2, 3.3) | "Recent answers" covers availability only; a full activity feed needs a new table (4.0) |
 | ADR-23 | The league scores players individually: 3 points for their team's win, 1 for a draw, goal difference from their team's score, this calendar year only | Teams change every game, so a player-based table is the fair way to rank | Only games with confirmed teams and a score count; it resets each January |
+| ADR-24 | Poll faster only while a round is open, and run the availability schedule only in the daytime window (3.8) | Keeps Supabase traffic and logs low as the group grows to about 60 players, with no visible change. Push notifications still tell people when something happens. | A round opening shows up on an idle open screen within 5 minutes rather than 30 seconds. Times outside 8am–10:45pm UK can't be used without changing the schedule. |
 
 ---
 
@@ -1078,6 +1086,7 @@ Visual changes are reviewed through screenshots or interactive mock-ups before d
 | R-11 | Anyone could answer for another player (no sign-in) | Low | Low | Organisers see who answered and when. Sign-in is on the roadmap. |
 | R-12 | The two copies of the selection rules drift apart | Medium | Low | The copy is marked BEGIN/END and compared before every release. The equivalence test runs on 2,000 cases. |
 | R-13 | The function isn't redeployed after a release that changes it | Medium | Medium | The release notes say so. The 🔔 line on Setup and the function logs show problems. |
+| R-14 | Supabase egress or log volume grows with more players | Low | Low | 3.8 cut availability traffic. About 1–1.5GB a month is expected for 60 players, inside the free plan's 5GB. Watch **Settings → Usage**. |
 | I-01 | README's opening section still describes the old SQLite starter app | Low | | Tidy in a minor release. |
 
 ---
@@ -1183,7 +1192,9 @@ The reserves block and the "Pitch has been booked" line appear only when they ap
 | Self-service availability | Off. When on: Thursday games open Tuesday, Monday games open Friday, 09:00 to 21:00 UK time, kick-off 18:30, announce automatically |
 | Notification choices | Availability, Squad, Teams and Payments on; Credit used off |
 | Automatic payment reminder | Every day at 12pm UK time, to anyone who still owes on a tracked game |
-| Availability refresh in the app | Every 30 seconds while it's on screen |
+| Availability refresh in the app | Every 30 seconds while a round is open and the app is on screen; every 5 minutes otherwise; at once on coming back on screen |
+| Availability check schedule | Every 15 minutes, 07:00–22:45 UTC (opening and closing times between 8am and 10:45pm UK) |
+| Schedule history kept | 7 days |
 | Minimum players before organisers are warned | 10 |
 | Dashboard: games in Turnout | Last 12 played |
 | Dashboard: League rows | As many as fit the row on a computer; 6 on a phone |
@@ -1200,7 +1211,7 @@ Neal, Kev and Gav. They're listed in `ORGANISERS` in the code. Adding one is a m
 |---|---|
 | `index.html` | The application |
 | `manifest.webmanifest`, `sw.js`, `icons/` | Installable app: name, icon, splash colours, offline copy, and the notification badge (`icons/badge-96.png`) |
-| `supabase/*.sql` | Database setup scripts: `policies.sql`, `money.sql`, `teams.sql`, `skills.sql`, `late.sql`, `credit.sql`, `push.sql`, `push-cron.sql`, `availability.sql` |
+| `supabase/*.sql` | Database setup scripts: `policies.sql`, `money.sql`, `teams.sql`, `skills.sql`, `late.sql`, `credit.sql`, `push.sql`, `push-cron.sql`, `availability.sql`, `schedule-3.8.sql` |
 | `selection.js` | Squad selection rules shared by the page and the function |
 | `supabase/functions/notify/index.ts` | The `notify` Edge Function |
 | `.github/workflows/static.yml` | Pages deployment |

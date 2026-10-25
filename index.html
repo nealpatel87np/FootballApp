@@ -3191,7 +3191,7 @@ renderHistory = function () {
    learns which players have them on. Organisers send them when they confirm a game
    or teams and from Outstanding Payments; payment reminders also go out on a
    schedule (supabase/push-cron.sql). */
-const APP_VERSION = '3.7';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
+const APP_VERSION = '3.8';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
 const PUSH_FN = SUPABASE_URL + '/functions/v1/notify';
 const PUSH_KEY = 'fbv3_push';   // this phone only: { playerId, endpoint, prefs, hideCard }
 const PUSH_KINDS = [['availability', 'Availability', 'When it opens, and if you play'], ['squad', 'Squad picked', 'Playing or reserve'], ['teams', 'Teams confirmed', 'Your team and bibs'],
@@ -3529,6 +3529,7 @@ function avPreview(r) {
 
 async function availLoad() {
   if (!sb) { AV.dbOk = false; availRender(); return; }
+  AV.loadedAt = Date.now();
   try {
     const st = await sb.from('availability_settings').select('*').eq('id', 1).maybeSingle();
     if (st.error) throw st.error;
@@ -3708,6 +3709,7 @@ function avSettingsCard() {
       <div class="g2" style="gap:10px;margin-top:10px">
         <div><label>Opens (UK time)</label><input type="time" id="av-open" value="${esc(s.open_time || '09:00')}"></div>
         <div><label>Closes (UK time)</label><input type="time" id="av-close" value="${esc(s.close_time || '21:00')}"></div>
+        <p class="hint" style="grid-column:1/-1;margin:0">${avInWindow(s) ? 'Opening and closing times can be from 8am to 10:45pm.' : '<strong>' + AV_WINDOW_MSG + '</strong>'}</p>
         <div><label>Monday game opens (days before)</label><input type="number" min="1" max="6" id="av-mon-days" value="${s.mon_open_days_before ?? 3}"></div>
         <div><label>Thursday game opens (days before)</label><input type="number" min="1" max="6" id="av-thu-days" value="${s.thu_open_days_before ?? 2}"></div>
         <div><label>Kick-off</label><input type="time" id="av-kick" value="${esc(s.kickoff_time || '18:30')}"></div>
@@ -3720,6 +3722,9 @@ function avSettingsCard() {
       <div id="av-set-msg" class="hint" style="margin-top:6px"></div>
     </div>`;
 }
+// The database only checks availability from 8am to 10:45pm UK time (supabase/availability.sql)
+const AV_WINDOW_MSG = 'Opening and closing times must be between 8am and 10:45pm, when the automatic check runs.';
+const avInWindow = s => (s.open_time || '09:00') >= '08:00' && (s.close_time || '21:00') <= '22:45';
 async function avSaveSettings() {
   const v = id => document.getElementById(id).value, mode = (document.querySelector('input[name=av-mode]:checked') || {}).value || 'off';
   const row = { id: 1, mode, open_time: v('av-open') || '09:00', close_time: v('av-close') || '21:00',
@@ -3727,6 +3732,7 @@ async function avSaveSettings() {
     auto_announce: document.getElementById('av-auto').checked, kickoff_time: v('av-kick') || '18:30', venue: v('av-venue').trim() || 'Harrow Powerleague',
     organiser_ids: ORGANISERS.map((o, i) => toId(v('av-org-' + i)) || 0) };
   if (row.open_time >= row.close_time) { document.getElementById('av-set-msg').textContent = 'Closing time must be after opening time.'; return; }
+  if (!avInWindow(row)) { document.getElementById('av-set-msg').textContent = AV_WINDOW_MSG; return; }
   if (mode !== 'off' && !row.organiser_ids.some(x => x)) { document.getElementById('av-set-msg').textContent = "Choose at least one organiser's name first."; return; }
   const { error } = await sb.from('availability_settings').upsert(row);
   avNote = '';
@@ -3784,12 +3790,20 @@ function availRender() {
   renderHi();
   if (open) { const box = document.getElementById('av-set-box'), b = document.querySelector('[aria-controls=av-set-box]'); if (box && b) { box.hidden = false; b.textContent = 'Hide'; b.setAttribute('aria-expanded', 'true'); } }
 }
-// Keep it fresh while someone is looking at it
-setInterval(() => {
-  if (document.hidden || avMode() === 'off') return;
+// Keep it fresh while someone is looking at it: every 30 seconds while a round is
+// open, every 5 minutes otherwise, and straight away when the app comes back on screen.
+// Nothing while the screen is hidden or availability is off (keeps Supabase traffic low).
+const AV_FAST = 30000, AV_SLOW = 300000;
+function avWatching() {
   const active = (document.querySelector('.page.active') || {}).id;
-  if (document.body.classList.contains('on-front') || active === 'page-avail' || active === 'page-game' || active === 'page-dash') availLoad();
-}, 30000);
+  return !document.hidden && avMode() !== 'off' && (document.body.classList.contains('on-front') || ['page-avail', 'page-game', 'page-dash'].includes(active));
+}
+setInterval(() => {
+  if (!avWatching()) return;
+  const gap = (AV.rounds || []).some(r => r.status === 'open') ? AV_FAST : AV_SLOW;
+  if (Date.now() - (AV.loadedAt || 0) >= gap - 1000) availLoad();
+}, AV_FAST);
+document.addEventListener('visibilitychange', () => { if (avWatching() && Date.now() - (AV.loadedAt || 0) >= AV_FAST) availLoad(); });
 
 /* ---- ORGANISER DASHBOARD ----
    The first page organisers see: what needs doing, the next game, money, the group,
