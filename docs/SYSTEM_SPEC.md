@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Document version** | 3.7 |
-| **Release** | Production Release 3.7 |
+| **Document version** | 3.8 |
+| **Release** | Production Release 3.8 |
 | **Status** | Released |
 | **Date** | 24 October 2026 |
 | **Application** | `index.html` (repository root), published with GitHub Pages |
@@ -60,6 +60,7 @@ If you aren't sure, treat it as minor unless it changes the data model or a core
 | 3.5 | 25 Oct 2026 | The install card shows to anyone using the app in a browser, whatever the availability switch. The Notifications page has an **Install the app** section. |
 | 3.6 | 25 Oct 2026 | Automatic payment reminders go out every day at 12pm UK time to anyone who still owes, until they've paid. |
 | 3.7 | 25 Oct 2026 | "Hi {name}" greeting on the front page (and the Dashboard for organisers) once a phone has picked Who are you?, with chips for the next game, availability, money and credit, and a Not you? link. |
+| 3.8 | 25 Oct 2026 | Quieter Supabase traffic: availability refreshes every 30 seconds only while a round is open (otherwise every 5 minutes, and when the app comes back on screen). The availability check runs from 8am to 10:45pm UK time, so Setup only accepts opening and closing times in that window. Nightly tidy-up of schedule history. Run `supabase/schedule-3.8.sql`. |
 
 ---
 
@@ -308,7 +309,7 @@ Shown on the front page and on the **Availability** page, but only when Self-ser
 
 - **Setup:** the **Self-service availability** card (Show / Hide). It holds:
   - the Off / Trial / On switch;
-  - opening and closing times, and how many days before each game it opens;
+  - opening and closing times (between 8am and 10:45pm UK time, when the automatic check runs), and how many days before each game it opens;
   - kick-off time and venue;
   - **Announce automatically**;
   - each organiser's own player name (used for organiser and trial notifications);
@@ -601,6 +602,10 @@ For self-service availability (release 3.0):
 
 10. Run `supabase/availability.sql`.
 11. Redeploy the `notify` function with the latest `supabase/functions/notify/index.ts`, keeping Verify JWT off. The feature stays Off until it's switched on under Setup.
+
+For release 3.8:
+
+12. Run `supabase/schedule-3.8.sql`. It limits the availability check to 8am–10:45pm UK time and clears schedule history older than 7 days each night.
 
 Each script also grants the page (`anon` and `authenticated` roles) select, insert, update and delete on its tables. Supabase stops granting this automatically for tables created from 30 October 2026, so **any new table added in a later release must include the same `grant` line in its script**, or the page gets "permission denied" for it. Re-running the scripts on the existing database is harmless.
 

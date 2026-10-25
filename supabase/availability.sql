@@ -75,13 +75,16 @@ grant select, insert, update, delete on public.availability_rounds to service_ro
 grant select, insert, update, delete on public.availability_answers to service_role;
 grant select, insert, update, delete on public.app_devices to service_role;
 
--- Every 15 minutes the database asks the function whether availability should open
--- or close (it checks the switch and UK time itself, so summer time is handled)
+-- Every 15 minutes from 07:00 to 22:45 UTC the database asks the function whether
+-- availability should open or close (it checks the switch and UK time itself). That
+-- covers 8am to 10:45pm UK time in winter and summer, so opening and closing times
+-- must be in that window (Setup checks this). Changed in 3.8 from all day.
+-- A nightly job then clears schedule history older than 7 days (also in schedule-3.8.sql).
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
 select cron.schedule(
   'brent-football-availability',
-  '*/15 * * * *',
+  '*/15 7-22 * * *',
   $$
   select net.http_post(
     url := 'https://myzzeeqltyjxsjydzhix.supabase.co/functions/v1/notify',
@@ -91,3 +94,8 @@ select cron.schedule(
   $$
 );
 -- To stop it:  select cron.unschedule('brent-football-availability');
+select cron.schedule(
+  'brent-football-tidy-history',
+  '30 3 * * *',
+  $$ delete from cron.job_run_details where end_time < now() - interval '7 days' $$
+);
