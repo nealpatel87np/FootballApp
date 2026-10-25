@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Document version** | 3.4 |
-| **Release** | Production Release 3.4 |
+| **Document version** | 3.5 |
+| **Release** | Production Release 3.5 |
 | **Status** | Released |
 | **Date** | 24 October 2026 |
 | **Application** | `index.html` (repository root), published with GitHub Pages |
@@ -57,6 +57,7 @@ If you aren't sure, treat it as minor unless it changes the data model or a core
 | 3.2 | 24 Oct 2026 | Organiser **Dashboard**, the first page after logging in: next game, to-do list, money, the group, turnout and this season. The organisers' phone bar is now Dashboard, Run game, Teams, Payments and More. |
 | 3.3 | 24 Oct 2026 | Dashboard layout: The group under To do; Money, a new League table and This season in one row; Turnout across the bottom, showing reserves. To do groups repeated jobs into one line. |
 | 3.4 | 24 Oct 2026 | App users no longer shows when each phone was last seen. |
+| 3.5 | 25 Oct 2026 | The install card shows to anyone using the app in a browser, whatever the availability switch. The Notifications page has an **Install the app** section. |
 
 ---
 

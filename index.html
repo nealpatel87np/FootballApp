@@ -3179,7 +3179,7 @@ renderHistory = function () {
    learns which players have them on. Organisers send them when they confirm a game
    or teams and from Outstanding Payments; payment reminders also go out on a
    schedule (supabase/push-cron.sql). */
-const APP_VERSION = '3.4';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
+const APP_VERSION = '3.5';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
 const PUSH_FN = SUPABASE_URL + '/functions/v1/notify';
 const PUSH_KEY = 'fbv3_push';   // this phone only: { playerId, endpoint, prefs, hideCard }
 const PUSH_KINDS = [['availability', 'Availability', 'When it opens, and if you play'], ['squad', 'Squad picked', 'Playing or reserve'], ['teams', 'Teams confirmed', 'Your team and bibs'],
@@ -3367,7 +3367,7 @@ function renderPushCard() {
 function renderNotify() {
   const el = document.getElementById('notify-card');
   const note = pushNote ? `<p class="hint" style="margin-top:8px">${esc(pushNote)}</p>` : '';
-  let html = '<h3>🔔 Notifications</h3>' + (pushReady ? pushSamsungNote() : '');
+  let html = '<h3>🔔 Notifications</h3>' + avInstallBlock() + (pushReady && pushInstalled() ? pushSamsungNote() : '');
   if (!pushCan()) {
     html += pushIos() && !pushInstalled()
       ? '<p class="hint">On iPhone, notifications only work in the installed app. In Safari, tap Share → Add to Home Screen, then open Brent Football from your home screen and come back here.</p>'
@@ -3564,6 +3564,8 @@ async function avHello(force) {
   try { await pushCall('hello', { deviceId: dev, playerId: ME, installed: pushInstalled(), browser: avBrowser(), platform, notifications: pushOn() }); localStorage.setItem(HELLO_KEY, String(Date.now())); } catch (e) {}
 }
 addEventListener('beforeinstallprompt', e => { avInstallEvt = e; });
+// Once installed, the install card and button go away
+addEventListener('appinstalled', () => { avInstallEvt = null; try { localStorage.setItem(INSTALL_HIDE_KEY, '1'); } catch (e) {} availRender(); if (document.getElementById('page-notify').classList.contains('active')) renderNotify(); });
 async function avInstall() {
   if (avInstallEvt) { try { await avInstallEvt.prompt(); } catch (e) {} avInstallEvt = null; }
   else alert('In Chrome, tap ⋮ then "Install app". On iPhone, in Safari tap Share then "Add to Home Screen".');
@@ -3619,13 +3621,24 @@ function avPlayerCard() {
     <div class="front-squad">${g.playingIds.map((id, i) => `<span><em>${i + 1}</em>${esc(pName(id))}</span>`).join('')}</div>
     ${g.reserveIds.length ? `<p class="hint" style="margin-top:8px">Reserves: ${g.reserveIds.map(id => esc(pName(id))).join(', ')}</p>` : ''}</div>`;
 }
+// How to install, for the welcome card and the Notifications page
+function avInstallSteps() {
+  return `<p class="hint"><strong>Android:</strong> tap Install app, or ⋮ → Install app in Chrome.<br><strong>iPhone:</strong> in Safari, tap Share → Add to Home Screen.</p>${pushSamsungNote()}`;
+}
+const avInstallButton = () => pushSamsung() || pushIos() ? '' : '<button class="btn primary" onclick="avInstall()">⬇ Install app</button>';
+// Shown in the browser (not the installed app) whatever the availability switch, until dismissed
 function avInstallCard() {
   let hidden = false; try { hidden = localStorage.getItem(INSTALL_HIDE_KEY) === '1'; } catch (e) {}
-  if (avMode() !== 'on' || pushInstalled() || hidden) return '';
-  return `<div class="card av-hi"><h3>👋 Welcome to Brent Football</h3><p class="hint">Say if you're playing, see the squad and teams, and check what you owe.</p>
-    <div class="sh">Install it first (once)</div>
-    <p class="hint"><strong>Android:</strong> tap Install app, or ⋮ → Install app in Chrome.<br><strong>iPhone:</strong> in Safari, tap Share → Add to Home Screen.</p>${pushSamsungNote()}
-    <div class="tactions" style="margin-top:10px">${pushSamsung() ? '' : '<button class="btn primary" onclick="avInstall()">⬇ Install app</button>'}<button class="btn" onclick="avHideInstall()">Continue in the browser</button></div></div>`;
+  if (pushInstalled() || hidden) return '';
+  return `<div class="card av-hi"><h3>👋 Welcome to Brent Football</h3><p class="hint">${avMode() === 'on' ? "Say if you're playing, see the squad and teams, and check what you owe." : 'See the next game, the squad and teams, and what you owe, and get notifications.'}</p>
+    <div class="sh">Install it (once)</div>${avInstallSteps()}
+    <div class="tactions" style="margin-top:10px">${avInstallButton()}<button class="btn" onclick="avHideInstall()">Continue in the browser</button></div></div>`;
+}
+// On the Notifications page, always available until the app is installed
+function avInstallBlock() {
+  if (pushInstalled()) return '';
+  return `<div class="notice" style="display:block;background:var(--bg-accent);color:var(--text-accent);margin:8px 0 10px"><strong>📲 Install the app</strong>
+    <div style="margin-top:4px">${avInstallSteps()}</div>${avInstallButton() ? `<div class="tactions" style="margin-top:8px">${avInstallButton()}</div>` : ''}</div>`;
 }
 
 /* What organisers see on Run game */
@@ -3742,7 +3755,7 @@ function availRender() {
   if (navChange && appMode) { const cur = document.querySelector('.page.active').id.replace('page-', ''); buildNav(); markNav(cur); }
   // Front page
   const fi = document.getElementById('front-install'), fa = document.getElementById('front-avail');
-  const ins = vis ? avInstallCard() : '';
+  const ins = avInstallCard();
   fi.innerHTML = ins; fi.style.display = ins ? '' : 'none';
   const known = ME && S.players.some(p => p.id === ME);   // a removed player picks again
   const fav = vis ? (known ? avPlayerCard() : avWhoCard('front-who')) : '';
