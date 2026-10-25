@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | **Document** | Solution Design Document (SDD) |
-| **Version** | 3.5 |
-| **Release** | Production Release 3.5 |
+| **Version** | 3.6 |
+| **Release** | Production Release 3.6 |
 | **Status** | Approved for production |
 | **Date** | 24 October 2026 |
 | **System** | Brent Football: the web app (`index.html`, `selection.js`, `sw.js`) on GitHub Pages, the Supabase database, the `notify` Edge Function and two scheduled jobs |
@@ -81,6 +81,7 @@ If you aren't sure, treat the change as **minor** unless it changes the data mod
 | 3.3 | 24 Oct 2026 | Organisers with Claude Code | Dashboard layout. On computers: To do and The group on the left beside Next game (and Recent answers); Money, a new **League** table and This season in one row; Turnout across the full width with reserves stacked on each bar. Cards in a row are the same height, and the league shows as many rows as fit its row. To do groups missing scores and untracked money into one line each. Document reviewed for 3.3 (requirements, modules, capability map, defaults, decisions, glossary). |
 | 3.4 | 24 Oct 2026 | Organisers with Claude Code | App users page: the "Seen" column is removed, as organisers didn't need it. Players with the app are listed first, then by name. The check-in still records a last-seen time in `app_devices`, but nothing shows it. |
 | 3.5 | 25 Oct 2026 | Organisers with Claude Code | The welcome install card shows to anyone using the app in a browser, whatever the availability switch (it was On only), until dismissed or installed. The Notifications page always has an **Install the app** section until the app is installed. The Install app button is hidden on iPhone and Samsung Internet, which get steps instead. Installing hides both. The change procedure (1.2) now requires this document to be updated for every release, and `CLAUDE.md` records the rule. |
+| 3.6 | 25 Oct 2026 | Organisers with Claude Code | **Automatic payment reminders** now go out **every day at 12pm UK time** to anyone who still owes on any tracked game, until they've paid. Each player gets one message with the total, the games and who to pay. This replaces the reminder the morning after a game. The schedule now calls at 11:00 and 12:00 UTC, and the function only sends at 12 o'clock UK time, so summer time is handled. Re-run `push-cron.sql` and redeploy the function. |
 
 ### 1.4 Approval
 
@@ -203,7 +204,7 @@ Until October 2026 this was all managed in a spreadsheet, a WhatsApp availabilit
 | FR-16 | Read-only View mode for players. Organiser mode behind a password. | Must | 10 |
 | FR-17 | Export and import all data, and export a CSV game log. | Should | 7.3.9 |
 | FR-18 | Show the next game, its teams or squad, and the kitty on a front page. | Must | 7.3.1 |
-| FR-19 | Let each player turn on push notifications on their phone and choose which kinds they get. Notify players when the squad or teams are confirmed, when they owe money (by organiser and automatically the day after a game) and when credit is used. | Should | 7.5 |
+| FR-19 | Let each player turn on push notifications on their phone and choose which kinds they get. Notify players when the squad or teams are confirmed, when they owe money (by organiser, and automatically every day at 12pm until paid) and when credit is used. | Should | 7.5 |
 | FR-20 | Behind an organiser switch (Off / Trial / On), let players say in or out for the next game in the app, open and close availability on a timetable, and pick, save and announce the squad automatically with the Run game rules. Handle drop-outs and late joiners until kick-off. | Should | 7.6 |
 | FR-21 | Show organisers which players have set up the app, on which browser, and which notifications they have on. | Should | 7.6.4 |
 | FR-22 | Give organisers a dashboard of what needs doing, the next game, money, the group, a league table for the year, turnout (with reserves) and this season, with a button to each job. | Should | 7.7 |
@@ -260,7 +261,7 @@ flowchart LR
   FN -- service role --> DB
   FN -- Web Push, VAPID --> PUSH[Phones' push services<br/>Google · Apple · Samsung]
   PUSH -- notification --> P
-  CRON[pg_cron: daily 10:00 UTC reminders<br/>and availability every 15 min] -- pg_net --> FN
+  CRON[pg_cron: 12pm UK payment reminders<br/>and availability every 15 min] -- pg_net --> FN
 ```
 
 ### 5.3 Capability map
@@ -324,7 +325,7 @@ flowchart TB
 | Installable app | Web app manifest (`manifest.webmanifest`), service worker (`sw.js`), icons (`icons/`) | Home-screen install as Brent Football; network first, cached copy when offline |
 | Server logic | Supabase Edge Function `notify` (Deno, TypeScript, about 520 lines; `web-push@3.6.7`, `supabase-js@2`) | Free tier. Deployed by pasting into the dashboard; Verify JWT off |
 | Notifications | Web Push (VAPID) through the phone's push service | Free |
-| Schedules | `pg_cron` and `pg_net`: daily payment reminders (10:00 UTC) and the availability check (every 15 minutes) | Free tier |
+| Schedules | `pg_cron` and `pg_net`: payment reminders every day at 12pm UK time (called at 11:00 and 12:00 UTC) and the availability check (every 15 minutes) | Free tier |
 | Hosting | GitHub Pages | Deployed by GitHub Actions on push to `main` |
 | Source control | Git or GitHub | Pull request per change |
 
@@ -598,14 +599,14 @@ sequenceDiagram
 |---|---|---|---|
 | `squad` | Organiser confirms a game with **Notify the squad** ticked (on by default) | On | Playing: "⚽ Monday squad is out: You're playing. Mon 26 Oct, 6:30 PM, Harrow Powerleague." Reserves: "You're a reserve this time. You're first in for the next game." |
 | `teams` | Organiser confirms teams with **Notify the players** ticked (on by default) | On | "👕 Teams are out: You're on Team 2 (bibs). Kick-off 6:30 PM." |
-| `payments` | Organiser taps **Send reminders** on Outstanding Payments; also automatically at 10:00 UTC the day after a tracked game (`push-cron.sql`) | On | "💷 Payment due: You owe £8.50 for Mon 26 Oct. Pay Kev." Several games are listed, with each organiser's share when more than one. |
+| `payments` | Organiser taps **Send reminders** on Outstanding Payments; also automatically every day at 12pm UK time to anyone who still owes on any tracked game (`push-cron.sql`) | On | "💷 Payment due: You owe £8.50 for Mon 26 Oct. Pay Kev." Several games are listed, with each organiser's share when more than one. |
 | `credit` | A game's money starts being tracked and the player's credit pays for it | Off | "💷 Credit used: £8.50 of your credit paid for Mon 26 Oct. £11.50 left." |
 | `test` | Player taps **Send a test notification** | Always | "Test notification. You're all set." |
 
 Rules:
 - **Recipients:** only players who have notifications on and that kind switched on receive it. The page filters first (it knows which players have notifications on), and the function filters again by each phone's choices.
 - **Tapping a notification:** it opens the app. Payment and credit notifications open Payments, even if the app is already open.
-- **Daily reminder:** it uses the UK date of "yesterday". It only covers games whose money was tracked by then.
+- **Daily reminder (3.6):** every day at 12pm UK time. Each player who still owes on any tracked game gets one message covering all their unpaid games, with who to pay. It repeats daily until they've paid (cleared, ticked as paid, or paid by credit), or until they switch payment reminders off. Games whose money isn't tracked aren't included. The schedule calls at 11:00 and 12:00 UTC, and the function only sends when it's 12 o'clock in the UK, so the time is right in summer and winter.
 - **Limits:** the function sends at most 200 messages per call. It clips titles to 80 characters and bodies to 300. Links must be relative to the app (`./…`).
 - **Not set up:** if the function isn't deployed, the Notifications page, the front card and all send options stay hidden.
 - **Availability (3.0):** an `availability` kind (on by default) covers availability opening, nudges, playing or reserve at the close, promotions, late joins and cancellations.
@@ -815,7 +816,7 @@ Relationships are held as id arrays (`playing_ids`, `paid_ids` and so on) rather
 | Web Push | `web-push` encrypts each notification (aes128gcm) and signs it with VAPID (subject: the app's address) for the phone's push service | Gone phones (404/410) are deleted. Time to live is 24 hours. |
 | Availability schedule | `pg_cron` job `brent-football-availability` calls `avail_tick` every 15 minutes | Set up by `availability.sql`. Does nothing while the switch is Off. |
 | Selection rules | The function carries an exact copy of `selection.js` between `BEGIN selection.js` and `END selection.js` markers, because Supabase can't import from other websites | When a rule changes, change both copies and redeploy the function. The release test checks that they match. |
-| Schedule | `pg_cron` job `brent-football-payment-reminders` calls the function through `pg_net` every day at 10:00 UTC, sending the publishable key as `apikey` | Set up by `push-cron.sql`. |
+| Schedule | `pg_cron` job `brent-football-payment-reminders` calls the function through `pg_net` at 11:00 and 12:00 UTC every day, sending the publishable key as `apikey`. The function only sends on the call that's 12pm in the UK. | Set up by `push-cron.sql`. Re-run it after 3.6 to change the times. |
 | CDN | jsDelivr for `supabase-js` and the Tabler icon font | If the CDN fails, the database is unavailable (the device copy is still used) and icons are missing. |
 
 ---
@@ -928,7 +929,7 @@ For release 2.0, also:
 
 7. `supabase/push.sql`: the two closed push tables.
 8. Deploy the `notify` Edge Function. In the Supabase dashboard, go to **Edge Functions → Deploy a new function → Via Editor**, name it `notify`, paste `supabase/functions/notify/index.ts` and deploy. Then turn off **Verify JWT** in the function's settings.
-9. `supabase/push-cron.sql`: the daily payment reminder. It needs the `pg_cron` and `pg_net` extensions.
+9. `supabase/push-cron.sql`: the 12pm daily payment reminder. It needs the `pg_cron` and `pg_net` extensions. It was updated in 3.6, so re-run it then; it replaces the old schedule.
 
 For release 3.0, also:
 
@@ -976,6 +977,7 @@ Visual changes are reviewed through screenshots or interactive mock-ups before d
 | Availability | Function scenarios over a simulated fortnight against a mock database and push service | Covered: off, trial and on; opening on Tuesday and Friday at 09:00; nothing before 09:00; closing at 21:00; trial held and confirmed; squad identical to the shared rules; guaranteed player with no answer left out; counts and reserve promise; drop-out promotes the first reserve and resets teams; late joiner to reserves or the squad; under 10; changes refused after kick-off; nudge; cancel and reopen; early open not closed early; a hand-made game not duplicated; App users data. |
 | Availability | App in Chromium with the real function and mock database | Covered: settings saved to Trial; Open now; organiser answers; guaranteed warning; Who are you?; in and out; Close now, then held, then Confirm; trial hidden from players; On shows the welcome, install and Who are you? cards; late joiner becomes 3rd reserve; App users lists phones. No page errors and no sideways scroll. |
 | Dashboard | App in Chromium at 1280px and 390px with the real function and mock database | Covered: the 3.3 layout (Money, League and This season in one row and the same height, The group under To do, Turnout full width, league trimmed to fit); organisers land on the Dashboard; live counts and guaranteed warning; to-do items (guaranteed, money not tracked, score needed, money owed); Money, Recent answers, Turnout and This season cards. Add score opens that game in the Game Log. Close now then Confirm from the dashboard switches the card to the saved squad. No page errors or sideways scroll. |
+| Payment reminders (3.6) | Function in Deno with a test clock against a mock database and push service | Winter: 11:00 UTC sends nothing and 12:00 UTC sends. Summer: 11:00 UTC sends and 12:00 UTC sends nothing. A player owing on two games with two organisers gets one message ("£17.00 for 2 games … Pay Kev £8.50 and Neal £8.50"). Paid players and players with payment reminders off get nothing. `force` skips the time check. Nothing is sent once everyone has paid. |
 | Notifications | App in Chromium with the real function, end to end | Front card, Notifications page in View mode, choices, test, squad, teams, reminders and credit-used notifications, tap opens Payments, Turn off. Nothing shows when the function isn't set up. |
 
 ---
@@ -1076,7 +1078,7 @@ Delivered since 1.0: installable app (1.2), push notifications (2.0), self-servi
   - merge older Attendance years;
   - self-host the CDN scripts;
   - more notification types (score is in, reminder before kick-off);
-  - daily payment reminders until paid, skipping players who are in that day's squad (discussed October 2026, left as is for now).
+  - skip the daily payment reminder for players who are in that day's squad (daily reminders until paid were delivered in 3.6).
 - **Candidates for 3.x or 4.0:**
   - **travel and weather:** a 4pm "Getting there" update on game days with live traffic (TomTom), TfL status for Northwick Park and Kenton, road disruptions near the pitch (High School, Gayton Road, HA1 2JG), and optional weather (mocked up, deferred);
   - an activity log table for the Dashboard (payments marked, squad changes), which would make it 4.0.
@@ -1165,7 +1167,7 @@ The reserves block and the "Pitch has been booked" line appear only when they ap
 | Phone layout breakpoint | 720px (Dashboard grid from 900px) |
 | Self-service availability | Off. When on: Thursday games open Tuesday, Monday games open Friday, 09:00 to 21:00 UK time, kick-off 18:30, announce automatically |
 | Notification choices | Availability, Squad, Teams and Payments on; Credit used off |
-| Automatic payment reminder | 10:00 UTC the day after a tracked game |
+| Automatic payment reminder | Every day at 12pm UK time, to anyone who still owes on a tracked game |
 | Availability refresh in the app | Every 30 seconds while it's on screen |
 | Minimum players before organisers are warned | 10 |
 | Dashboard: games in Turnout | Last 12 played |

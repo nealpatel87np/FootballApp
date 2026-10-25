@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Document version** | 3.5 |
-| **Release** | Production Release 3.5 |
+| **Document version** | 3.6 |
+| **Release** | Production Release 3.6 |
 | **Status** | Released |
 | **Date** | 24 October 2026 |
 | **Application** | `index.html` (repository root), published with GitHub Pages |
@@ -58,6 +58,7 @@ If you aren't sure, treat it as minor unless it changes the data model or a core
 | 3.3 | 24 Oct 2026 | Dashboard layout: The group under To do; Money, a new League table and This season in one row; Turnout across the bottom, showing reserves. To do groups repeated jobs into one line. |
 | 3.4 | 24 Oct 2026 | App users no longer shows when each phone was last seen. |
 | 3.5 | 25 Oct 2026 | The install card shows to anyone using the app in a browser, whatever the availability switch. The Notifications page has an **Install the app** section. |
+| 3.6 | 25 Oct 2026 | Automatic payment reminders go out every day at 12pm UK time to anyone who still owes, until they've paid. |
 
 ---
 
@@ -274,7 +275,7 @@ This page appears only once the `notify` function is set up (11.2). It's under *
   - Teams has **Notify the players** before Confirm teams. Each player gets their team, and whether it wears the bibs.
   - Outstanding Payments has **Send reminders (N)**. Each player who owes gets the total, the games and who to pay.
   - Credit used is sent automatically when tracking a game's money uses someone's credit.
-- **Automatic:** at 10:00 UTC each day, players who haven't paid for a tracked game played the day before get a payment reminder.
+- **Automatic:** every day at 12pm UK time, each player who still owes on any tracked game gets one payment reminder with the total, the games and who to pay. It repeats daily until they've paid.
 - **Tapping:** tapping a payment or credit notification opens Payments. The others open the front page.
 
 ### 6.11 Availability (players, when switched on)
