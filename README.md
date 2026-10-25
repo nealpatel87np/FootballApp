@@ -33,7 +33,7 @@ This project is a very simple football app that stores player data in a local SQ
 - `data/football.db` - database file created automatically
 
 ## Football organisation page
-The design is documented in [`docs/SOLUTION_DESIGN.md`](docs/SOLUTION_DESIGN.md) (Solution Design Document) and [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md) (functional specification). Both include the versioning policy. Current release: **3.6**. The version is shown at the bottom of the front page.
+The design is documented in [`docs/SOLUTION_DESIGN.md`](docs/SOLUTION_DESIGN.md) (Solution Design Document) and [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md) (functional specification). Both include the versioning policy. Current release: **3.7**. The version is shown at the bottom of the front page.
 
 Every file in `supabase/` grants the page access to its tables. Supabase no longer does this automatically for tables created from 30 October 2026, so any new table needs the same `grant` line.
 
@@ -160,7 +160,7 @@ Players can say whether they're in for the next game in the app. At closing time
 3. Turn it to **Trial** on Setup when you're ready to try it.
 
 ### Moving around
-Organisers start on the **Dashboard**: the next game (live availability counts or the saved squad), a to-do list with a button for each job, money, who's on the app, turnout over the last 10 games, a league table for the year (3 points a win, 1 a draw), and this season's most games and best win %. On a phone the organisers' bar is Dashboard, Run game, Teams and Payments, with **More** for the other pages, including Game Log. On a computer the pages are a row of tabs along the top. In View mode only Game Log, Player Stats and Payments are shown, plus Notifications once they are set up.
+Once a phone has picked its name, the front page says **Hi {name}** with what matters to them: playing or reserve, whether they've said in, and what they owe. **Not you?** changes the name. Organisers start on the **Dashboard**, which greets them too and shows the next game (live availability counts or the saved squad), a to-do list with a button for each job, money, who's on the app, turnout over the last 10 games, a league table for the year (3 points a win, 1 a draw), and this season's most games and best win %. On a phone the organisers' bar is Dashboard, Run game, Teams and Payments, with **More** for the other pages, including Game Log. On a computer the pages are a row of tabs along the top. In View mode only Game Log, Player Stats and Payments are shown, plus Notifications once they are set up.
 
 The **Payments** tab (called Money before) holds Outstanding Payments, credit, the kitty, games and the ledger.
 

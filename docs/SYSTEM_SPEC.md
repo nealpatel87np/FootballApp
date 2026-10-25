@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Document version** | 3.6 |
-| **Release** | Production Release 3.6 |
+| **Document version** | 3.7 |
+| **Release** | Production Release 3.7 |
 | **Status** | Released |
 | **Date** | 24 October 2026 |
 | **Application** | `index.html` (repository root), published with GitHub Pages |
@@ -59,6 +59,7 @@ If you aren't sure, treat it as minor unless it changes the data model or a core
 | 3.4 | 24 Oct 2026 | App users no longer shows when each phone was last seen. |
 | 3.5 | 25 Oct 2026 | The install card shows to anyone using the app in a browser, whatever the availability switch. The Notifications page has an **Install the app** section. |
 | 3.6 | 25 Oct 2026 | Automatic payment reminders go out every day at 12pm UK time to anyone who still owes, until they've paid. |
+| 3.7 | 25 Oct 2026 | "Hi {name}" greeting on the front page (and the Dashboard for organisers) once a phone has picked Who are you?, with chips for the next game, availability, money and credit, and a Not you? link. |
 
 ---
 
@@ -133,6 +134,12 @@ The repository also contains an unrelated starter app (`server.js`, `public/`, S
 ## 6. Functional specification by page
 
 ### 6.1 Front page
+
+- When the phone has picked **Who are you?**, a greeting card says **"Hi {name} 👋"**. It has chips for:
+  - **the next game:** playing, which reserve, or not in the squad; or, while availability is open, whether they've said in;
+  - **money:** what they owe, or All paid up, plus any credit.
+
+  **Not you?** changes the name. Organisers also see it on the Dashboard, with the time of day, their to-do count and how many are in.
 
 - Shows the **next game**: the earliest game dated today or later, or else the most recent game. It includes the date, time, venue and organiser (when money is tracked).
 - Shows the **confirmed teams** for that game if there are any. Otherwise it shows the numbered squad and the reserves.
