@@ -54,7 +54,7 @@ If you aren't sure, treat the change as **minor** unless it changes the data mod
 
 1. **Agree the change.** A mock-up or preview is produced for anything visual.
 2. **Build and test it** on a working branch, at phone width (375–390px) and desktop width (1280px), with the database blocked so live data is never touched in testing.
-3. **Update this document** (version, revision history, affected sections) and [`SYSTEM_SPEC.md`](SYSTEM_SPEC.md).
+3. **Update this document for every release, however small.** Change the version, add a revision history row, and update every section the change affects. Do this in the same pull request as the change. Also update [`SYSTEM_SPEC.md`](SYSTEM_SPEC.md), the README's current release and `APP_VERSION`. The repository's `CLAUDE.md` records this rule for future sessions.
 4. **Merge** the pull request into `main`. GitHub Pages deploys automatically.
 5. **Tag** the merge commit `vMAJOR.MINOR` on GitHub (*Releases → Draft a new release*).
 6. **Run any new SQL file** once in Supabase (section 13.3).
@@ -80,7 +80,7 @@ If you aren't sure, treat the change as **minor** unless it changes the data mod
 | 3.2 | 24 Oct 2026 | Organisers with Claude Code | **Organiser dashboard** (7.7), the first page after logging in. It has: Next game, To do, Money, Recent answers, The group, Turnout and This season. It's a grid on computers and one column on phones. The organisers' phone bar becomes Dashboard, Run game, Teams, Payments and More. No database change. Full review of this document for 3.2: earlier sections brought up to date (scope, constraints, architecture, data, security, operations, roadmap, defaults and glossary). |
 | 3.3 | 24 Oct 2026 | Organisers with Claude Code | Dashboard layout. On computers: To do and The group on the left beside Next game (and Recent answers); Money, a new **League** table and This season in one row; Turnout across the full width with reserves stacked on each bar. Cards in a row are the same height, and the league shows as many rows as fit its row. To do groups missing scores and untracked money into one line each. Document reviewed for 3.3 (requirements, modules, capability map, defaults, decisions, glossary). |
 | 3.4 | 24 Oct 2026 | Organisers with Claude Code | App users page: the "Seen" column is removed, as organisers didn't need it. Players with the app are listed first, then by name. The check-in still records a last-seen time in `app_devices`, but nothing shows it. |
-| 3.5 | 25 Oct 2026 | Organisers with Claude Code | The welcome install card shows to anyone using the app in a browser, whatever the availability switch (it was On only), until dismissed or installed. The Notifications page always has an **Install the app** section until the app is installed. The Install app button is hidden on iPhone and Samsung Internet, which get steps instead. Installing hides both. |
+| 3.5 | 25 Oct 2026 | Organisers with Claude Code | The welcome install card shows to anyone using the app in a browser, whatever the availability switch (it was On only), until dismissed or installed. The Notifications page always has an **Install the app** section until the app is installed. The Install app button is hidden on iPhone and Samsung Internet, which get steps instead. Installing hides both. The change procedure (1.2) now requires this document to be updated for every release, and `CLAUDE.md` records the rule. |
 
 ### 1.4 Approval
 
@@ -1190,6 +1190,7 @@ Neal, Kev and Gav. They're listed in `ORGANISERS` in the code. Adding one is a m
 | `docs/SOLUTION_DESIGN.md` | This document |
 | `docs/SYSTEM_SPEC.md` | Functional specification |
 | `README.md` | User guide |
+| `CLAUDE.md` | Working rules for Claude Code sessions (release checklist, including updating this document) |
 | `data/*.json` | Example data export |
 
 ### 19.5 Glossary
