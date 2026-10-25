@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | **Document** | Solution Design Document (SDD) |
-| **Version** | 3.6 |
-| **Release** | Production Release 3.6 |
+| **Version** | 3.7 |
+| **Release** | Production Release 3.7 |
 | **Status** | Approved for production |
 | **Date** | 24 October 2026 |
 | **System** | Brent Football: the web app (`index.html`, `selection.js`, `sw.js`) on GitHub Pages, the Supabase database, the `notify` Edge Function and two scheduled jobs |
@@ -82,6 +82,7 @@ If you aren't sure, treat the change as **minor** unless it changes the data mod
 | 3.4 | 24 Oct 2026 | Organisers with Claude Code | App users page: the "Seen" column is removed, as organisers didn't need it. Players with the app are listed first, then by name. The check-in still records a last-seen time in `app_devices`, but nothing shows it. |
 | 3.5 | 25 Oct 2026 | Organisers with Claude Code | The welcome install card shows to anyone using the app in a browser, whatever the availability switch (it was On only), until dismissed or installed. The Notifications page always has an **Install the app** section until the app is installed. The Install app button is hidden on iPhone and Samsung Internet, which get steps instead. Installing hides both. The change procedure (1.2) now requires this document to be updated for every release, and `CLAUDE.md` records the rule. |
 | 3.6 | 25 Oct 2026 | Organisers with Claude Code | **Automatic payment reminders** now go out **every day at 12pm UK time** to anyone who still owes on any tracked game, until they've paid. Each player gets one message with the total, the games and who to pay. This replaces the reminder the morning after a game. The schedule now calls at 11:00 and 12:00 UTC, and the function only sends at 12 o'clock UK time, so summer time is handled. Re-run `push-cron.sql` and redeploy the function. |
+| 3.7 | 25 Oct 2026 | Organisers with Claude Code | **Personal greeting** (7.8): a phone that has picked Who are you? shows "Hi {name} 👋" with chips on the front page. Players see their next game, what they owe and their credit; while availability is open, whether they've said in. Organisers on the Dashboard see the time of day, their to-do count and how many are in. **Not you?** changes the name. No database change. |
 
 ### 1.4 Approval
 
@@ -208,6 +209,7 @@ Until October 2026 this was all managed in a spreadsheet, a WhatsApp availabilit
 | FR-20 | Behind an organiser switch (Off / Trial / On), let players say in or out for the next game in the app, open and close availability on a timetable, and pick, save and announce the squad automatically with the Run game rules. Handle drop-outs and late joiners until kick-off. | Should | 7.6 |
 | FR-21 | Show organisers which players have set up the app, on which browser, and which notifications they have on. | Should | 7.6.4 |
 | FR-22 | Give organisers a dashboard of what needs doing, the next game, money, the group, a league table for the year, turnout (with reserves) and this season, with a button to each job. | Should | 7.7 |
+| FR-23 | Greet a phone's player by name on the front page (and organisers on the Dashboard), with what matters to them now: playing or reserve, availability answer, money owed and credit. | Could | 7.8 |
 
 ### 4.2 Non-functional requirements
 
@@ -374,6 +376,7 @@ The web app deploys automatically on merge. The function and the SQL scripts are
 | **Export and import** | JSON file, share, text, CSV, import | `exportFile`, `exportLogCSV`, `applyImport` |
 | **Selection rules** (`selection.js`) | Squad order shared by Run game and the function | `orderSquad`, `splitSquad`, `latePenaltyFor` |
 | **Dashboard** | Organiser home page cards | `renderDash`, `dashTodos`, `dashNextCard`, `dashMoneyCard`, `dashGroupCard`, `dashLeagueCard`, `dashFitLeague`, `dashTurnoutCard`, `dashSeasonCard` |
+| **Greeting** | "Hi {name}" card under the heading on the front page and the Dashboard | `renderHi`, `hiChips`, `hiNotYou` |
 | **Availability** | Player card, organiser card, settings, App users | `availLoad`, `avPlayerCard`, `avOrgCard`, `avSettingsCard`, `avAnswer`, `avAct`, `avHello`, `renderUsers`, `availRender` |
 | **Notifications** | Opt-in, choices, sending, front card, Notifications page | `pushLoadStatus`, `pushTurnOn`, `pushUpdate`, `pushTurnOff`, `pushSquad`, `pushTeams`, `pushRemind`, `pushCreditUsed`, `renderNotify`, `renderPushCard` |
 
@@ -708,6 +711,17 @@ A **Dashboard** page is the first page organisers see after logging in. It only 
 
 **Phone bar for organisers:** Dashboard, Run game, Teams, Payments and More. Game Log moves under More. Viewers' pages are unchanged.
 
+### 7.8 Personal greeting (release 3.7)
+
+When a phone has picked Who are you? (`fbv3_me`), a card under the Brent Football heading says **"Hi {name} 👋"**. It's on the **front page** for everyone, and on the **Dashboard** for organisers. It's hidden on every other page, and when no name has been picked.
+
+| Where | Line under the name | Chips (real data) |
+|---|---|---|
+| Front page | "Here's what's coming up for you.", or "{Day}'s availability is open until {time}." while it's open | **Availability open or held:** You're in / You're out / You haven't said if you're in. **Otherwise, the next saved game:** Playing {day} / {nth} reserve for {day} / Not in {day}'s squad. **Money:** You owe £x (all tracked games), or All paid up. **Credit:** £x credit, if any. |
+| Dashboard (organisers) | "Good morning / afternoon / evening. Here's where things stand." (from the phone's clock) | N things to do (same list as To do), or All caught up; and N in for {day} while availability is open |
+
+**Not you?** opens the Notifications page's Not you? if the phone has notifications on, so the name and notifications change together. Otherwise it forgets the name, and Who are you? (or Get notified) asks again.
+
 ---
 
 ## 8. Data design
@@ -860,7 +874,7 @@ The app stores **first names or nicknames**, attendance, ratings, scores and pay
   - Desktop: one row of tabs.
   - View mode: Game Log, Player Stats and Payments, plus Availability (when it's On) and Notifications (once set up).
   - Organisers start on the Dashboard after logging in.
-- **First time on a phone:** a welcome and install card (whenever the app is opened in a browser rather than installed, until dismissed), then **Who are you?** (when availability is on), then **Get notified**. The Notifications page also has an **Install the app** section until it's installed.
+- **First time on a phone:** a welcome and install card (whenever the app is opened in a browser rather than installed, until dismissed), then **Who are you?** (when availability is on), then **Get notified**. The Notifications page also has an **Install the app** section until it's installed. Once a name is picked, the front page greets them by name (7.8).
 - **Layout:** one column, at most 680px wide. The Dashboard widens to 1180px with a three-column grid on screens 900px or wider. Cards for sections. Secondary sections (Add player, Export, Import, How each game is split, Legacy Player Data, paid games) start closed behind **Show**.
 - **Feedback:**
   - A sync status line under the title.
@@ -977,6 +991,7 @@ Visual changes are reviewed through screenshots or interactive mock-ups before d
 | Availability | Function scenarios over a simulated fortnight against a mock database and push service | Covered: off, trial and on; opening on Tuesday and Friday at 09:00; nothing before 09:00; closing at 21:00; trial held and confirmed; squad identical to the shared rules; guaranteed player with no answer left out; counts and reserve promise; drop-out promotes the first reserve and resets teams; late joiner to reserves or the squad; under 10; changes refused after kick-off; nudge; cancel and reopen; early open not closed early; a hand-made game not duplicated; App users data. |
 | Availability | App in Chromium with the real function and mock database | Covered: settings saved to Trial; Open now; organiser answers; guaranteed warning; Who are you?; in and out; Close now, then held, then Confirm; trial hidden from players; On shows the welcome, install and Who are you? cards; late joiner becomes 3rd reserve; App users lists phones. No page errors and no sideways scroll. |
 | Dashboard | App in Chromium at 1280px and 390px with the real function and mock database | Covered: the 3.3 layout (Money, League and This season in one row and the same height, The group under To do, Turnout full width, league trimmed to fit); organisers land on the Dashboard; live counts and guaranteed warning; to-do items (guaranteed, money not tracked, score needed, money owed); Money, Recent answers, Turnout and This season cards. Add score opens that game in the Game Log. Close now then Confirm from the dashboard switches the card to the saved squad. No page errors or sideways scroll. |
+| Greeting (3.7) | App in Chromium at 390px from a saved data file | Lewis sees Playing and You owe £8.50, and Pedro sees 1st reserve and All paid up, on the front page. Neal sees the time of day and to-do count on the Dashboard, and his own chips and credit on the front page. Hidden on other pages and with no name. Not you? clears the name. No page errors or sideways scroll. |
 | Payment reminders (3.6) | Function in Deno with a test clock against a mock database and push service | Winter: 11:00 UTC sends nothing and 12:00 UTC sends. Summer: 11:00 UTC sends and 12:00 UTC sends nothing. A player owing on two games with two organisers gets one message ("£17.00 for 2 games … Pay Kev £8.50 and Neal £8.50"). Paid players and players with payment reminders off get nothing. `force` skips the time check. Nothing is sent once everyone has paid. |
 | Notifications | App in Chromium with the real function, end to end | Front card, Notifications page in View mode, choices, test, squad, teams, reminders and credit-used notifications, tap opens Payments, Turn off. Nothing shows when the function isn't set up. |
 
@@ -1220,6 +1235,7 @@ Neal, Kev and Gav. They're listed in `ORGANISERS` in the code. Adding one is a m
 | Web Push / VAPID | The standard way browsers receive notifications, and the key pair that signs them |
 | Service worker | Background script (`sw.js`) that keeps an offline copy and shows notifications |
 | Dashboard | The organisers' home page (7.7) |
+| Greeting | The "Hi {name}" card for a phone that has picked Who are you? (7.8) |
 | League | The dashboard's table for the year: P, W, D, L, goal difference and points (3 a win, 1 a draw) per player |
 | GD | Goal difference: goals for minus goals against, from the player's team in each scored game |
 | App users | Organiser page listing which players have set up the app and notifications |

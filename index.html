@@ -99,6 +99,16 @@
   .av-names span { display: block; }
   .av-guar { display: block; margin-top: 10px; background: var(--bg-accent); color: var(--text-accent); }
   .av-orgs label { display: block; font-size: 12px; }
+  /* "Hi Neal": the greeting for a phone that has picked Who are you? */
+  .hi { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 12px; padding: 10px 14px; margin: -4px 0 12px; }
+  .hi strong { font-size: 18px; font-weight: 500; display: block; }
+  .hi .sub { font-size: 12.5px; color: var(--text-secondary); }
+  .hi .notyou { font-size: 11.5px; color: var(--text-muted); text-decoration: underline; background: none; border: none; cursor: pointer; white-space: nowrap; align-self: flex-start; padding: 2px 0; font-family: inherit; }
+  .hi .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px; }
+  .hi .chips span { font-size: 11px; padding: 2px 8px; border-radius: 20px; }
+  .hi .c-ok { background: var(--bg-success); color: var(--text-success); } .hi .c-bad { background: var(--bg-danger); color: var(--text-danger); }
+  .hi .c-info { background: var(--bg-accent); color: var(--text-accent); } .hi .c-warn { background: var(--bg-warning); color: var(--text-warning); }
+  .hi .c-grey { background: var(--surface-1); color: var(--text-secondary); }
   .av-stats .b { background: var(--bg-accent); color: var(--text-accent); }
   .av-stats .w { background: var(--bg-warning); color: var(--text-warning); }
   /* Organiser dashboard: one column on phones, a grid on computers */
@@ -450,6 +460,7 @@
 <div class="app">
   <h2><i class="ti ti-ball-football" style="margin-right:8px;font-size:20px"></i>Brent Football</h2>
   <div id="sync-status" style="font-size:11px;color:var(--text-muted);margin:-8px 0 14px 2px"></div>
+  <div class="hi" id="hi" style="display:none"></div>
 
   <!-- FRONT PAGE -->
   <div id="front">
@@ -1397,6 +1408,7 @@ function goTab(t) {
   if (t === 'avail') { availRender(); availLoad(); }
   if (t === 'users') renderUsers();
   if (t === 'dash') { renderDash(); availLoad(); }
+  renderHi();
 }
 
 function togglePref() {
@@ -3179,7 +3191,7 @@ renderHistory = function () {
    learns which players have them on. Organisers send them when they confirm a game
    or teams and from Outstanding Payments; payment reminders also go out on a
    schedule (supabase/push-cron.sql). */
-const APP_VERSION = '3.6';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
+const APP_VERSION = '3.7';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
 const PUSH_FN = SUPABASE_URL + '/functions/v1/notify';
 const PUSH_KEY = 'fbv3_push';   // this phone only: { playerId, endpoint, prefs, hideCard }
 const PUSH_KINDS = [['availability', 'Availability', 'When it opens, and if you play'], ['squad', 'Squad picked', 'Playing or reserve'], ['teams', 'Teams confirmed', 'Your team and bibs'],
@@ -3465,7 +3477,7 @@ teamsConfirm = function () {
   if (notify && t && t.status === 'confirmed') pushTeams(g, t);
 };
 const _pushRenderSquad = renderSquad; renderSquad = function () { _pushRenderSquad(); renderPushSquadOpt(); };
-const _pushRenderFront = renderFront; renderFront = function () { _pushRenderFront(); renderPushCard(); };
+const _pushRenderFront = renderFront; renderFront = function () { _pushRenderFront(); renderPushCard(); if (typeof renderHi === 'function' && AV) renderHi(); };
 const _pushRerenderAll = rerenderAll; rerenderAll = function () { _pushRerenderAll(); if (document.getElementById('page-notify').classList.contains('active')) renderNotify(); if (AV.settings) availRender(); if (document.getElementById('page-dash').classList.contains('active')) renderDash(); };
 
 /* ---- SELF-SERVICE AVAILABILITY AND APP USERS ----
@@ -3547,7 +3559,7 @@ function avAnswer(iso, answer, playerId = ME, byOrganiser = false) {
 function avSetMe(id) {
   id = toId(id); if (!id) return;
   ME = id; try { localStorage.setItem(ME_KEY, String(id)); } catch (e) {}
-  avHello(true); availRender(); renderPushCard();
+  avHello(true); availRender(); renderPushCard(); renderHi();
 }
 
 // Tell the function this phone is set up (for App users), at most every 6 hours
@@ -3769,6 +3781,7 @@ function availRender() {
   const set = document.getElementById('avail-settings'), open = !!document.querySelector('#av-set-box:not([hidden])');
   set.innerHTML = avSettingsCard();
   if (document.getElementById('page-dash').classList.contains('active')) renderDash();
+  renderHi();
   if (open) { const box = document.getElementById('av-set-box'), b = document.querySelector('[aria-controls=av-set-box]'); if (box && b) { box.hidden = false; b.textContent = 'Hide'; b.setAttribute('aria-expanded', 'true'); } }
 }
 // Keep it fresh while someone is looking at it
@@ -3985,6 +3998,59 @@ function dashSeasonCard() {
     <table class="ledger" style="min-width:0"><thead><tr><th>Most games</th><th class="r"></th></tr></thead><tbody>${most.map(x => `<tr><td>${esc(x.p.name)}</td><td class="r">${x.n}</td></tr>`).join('') || '<tr><td class="hint">No games yet</td><td></td></tr>'}</tbody></table>
     <table class="ledger" style="min-width:0;margin-top:6px"><thead><tr><th>Best win % (5+ scored games)</th><th class="r"></th></tr></thead><tbody>${best.map(x => `<tr><td>${esc(pName(x.id))}</td><td class="r">${x.pct}%</td></tr>`).join('') || '<tr><td class="hint">Needs more scores</td><td></td></tr>'}</tbody></table></div>`;
 }
+/* ---- GREETING ("Hi Neal") ----
+   For a phone that has picked Who are you?: the player's name and one or two chips
+   about what matters to them. Players see it on the front page; organisers see it
+   on the Dashboard with the time of day and their to-do count. */
+function hiChips() {
+  const out = [], chip = (cls, text) => out.push(`<span class="${cls}">${esc(text)}</span>`);
+  const r = avVisible() ? avRound() : null;
+  if (r && (r.status === 'open' || r.status === 'held')) {
+    const mine = avMine(r.game_iso), dn = avDayName(r.day);
+    if (mine === 'in') chip('c-ok', `✓ You're in for ${dn}`);
+    else if (mine === 'out') chip('c-grey', `You're out for ${dn}`);
+    else chip('c-warn', "❓ You haven't said if you're in");
+  } else {
+    const g = S.games.filter(x => x.iso && x.iso >= isoToday()).sort((a, b) => a.iso.localeCompare(b.iso))[0];
+    if (g) {
+      const dn = isoToDate(g.iso).toLocaleDateString('en-GB', { weekday: 'long' }), ri = g.reserveIds.indexOf(ME);
+      if (g.playingIds.includes(ME)) chip('c-ok', `⚽ Playing ${dn}`);
+      else if (ri !== -1) chip('c-warn', `🪑 ${avOrdinal(ri + 1)} reserve for ${dn}`);
+      else chip('c-grey', `Not in ${dn}'s squad`);
+    }
+  }
+  const owed = debtsOwed().filter(d => d.pid === ME).reduce((t, d) => t + d.amt, 0), credit = creditOf(ME);
+  if (owed) chip('c-bad', `💷 You owe ${gbp(owed)}`);
+  else chip('c-ok', '✓ All paid up');
+  if (credit) chip('c-info', `💷 ${gbp(credit)} credit`);
+  return out;
+}
+function renderHi() {
+  const el = document.getElementById('hi'), p = ME && S.players.find(x => x.id === ME);
+  const onFront = document.body.classList.contains('on-front'), onDash = document.getElementById('page-dash').classList.contains('active') && appMode === 'edit';
+  if (!p || !(onFront || onDash)) { el.style.display = 'none'; return; }
+  let sub, chips;
+  if (onDash) {
+    const h = new Date().getHours(), todos = dashTodos().length, r = avVisible() ? avRound() : null;
+    sub = `Good ${h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening'}. Here's where things stand.`;
+    chips = [todos ? `<span class="c-info">✅ ${todos} thing${todos === 1 ? '' : 's'} to do</span>` : '<span class="c-ok">🎉 All caught up</span>'];
+    if (r && (r.status === 'open' || r.status === 'held')) chips.push(`<span class="c-ok">⚽ ${avAnswersFor(r.game_iso).filter(a => a.answer === 'in').length} in for ${esc(avDayName(r.day))}</span>`);
+  } else {
+    const r = avVisible() ? avRound() : null;
+    sub = r && r.status === 'open' ? `${avDayName(r.day)}'s availability is open until ${avClock(AV.settings.close_time)}.` : "Here's what's coming up for you.";
+    chips = hiChips();
+  }
+  el.innerHTML = `<div><strong>Hi ${esc(p.name)} 👋</strong><span class="sub">${esc(sub)}</span><div class="chips">${chips.join('')}</div></div><button class="notyou" onclick="hiNotYou()">Not you?</button>`;
+  el.style.display = '';
+}
+// Not you? Change the name where the phone's notifications are, or pick again
+function hiNotYou() {
+  if (pushOn()) { if (!appMode) enterApp(isLoggedIn() ? 'edit' : 'view'); goTab('notify'); return; }
+  ME = null; try { localStorage.removeItem(ME_KEY); } catch (e) {}
+  PUSH.hideCard = false; pushSave();
+  availRender(); renderPushCard(); renderHi();
+}
+
 function renderDash() {
   const el = document.getElementById('dash');
   if (!el) return;
@@ -3993,6 +4059,7 @@ function renderDash() {
   el.classList.toggle('has-act', !!act);
   el.innerHTML = dashNextCard() + dashTodoCard() + dashGroupCard() + act + dashMoneyCard() + dashLeagueCard() + dashSeasonCard() + dashTurnoutCard();
   dashFitLeague();
+  renderHi();
 }
 
 try { const o = localStorage.getItem('fbv3_org'); if (ORGANISERS.includes(o)) document.getElementById('org-select').value = o; } catch (e) {}
