@@ -3909,14 +3909,11 @@ function dashNextCard() {
 }
 function dashMoneyCard() {
   const t = moneyTotals(), h = moneyHoldings(), credit = S.money.credit.reduce((s, x) => s + x.amount, 0), debts = debtsOwed();
-  const per = new Map();
-  debts.forEach(d => { const x = per.get(d.pid) || { amt: 0, n: 0 }; x.amt += d.amt; x.n++; per.set(d.pid, x); });
-  const most = [...per.entries()].sort((a, b) => b[1].amt - a[1].amt).slice(0, 3);
+  const owing = [...new Set(debts.map(d => d.pid))];
   return `<div class="card da-money"><h3 class="dash-h">💷 Money <button class="btn xs" onclick="goTab('money')">Payments →</button></h3>
     <div class="av-stats"><div class="i"><b>${gbp(t.kitty)}</b>In the kitty</div><div class="o"><b>${gbp(t.owed)}</b>Still owed</div><div class="b"><b>${gbp(credit)}</b>Credit held</div></div>
     <table class="ledger" style="min-width:0"><thead><tr><th>Organiser</th><th class="r">Holds</th><th class="r">Owed to them</th></tr></thead><tbody>${ORGANISERS.map(o => `<tr><td>${esc(o)}</td><td class="r">${gbp(h[o].kitty)}</td><td class="r">${h[o].owed ? gbp(h[o].owed) : '–'}</td></tr>`).join('')}</tbody></table>
-    ${most.length ? `<p class="hint" style="margin-top:8px"><strong>Owes most:</strong> ${most.map(([pid, x]) => `${esc(pName(pid))} ${gbp(x.amt)}${x.n > 1 ? ` (${x.n} games)` : ''}`).join(' · ')}</p>` : ''}
-    ${pushReady && pushCount([...per.keys()]) ? `<div class="tactions" style="margin-top:8px"><button class="btn sm primary" onclick="pushRemind()">🔔 Send reminders (${pushCount([...per.keys()])})</button></div>` : ''}</div>`;
+    ${pushReady && pushCount(owing) ? `<div class="tactions" style="margin-top:8px"><button class="btn sm primary" onclick="pushRemind()">🔔 Send reminders (${pushCount(owing)})</button></div>` : ''}</div>`;
 }
 function dashActivityCard() {
   if (!AV.settings || avMode() === 'off' || !AV.answers.length) return '';
@@ -3954,15 +3951,12 @@ function dashCopyInvite(btn) {
 function dashTurnoutCard() {
   const today = isoToday(), last = S.games.filter(g => g.iso && g.iso <= today).sort((a, b) => a.iso.localeCompare(b.iso)).slice(-12);
   if (!last.length) return '';
-  const avg = list => list.length ? (list.reduce((s, g) => s + g.playingIds.length, 0) / list.length).toFixed(1) : '–';
-  const short = last.filter(g => g.playingIds.length < 10).length, res = last.reduce((s, g) => s + g.reserveIds.length, 0), late = last.reduce((s, g) => s + lateIdsOf(g.id).length, 0);
   // Each bar: players at the bottom, reserves stacked on top, total above
   const max = Math.max(BF_SELECT.SQUAD_SIZE, ...last.map(g => g.playingIds.length + g.reserveIds.length));
-  return `<div class="card da-turn"><h3 class="dash-h">📈 Turnout, last ${last.length} game${last.length === 1 ? '' : 's'} <small>average ${avg(last)} playing${short ? ` · ${short} short` : ''} · ${res} reserve${res === 1 ? '' : 's'}</small></h3>
+  return `<div class="card da-turn"><h3 class="dash-h">📈 Turnout, last ${last.length} game${last.length === 1 ? '' : 's'}</h3>
     <div class="dash-spark">${last.map(g => `<div class="tb" title="${esc(dashShort(g.iso))}: ${g.playingIds.length} playing, ${g.reserveIds.length} reserve${g.reserveIds.length === 1 ? '' : 's'}"><b>${g.playingIds.length}${g.reserveIds.length ? '+' + g.reserveIds.length : ''}</b>${g.reserveIds.length ? `<i class="rs" style="height:${g.reserveIds.length / max * 100}%"></i>` : ''}<i class="pl${g.playingIds.length < 10 ? ' low' : ''}" style="height:${g.playingIds.length / max * 100}%"></i></div>`).join('')}</div>
     <div class="dash-sparkl">${last.map(g => `<span>${esc(isoToDate(g.iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))}</span>`).join('')}</div>
-    <div class="dash-key"><span><i style="background:var(--border-accent)"></i>Playing</span><span><i style="background:var(--bg-warning);border:0.5px solid var(--text-warning)"></i>Reserves</span><span><i style="background:var(--border-danger)"></i>Under 10 playing</span>
-      <span>· Late arrivals: ${late} · Monday avg ${avg(last.filter(g => g.day === 'mon'))} · Thursday avg ${avg(last.filter(g => g.day === 'thu'))}</span></div></div>`;
+    <div class="dash-key"><span><i style="background:var(--border-accent)"></i>Playing</span><span><i style="background:var(--bg-warning);border:0.5px solid var(--text-warning)"></i>Reserves</span><span><i style="background:var(--border-danger)"></i>Under 10 playing</span></div></div>`;
 }
 // League table for this year: 3 points a win, 1 a draw, from confirmed teams with a score
 function dashLeagueCard() {
