@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | **Document** | Solution Design Document (SDD) |
-| **Version** | 3.8 |
-| **Release** | Production Release 3.8 |
+| **Version** | 3.9 |
+| **Release** | Production Release 3.9 |
 | **Status** | Approved for production |
 | **Date** | 24 October 2026 |
 | **System** | Brent Football: the web app (`index.html`, `selection.js`, `sw.js`) on GitHub Pages, the Supabase database, the `notify` Edge Function and two scheduled jobs |
@@ -84,6 +84,7 @@ If you aren't sure, treat the change as **minor** unless it changes the data mod
 | 3.6 | 25 Oct 2026 | Organisers with Claude Code | **Automatic payment reminders** now go out **every day at 12pm UK time** to anyone who still owes on any tracked game, until they've paid. Each player gets one message with the total, the games and who to pay. This replaces the reminder the morning after a game. The schedule now calls at 11:00 and 12:00 UTC, and the function only sends at 12 o'clock UK time, so summer time is handled. Re-run `push-cron.sql` and redeploy the function. |
 | 3.7 | 25 Oct 2026 | Organisers with Claude Code | **Personal greeting** (7.8): a phone that has picked Who are you? shows "Hi {name} 👋" with chips on the front page. Players see their next game, what they owe and their credit; while availability is open, whether they've said in. Organisers on the Dashboard see the time of day, their to-do count and how many are in. **Not you?** changes the name. No database change. |
 | 3.8 | 25 Oct 2026 | Organisers with Claude Code | **Lower Supabase traffic** (12, 13.3): the app re-reads availability every 30 seconds only while a round is open, every 5 minutes otherwise, and straight away when it comes back on screen. The availability schedule runs from 07:00 to 22:45 UTC instead of all day (64 calls a day, down from 96), so opening and closing times must be between 8am and 10:45pm UK time, which Setup checks. A nightly job deletes schedule history older than 7 days. New `supabase/schedule-3.8.sql`, run by hand; no function change. |
+| 3.9 | 26 Oct 2026 | Organisers with Claude Code | **Simpler dashboard and cancelled games** (7.4.7, 7.7): Turnout shows only each game's numbers (no averages, short or late counts), and Money no longer lists who owes most. A game with fewer than 10 playing counts as **cancelled**: it isn't asked for money, a score or late arrivals on To do, and Payments keeps it behind **Show paid and cancelled games** with **Track anyway**. Page only. |
 
 ### 1.4 Approval
 
@@ -539,6 +540,7 @@ kitty(org) = opening(org) + Σ toKitty of games org organised − Σ spends org 
 - **Tracking is opt-in per game.** Price, pitch cost and admin % are copied onto the game when tracking starts, so later setting changes don't rewrite history.
 - **Outstanding Payments** is derived from tracked games' unpaid players. Clearing a debt ticks the player as paid.
 - The Games list hides fully paid games behind **Show paid games**.
+- **Cancelled games (3.9):** a game with fewer than 10 playing (`MIN_PLAYERS`, `gameCancelled`) was cancelled, so no money is collected. It isn't listed as waiting for money, and the button becomes **Show paid and cancelled games**. There it reads "Only N · cancelled, no money", with **Track anyway** in case it went ahead. The Dashboard doesn't ask for its money, score or late arrivals.
 
 #### 7.4.8 Credit
 
@@ -702,12 +704,12 @@ A **Dashboard** page is the first page organisers see after logging in. It only 
 | Card | Shows | Actions |
 |---|---|---|
 | **Next game** | **While availability is open or held:** in, out and no-answer counts with a bar; time left; guaranteed players who haven't said in; the squad "if it closed now" (Guaranteed, →Next and Late tags). **Once a squad is saved:** a checklist (squad, teams, money), the squad, and a warning if the teams no longer match. **Otherwise:** when availability opens next. | Nudge, Close now or Confirm and announce, Answer for a player, Pick teams, WhatsApp, Track money, Open now |
-| **To do** | Generated from the data: a squad waiting to be confirmed; guaranteed players not in; scores missing for confirmed teams (last 45 days, one line however many games); played games with money not tracked (one line, with the latest and oldest); draft or out-of-date teams for the next game; money owed (total, players, oldest); late arrivals for yesterday's or today's game (optional). Shows "All caught up" when empty. | Each item jumps to the page that does it |
-| **Money** | Kitty, still owed, credit held; what each organiser holds and is owed; the three who owe most | Payments; Send reminders (when anyone who owes has notifications on) |
+| **To do** | Generated from the data: a squad waiting to be confirmed; guaranteed players not in; scores missing for confirmed teams (last 45 days, one line however many games); played games with money not tracked (one line, with the latest and oldest); draft or out-of-date teams for the next game; money owed (total, players, oldest); late arrivals for yesterday's or today's game (optional). Cancelled games (under 10 playing) are left out of the score, money and late items. Shows "All caught up" when empty. | Each item jumps to the page that does it |
+| **Money** | Kitty, still owed, credit held; what each organiser holds and is owed (who owes most was removed in 3.9) | Payments; Send reminders (when anyone who owes has notifications on) |
 | **Recent answers** | The latest availability answers, including any made by an organiser (only when the switch isn't Off) | |
 | **The group** | On the app, notifications on, not yet; who isn't on the app; Samsung Internet users. Comes from `admin_users`, cached for 5 minutes. | App users; Copy invite message |
 | **League** | This year's table from confirmed teams with a score: P, W, D, L, goal difference and points (3 for a win, 1 for a draw), ordered by points, then goal difference, then wins. Shows as many rows as fit the height of its row (top 6 on a phone), then "+ N more". | Player Stats |
-| **Turnout** | Full width: the last 12 played games as bars, with players at the bottom (under 10 in red) and reserves stacked on top, plus the total above each bar. Average, short games, reserves, late arrivals, Monday and Thursday averages, and a key. | |
+| **Turnout** | Full width: the last 12 played games as bars, with players at the bottom (cancelled games, under 10, in red) and reserves stacked on top, and each game's numbers above its bar (for example 12+1). A key for Playing, Reserves and Cancelled (under 10). Averages and late counts were removed in 3.9. | |
 | **This season** | Most games this year (the app's games plus the spreadsheet's 2026 figures), and best win % with 5+ scored games | |
 
 **Phone bar for organisers:** Dashboard, Run game, Teams, Payments and More. Game Log moves under More. Viewers' pages are unchanged.
@@ -997,6 +999,7 @@ Visual changes are reviewed through screenshots or interactive mock-ups before d
 | Availability | Function scenarios over a simulated fortnight against a mock database and push service | Covered: off, trial and on; opening on Tuesday and Friday at 09:00; nothing before 09:00; closing at 21:00; trial held and confirmed; squad identical to the shared rules; guaranteed player with no answer left out; counts and reserve promise; drop-out promotes the first reserve and resets teams; late joiner to reserves or the squad; under 10; changes refused after kick-off; nudge; cancel and reopen; early open not closed early; a hand-made game not duplicated; App users data. |
 | Availability | App in Chromium with the real function and mock database | Covered: settings saved to Trial; Open now; organiser answers; guaranteed warning; Who are you?; in and out; Close now, then held, then Confirm; trial hidden from players; On shows the welcome, install and Who are you? cards; late joiner becomes 3rd reserve; App users lists phones. No page errors and no sideways scroll. |
 | Dashboard | App in Chromium at 1280px and 390px with the real function and mock database | Covered: the 3.3 layout (Money, League and This season in one row and the same height, The group under To do, Turnout full width, league trimmed to fit); organisers land on the Dashboard; live counts and guaranteed warning; to-do items (guaranteed, money not tracked, score needed, money owed); Money, Recent answers, Turnout and This season cards. Add score opens that game in the Game Log. Close now then Confirm from the dashboard switches the card to the saved squad. No page errors or sideways scroll. |
+| Dashboard trim and cancelled games (3.9) | App in Chromium at 390px and 1280px from a saved data file with 12 games, two of them with 9 playing | Turnout has no averages or late count but keeps the bars, numbers and key (Cancelled (under 10)). Money has no Owes most. To do counts 8 untracked games, not the 2 cancelled. Payments hides the cancelled games behind Show paid and cancelled games, and shows them with Track anyway. No page errors or sideways scroll. |
 | Greeting (3.7) | App in Chromium at 390px from a saved data file | Lewis sees Playing and You owe £8.50, and Pedro sees 1st reserve and All paid up, on the front page. Neal sees the time of day and to-do count on the Dashboard, and his own chips and credit on the front page. Hidden on other pages and with no name. Not you? clears the name. No page errors or sideways scroll. |
 | Quieter refresh (3.8) | App in Chromium at 390px and 1280px with a fake clock and a fake database counting availability reads | One read on opening. With no round open, none for 5 minutes and then one. With a round open, one every 30 seconds. None while the screen is hidden, and one on coming back. Setup refuses a 7am opening or an 11pm closing and saves a 10:45pm closing. No page errors. |
 | Payment reminders (3.6) | Function in Deno with a test clock against a mock database and push service | Winter: 11:00 UTC sends nothing and 12:00 UTC sends. Summer: 11:00 UTC sends and 12:00 UTC sends nothing. A player owing on two games with two organisers gets one message ("£17.00 for 2 games … Pay Kev £8.50 and Neal £8.50"). Paid players and players with payment reminders off get nothing. `force` skips the time check. Nothing is sent once everyone has paid. |
@@ -1196,6 +1199,7 @@ The reserves block and the "Pitch has been booked" line appear only when they ap
 | Availability check schedule | Every 15 minutes, 07:00–22:45 UTC (opening and closing times between 8am and 10:45pm UK) |
 | Schedule history kept | 7 days |
 | Minimum players before organisers are warned | 10 |
+| Fewer than this playing and the game counts as cancelled (no money) | 10 |
 | Dashboard: games in Turnout | Last 12 played |
 | Dashboard: League rows | As many as fit the row on a computer; 6 on a phone |
 | Dashboard: To do look-back for scores and money | 45 days |
