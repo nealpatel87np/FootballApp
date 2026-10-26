@@ -1903,6 +1903,8 @@ function deleteGame(gIdx) {
 /* ---- HISTORY ---- */
 // How much of the long lists to show (resets on reload)
 const RECENT_GAMES = 5, LEDGER_ROWS = 15;
+// A game with fewer than 10 playing is cancelled: no money, score or late check is needed
+const MIN_PLAYERS = 10, gameCancelled = g => g.playingIds.length < MIN_PLAYERS;
 let histShowAll = false, moneyShowAllGames = false, moneyShowFullLedger = false;
 
 function renderHistory() {
@@ -2188,17 +2190,18 @@ function renderMoney() {
   // (plus the one that's open, so it doesn't vanish while you tick the last payment). Paid games are behind a button.
   const newestFirst = [...S.games].reverse();
   const owesMoney = g => { const m = S.money.games.find(x => x.gameId === g.id); return m && gameSplit(g, m).unpaid > 0; };
-  const untrackedRecent = (g, i) => i < RECENT_GAMES && !S.money.games.some(x => x.gameId === g.id);
+  const untrackedRecent = (g, i) => i < RECENT_GAMES && !gameCancelled(g) && !S.money.games.some(x => x.gameId === g.id);
   const shownGames = moneyShowAllGames ? newestFirst : newestFirst.filter((g, i) => owesMoney(g) || untrackedRecent(g, i) || g.id === moneyOpenGame);
   const hiddenGames = newestFirst.length - shownGames.length;
+  const anyCancelled = newestFirst.some((g, i) => i < RECENT_GAMES && gameCancelled(g) && !S.money.games.some(x => x.gameId === g.id));
   document.getElementById('money-games-more').innerHTML = hiddenGames || moneyShowAllGames
-    ? `<button class="btn sm" style="margin-top:8px" onclick="moneyShowAllGames = !moneyShowAllGames; renderMoney()">${moneyShowAllGames ? 'Hide paid games' : `Show paid games (${hiddenGames})`}</button>` : '';
+    ? `<button class="btn sm" style="margin-top:8px" onclick="moneyShowAllGames = !moneyShowAllGames; renderMoney()">${moneyShowAllGames ? `Hide paid${anyCancelled ? ' and cancelled' : ''} games` : `Show paid${anyCancelled ? ' and cancelled' : ''} games (${hiddenGames})`}</button>` : '';
   if (S.games.length) gamesEl.innerHTML = shownGames.map(g => {
     const m = S.money.games.find(x => x.gameId === g.id);
     const head = `<span class="when"><span class="d">${esc(g.date)}</span> <span class="badge ${g.day === 'mon' ? 'b-mon' : g.day === 'thu' ? 'b-thu' : 'b-both'}">${dayLabel(g.day)}</span>`;
     if (!m) {
-      return `<div class="mgame"><div class="mgame-row" style="cursor:default">${head}<span class="m">${g.playingIds.length} played · money not tracked</span></span>` +
-        `<button class="btn xs" onclick="moneyTrack(${g.id})">Track money</button></div></div>`;
+      return `<div class="mgame"><div class="mgame-row" style="cursor:default">${head}<span class="m">${gameCancelled(g) ? `Only ${g.playingIds.length} · cancelled, no money` : `${g.playingIds.length} played · money not tracked`}</span></span>` +
+        `<button class="btn xs" onclick="moneyTrack(${g.id})">${gameCancelled(g) ? 'Track anyway' : 'Track money'}</button></div></div>`;
     }
     const s = gameSplit(g, m), open = moneyOpenGame === g.id;
     const res = `<span class="res ${s.toKitty >= 0 ? 'up' : 'down'}">${s.toKitty >= 0 ? '+' : ''}${gbp(s.toKitty)}</span>`;
@@ -3191,7 +3194,7 @@ renderHistory = function () {
    learns which players have them on. Organisers send them when they confirm a game
    or teams and from Outstanding Payments; payment reminders also go out on a
    schedule (supabase/push-cron.sql). */
-const APP_VERSION = '3.8';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
+const APP_VERSION = '3.9';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
 const PUSH_FN = SUPABASE_URL + '/functions/v1/notify';
 const PUSH_KEY = 'fbv3_push';   // this phone only: { playerId, endpoint, prefs, hideCard }
 const PUSH_KINDS = [['availability', 'Availability', 'When it opens, and if you play'], ['squad', 'Squad picked', 'Playing or reserve'], ['teams', 'Teams confirmed', 'Your team and bibs'],
@@ -3836,8 +3839,9 @@ function dashTodos() {
   const since = avAddDays(today, -45), noScore = [], noMoney = [];
   S.games.filter(g => g.iso && g.iso <= today && g.iso >= since).sort((a, b) => b.iso.localeCompare(a.iso)).forEach(g => {
     const t = gameTeams(g.id), past = g.iso < today || (AV.settings ? avStarted({ game_iso: g.iso }) : false);
-    if (past && t && t.status === 'confirmed' && !hasScore(t)) noScore.push(g);
-    if (past && !S.money.games.some(m => m.gameId === g.id)) noMoney.push(g);
+    if (!past || gameCancelled(g)) return;
+    if (t && t.status === 'confirmed' && !hasScore(t)) noScore.push(g);
+    if (!S.money.games.some(m => m.gameId === g.id)) noMoney.push(g);
   });
   if (noScore.length) item('⚽', 'var(--bg-accent)', noScore.length === 1 ? `Score needed: ${dashShort(noScore[0].iso)}` : `Scores needed: ${noScore.length} games`,
     noScore.length === 1 ? 'Teams were confirmed' : noScore.slice(0, 3).map(g => dashShort(g.iso)).join(', ') + (noScore.length > 3 ? '…' : ''), 'Add score', `dashOpenLog(${noScore[0].id})`);
@@ -3856,7 +3860,7 @@ function dashTodos() {
     item('💷', 'var(--bg-danger)', `${gbp(total)} still owed`, `${people.size} player${people.size === 1 ? '' : 's'}${oldest !== null ? ` · oldest ${oldest} day${oldest === 1 ? '' : 's'}` : ''}`, pushReady ? 'Remind' : 'View', pushReady ? 'pushRemind()' : "goTab('money')");
   }
   const last = S.games.filter(g => g.iso && g.iso <= today).sort((a, b) => b.iso.localeCompare(a.iso))[0];
-  if (last && last.iso >= avAddDays(today, -1) && !lateIdsOf(last.id).length && (last.iso < today || (AV.settings && avStarted({ game_iso: last.iso }))))
+  if (last && !gameCancelled(last) && last.iso >= avAddDays(today, -1) && !lateIdsOf(last.id).length && (last.iso < today || (AV.settings && avStarted({ game_iso: last.iso }))))
     item('⏰', 'var(--bg-pro)', `Anyone late on ${dashShort(last.iso)}?`, 'Optional', 'Game Log', `dashOpenLog(${last.id})`);
   return out;
 }
@@ -3909,14 +3913,11 @@ function dashNextCard() {
 }
 function dashMoneyCard() {
   const t = moneyTotals(), h = moneyHoldings(), credit = S.money.credit.reduce((s, x) => s + x.amount, 0), debts = debtsOwed();
-  const per = new Map();
-  debts.forEach(d => { const x = per.get(d.pid) || { amt: 0, n: 0 }; x.amt += d.amt; x.n++; per.set(d.pid, x); });
-  const most = [...per.entries()].sort((a, b) => b[1].amt - a[1].amt).slice(0, 3);
+  const owing = [...new Set(debts.map(d => d.pid))];
   return `<div class="card da-money"><h3 class="dash-h">💷 Money <button class="btn xs" onclick="goTab('money')">Payments →</button></h3>
     <div class="av-stats"><div class="i"><b>${gbp(t.kitty)}</b>In the kitty</div><div class="o"><b>${gbp(t.owed)}</b>Still owed</div><div class="b"><b>${gbp(credit)}</b>Credit held</div></div>
     <table class="ledger" style="min-width:0"><thead><tr><th>Organiser</th><th class="r">Holds</th><th class="r">Owed to them</th></tr></thead><tbody>${ORGANISERS.map(o => `<tr><td>${esc(o)}</td><td class="r">${gbp(h[o].kitty)}</td><td class="r">${h[o].owed ? gbp(h[o].owed) : '–'}</td></tr>`).join('')}</tbody></table>
-    ${most.length ? `<p class="hint" style="margin-top:8px"><strong>Owes most:</strong> ${most.map(([pid, x]) => `${esc(pName(pid))} ${gbp(x.amt)}${x.n > 1 ? ` (${x.n} games)` : ''}`).join(' · ')}</p>` : ''}
-    ${pushReady && pushCount([...per.keys()]) ? `<div class="tactions" style="margin-top:8px"><button class="btn sm primary" onclick="pushRemind()">🔔 Send reminders (${pushCount([...per.keys()])})</button></div>` : ''}</div>`;
+    ${pushReady && pushCount(owing) ? `<div class="tactions" style="margin-top:8px"><button class="btn sm primary" onclick="pushRemind()">🔔 Send reminders (${pushCount(owing)})</button></div>` : ''}</div>`;
 }
 function dashActivityCard() {
   if (!AV.settings || avMode() === 'off' || !AV.answers.length) return '';
@@ -3954,15 +3955,12 @@ function dashCopyInvite(btn) {
 function dashTurnoutCard() {
   const today = isoToday(), last = S.games.filter(g => g.iso && g.iso <= today).sort((a, b) => a.iso.localeCompare(b.iso)).slice(-12);
   if (!last.length) return '';
-  const avg = list => list.length ? (list.reduce((s, g) => s + g.playingIds.length, 0) / list.length).toFixed(1) : '–';
-  const short = last.filter(g => g.playingIds.length < 10).length, res = last.reduce((s, g) => s + g.reserveIds.length, 0), late = last.reduce((s, g) => s + lateIdsOf(g.id).length, 0);
   // Each bar: players at the bottom, reserves stacked on top, total above
   const max = Math.max(BF_SELECT.SQUAD_SIZE, ...last.map(g => g.playingIds.length + g.reserveIds.length));
-  return `<div class="card da-turn"><h3 class="dash-h">📈 Turnout, last ${last.length} game${last.length === 1 ? '' : 's'} <small>average ${avg(last)} playing${short ? ` · ${short} short` : ''} · ${res} reserve${res === 1 ? '' : 's'}</small></h3>
-    <div class="dash-spark">${last.map(g => `<div class="tb" title="${esc(dashShort(g.iso))}: ${g.playingIds.length} playing, ${g.reserveIds.length} reserve${g.reserveIds.length === 1 ? '' : 's'}"><b>${g.playingIds.length}${g.reserveIds.length ? '+' + g.reserveIds.length : ''}</b>${g.reserveIds.length ? `<i class="rs" style="height:${g.reserveIds.length / max * 100}%"></i>` : ''}<i class="pl${g.playingIds.length < 10 ? ' low' : ''}" style="height:${g.playingIds.length / max * 100}%"></i></div>`).join('')}</div>
+  return `<div class="card da-turn"><h3 class="dash-h">📈 Turnout, last ${last.length} game${last.length === 1 ? '' : 's'}</h3>
+    <div class="dash-spark">${last.map(g => `<div class="tb" title="${esc(dashShort(g.iso))}: ${g.playingIds.length} playing, ${g.reserveIds.length} reserve${g.reserveIds.length === 1 ? '' : 's'}${gameCancelled(g) ? ' (cancelled)' : ''}"><b>${g.playingIds.length}${g.reserveIds.length ? '+' + g.reserveIds.length : ''}</b>${g.reserveIds.length ? `<i class="rs" style="height:${g.reserveIds.length / max * 100}%"></i>` : ''}<i class="pl${gameCancelled(g) ? ' low' : ''}" style="height:${g.playingIds.length / max * 100}%"></i></div>`).join('')}</div>
     <div class="dash-sparkl">${last.map(g => `<span>${esc(isoToDate(g.iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))}</span>`).join('')}</div>
-    <div class="dash-key"><span><i style="background:var(--border-accent)"></i>Playing</span><span><i style="background:var(--bg-warning);border:0.5px solid var(--text-warning)"></i>Reserves</span><span><i style="background:var(--border-danger)"></i>Under 10 playing</span>
-      <span>· Late arrivals: ${late} · Monday avg ${avg(last.filter(g => g.day === 'mon'))} · Thursday avg ${avg(last.filter(g => g.day === 'thu'))}</span></div></div>`;
+    <div class="dash-key"><span><i style="background:var(--border-accent)"></i>Playing</span><span><i style="background:var(--bg-warning);border:0.5px solid var(--text-warning)"></i>Reserves</span><span><i style="background:var(--border-danger)"></i>Cancelled (under 10)</span></div></div>`;
 }
 // League table for this year: 3 points a win, 1 a draw, from confirmed teams with a score
 function dashLeagueCard() {

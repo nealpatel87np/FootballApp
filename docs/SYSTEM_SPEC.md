@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Document version** | 3.8 |
-| **Release** | Production Release 3.8 |
+| **Document version** | 3.9 |
+| **Release** | Production Release 3.9 |
 | **Status** | Released |
 | **Date** | 24 October 2026 |
 | **Application** | `index.html` (repository root), published with GitHub Pages |
@@ -61,6 +61,7 @@ If you aren't sure, treat it as minor unless it changes the data model or a core
 | 3.6 | 25 Oct 2026 | Automatic payment reminders go out every day at 12pm UK time to anyone who still owes, until they've paid. |
 | 3.7 | 25 Oct 2026 | "Hi {name}" greeting on the front page (and the Dashboard for organisers) once a phone has picked Who are you?, with chips for the next game, availability, money and credit, and a Not you? link. |
 | 3.8 | 25 Oct 2026 | Quieter Supabase traffic: availability refreshes every 30 seconds only while a round is open (otherwise every 5 minutes, and when the app comes back on screen). The availability check runs from 8am to 10:45pm UK time, so Setup only accepts opening and closing times in that window. Nightly tidy-up of schedule history. Run `supabase/schedule-3.8.sql`. |
+| 3.9 | 26 Oct 2026 | Dashboard Turnout shows just the numbers, and Money drops who owes most. A game with fewer than 10 playing counts as cancelled: no money, score or late prompts, and Payments shows it only under Show paid and cancelled games, with Track anyway. |
 
 ---
 
@@ -256,7 +257,7 @@ Sections, from top to bottom:
    - one card per organiser showing the money they hold, the number of games, what's still owed to them, and a warning if they've paid out more than they hold.
 3. **Games:**
    - Only games that still need something are listed: money still owed, a recent game whose money isn't tracked (with **Track money**), or the game that's open. When nothing is left, it shows **All games paid up 🎉**.
-   - **Show paid games** lists every game.
+   - **Show paid games** lists every game. A game with fewer than 10 playing was cancelled, so it isn't listed as waiting for money; the button then says **Show paid and cancelled games**, and the game shows "Only N · cancelled, no money" with **Track anyway**.
    - An open game shows: Organised by, the Paid ticks, **Mark all paid**, **Stop tracking money**, and the split (collected, pitch, to or from the kitty).
 4. **Kitty ledger:**
    - starting balances (shown only when starting balances are shown), each tracked game's amount to or from the kitty, and kitty spends, with a running balance;
@@ -333,12 +334,12 @@ The first page after logging in. It's a grid on a computer and one column on a p
   - **While availability is open:** live counts, time left, guaranteed players who haven't said in, and the squad "if it closed now". Buttons: Nudge, Close now (or Confirm and announce when held), and Answer for a player.
   - **Once the squad is saved:** a checklist (Squad, Teams, Money), the squad, and buttons for Pick teams, WhatsApp and Track money. On the day it's titled "Tonight".
   - **When nothing is open:** when availability opens next, with Open now.
-- **To do:** a confirmed squad waiting, guaranteed players not in, missing scores, money not tracked, draft or changed teams, money owed, and late arrivals (optional). Each has a button. "All caught up" when there's nothing.
-- **Money:** kitty, owed, credit, each organiser's holdings, who owes most, and Send reminders.
+- **To do:** a confirmed squad waiting, guaranteed players not in, missing scores, money not tracked, draft or changed teams, money owed, and late arrivals (optional). Cancelled games (under 10 playing) are left out. Each has a button. "All caught up" when there's nothing.
+- **Money:** kitty, owed, credit, each organiser's holdings, and Send reminders.
 - **Recent answers** (availability) and **The group** (app and notification counts, who's not on the app, Copy invite message).
 - **League** for this year: P, W, D, L, goal difference and points (3 a win, 1 a draw), as many rows as fit beside Money (top 6 on a phone).
 - **This season** (most games, best win %).
-- **Turnout** across the bottom: the last 12 games, players and reserves stacked.
+- **Turnout** across the bottom: the last 12 games, players and reserves stacked, with each game's numbers (for example 12+1). Cancelled games (under 10) are red.
 - **Computer layout:** To do and The group on the left beside Next game; Money, League and This season in one row; Turnout full width. Cards in a row are the same height.
 
 ## 7. Business rules
