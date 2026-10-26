@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | **Document** | Solution Design Document (SDD) |
-| **Version** | 3.9 |
-| **Release** | Production Release 3.9 |
+| **Version** | 4.0 |
+| **Release** | Production Release 4.0 |
 | **Status** | Approved for production |
 | **Date** | 24 October 2026 |
 | **System** | Brent Football: the web app (`index.html`, `selection.js`, `sw.js`) on GitHub Pages, the Supabase database, the `notify` Edge Function and two scheduled jobs |
@@ -85,6 +85,7 @@ If you aren't sure, treat the change as **minor** unless it changes the data mod
 | 3.7 | 25 Oct 2026 | Organisers with Claude Code | **Personal greeting** (7.8): a phone that has picked Who are you? shows "Hi {name} 👋" with chips on the front page. Players see their next game, what they owe and their credit; while availability is open, whether they've said in. Organisers on the Dashboard see the time of day, their to-do count and how many are in. **Not you?** changes the name. No database change. |
 | 3.8 | 25 Oct 2026 | Organisers with Claude Code | **Lower Supabase traffic** (12, 13.3): the app re-reads availability every 30 seconds only while a round is open, every 5 minutes otherwise, and straight away when it comes back on screen. The availability schedule runs from 07:00 to 22:45 UTC instead of all day (64 calls a day, down from 96), so opening and closing times must be between 8am and 10:45pm UK time, which Setup checks. A nightly job deletes schedule history older than 7 days. New `supabase/schedule-3.8.sql`, run by hand; no function change. |
 | 3.9 | 26 Oct 2026 | Organisers with Claude Code | **Simpler dashboard and cancelled games** (7.4.7, 7.7): Turnout shows only each game's numbers (no averages, short or late counts), and Money no longer lists who owes most. A game with fewer than 10 playing counts as **cancelled**: it isn't asked for money, a score or late arrivals on To do, and Payments keeps it behind **Show paid and cancelled games** with **Track anyway**. Page only. |
+| 4.0 | 26 Oct 2026 | Organisers with Claude Code | **Cancel a game** (7.4.10, 7.6.3, 7.9): organisers can cancel a saved game (Drop-outs, Pitch not available, Weather or Other, with an optional note) from the Dashboard, Run game or Game Log, and Undo it. Run game offers **Cancel game: not enough players** when fewer than 10 are picked. Availability that closes with fewer than 10 is **held** for organisers to cancel, keep open or confirm anyway. Cancelled games stay in the Game Log but don't count towards games played, reserves, attendance, the league or late arrivals, and need no money. Players get a "game is cancelled" notification and the front page says the game is off. Major: new `games` columns (`cancel.sql`) and changed squad and availability logic; the `notify` function changes. |
 
 ### 1.4 Approval
 
@@ -212,6 +213,7 @@ Until October 2026 this was all managed in a spreadsheet, a WhatsApp availabilit
 | FR-21 | Show organisers which players have set up the app, on which browser, and which notifications they have on. | Should | 7.6.4 |
 | FR-22 | Give organisers a dashboard of what needs doing, the next game, money, the group, a league table for the year, turnout (with reserves) and this season, with a button to each job. | Should | 7.7 |
 | FR-23 | Greet a phone's player by name on the front page (and organisers on the Dashboard), with what matters to them now: playing or reserve, availability answer, money owed and credit. | Could | 7.8 |
+| FR-24 | Let organisers cancel a game (from Run game when fewer than 10 are in, or later for drop-outs, pitch or weather), tell the players, keep it on record without counting it or charging for it, and undo it. | Must | 7.4.10, 7.9 |
 
 ### 4.2 Non-functional requirements
 
@@ -379,6 +381,7 @@ The web app deploys automatically on merge. The function and the SQL scripts are
 | **Selection rules** (`selection.js`) | Squad order shared by Run game and the function | `orderSquad`, `splitSquad`, `latePenaltyFor` |
 | **Dashboard** | Organiser home page cards | `renderDash`, `dashTodos`, `dashNextCard`, `dashMoneyCard`, `dashGroupCard`, `dashLeagueCard`, `dashFitLeague`, `dashTurnoutCard`, `dashSeasonCard` |
 | **Greeting** | "Hi {name}" card under the heading on the front page and the Dashboard | `renderHi`, `hiChips`, `hiNotYou` |
+| **Cancelled games** | Cancel dialog, cancelled boxes, Run game's under-10 step, the cancelled WhatsApp message and notifications | `cancelOpen`, `cancelGame`, `cancelUndo`, `cancelCounts`, `pushCancel`, `cancelWaText`, `runShortUI`, `runCancel`, `avShortButtons`; `gameCancelled`, `realGames` |
 | **Availability** | Player card, organiser card, settings, App users | `availLoad`, `avPlayerCard`, `avOrgCard`, `avSettingsCard`, `avAnswer`, `avAct`, `avHello`, `renderUsers`, `availRender` |
 | **Notifications** | Opt-in, choices, sending, front card, Notifications page | `pushLoadStatus`, `pushTurnOn`, `pushUpdate`, `pushTurnOff`, `pushSquad`, `pushTeams`, `pushRemind`, `pushCreditUsed`, `renderNotify`, `renderPushCard` |
 
@@ -540,7 +543,7 @@ kitty(org) = opening(org) + Σ toKitty of games org organised − Σ spends org 
 - **Tracking is opt-in per game.** Price, pitch cost and admin % are copied onto the game when tracking starts, so later setting changes don't rewrite history.
 - **Outstanding Payments** is derived from tracked games' unpaid players. Clearing a debt ticks the player as paid.
 - The Games list hides fully paid games behind **Show paid games**.
-- **Cancelled games (3.9):** a game with fewer than 10 playing (`MIN_PLAYERS`, `gameCancelled`) was cancelled, so no money is collected. It isn't listed as waiting for money, and the button becomes **Show paid and cancelled games**. There it reads "Only N · cancelled, no money", with **Track anyway** in case it went ahead. The Dashboard doesn't ask for its money, score or late arrivals.
+- **Cancelled games (3.9):** a game with fewer than 10 playing (`MIN_PLAYERS`, `gameCancelled`) was cancelled, so no money is collected. It isn't listed as waiting for money, and the button becomes **Show paid and cancelled games**. There it reads "Game cancelled · only N" (4.0 wording), with **Track anyway** in case it went ahead. Games an organiser cancels (4.0) read "Game cancelled · {reason}" with no Track button (7.4.10). The Dashboard doesn't ask for its money, score or late arrivals.
 
 #### 7.4.8 Credit
 
@@ -558,6 +561,21 @@ kitty(org) = opening(org) + Σ toKitty of games org organised − Σ spends org 
   - Total = the sum of all of these
 - **Matching:** figures are matched by player name, ignoring capitals.
 - **Read-only:** the legacy figures are only read when rendering Attendance. They are never written to `S` or the database.
+
+#### 7.4.10 Cancelled games (release 4.0)
+
+- **Cancelled** means either:
+  - an organiser cancelled it: `g.cancelled = { reason, note, by, at }`, saved in the `cancelled_*` columns of `games`;
+  - or, automatically, a game with fewer than **10** playing whose money was never tracked (3.9). Tracking its money ("Track anyway") means it went ahead.
+- **Reasons:** `players` (Not enough players, set by Run game and availability), `dropouts`, `pitch`, `weather`, `other`. The optional note (up to 140 characters) replaces the standard sentence in messages.
+- **What cancelling does** (`cancelGame`):
+  - takes one off each player's games played (squad) and times reserved (reserves), and moves "last played" back to their last game that went ahead;
+  - removes any money tracking for the game (nobody pays until the day, so there is nothing to refund);
+  - if it's the latest game, sets `reserveNext` to the last real game's reserves plus this game's reserves, so nobody loses their place;
+  - tells everyone in the game, plus anyone who dropped out of it through availability (`squad` notifications), if the organiser leaves **Send a notification** on.
+- **Not counted anywhere:** games played and reserves, Attendance, Player Stats, the league, This season, and the late rule (`realGames()` is used for all of these, in the page and the function). No late marks can be added to it.
+- **Undo** (`cancelUndo`) clears the columns, adds the counts back, restores `reserveNext` to this game's reserves if it's the latest, and tells everyone it's back on. Money tracking isn't restored, because there was none to restore.
+- **Run game:** with fewer than 10 picked, **Confirm game** becomes **Cancel game: not enough players**. It saves the game as cancelled, with that reason, and sends the cancelled notification instead of "squad is out". **Confirm game anyway with N** keeps the old behaviour.
 
 ### 7.5 Push notifications (release 2.0)
 
@@ -642,12 +660,12 @@ Players say whether they're in for the next game in the app. At closing time, th
 ```mermaid
 stateDiagram-v2
   [*] --> Open: Tuesday or Friday 9am, or Open now
-  Open --> Held: closing time (trial, or auto-announce off)
-  Open --> Closed: closing time (on and auto-announce)
+  Open --> Held: closing time (trial, auto-announce off, or fewer than 10)
+  Open --> Closed: closing time (on, auto-announce, 10 or more)
   Held --> Closed: Confirm and announce
   Held --> Open: Reopen
   Open --> Cancelled: Cancel this week
-  Held --> Cancelled: Cancel this week
+  Held --> Cancelled: Cancel this week, or Cancel game (not enough players)
   Cancelled --> Open: Reopen
   Closed --> [*]: kick-off locks changes
 ```
@@ -661,13 +679,17 @@ stateDiagram-v2
    3. The first 12 play and the rest are reserves.
    4. Save the game as **Confirm game** does: the `games` row, everyone's played and reserve counts and last played date, and `reserve_next`.
    5. Notify everyone.
-   6. If a game already exists for that date (made by hand), it's kept and nothing is duplicated.
+   6. If a game already exists for that date (made by hand, even a cancelled one), it's kept and nothing is duplicated.
 3. **After closing, until kick-off:**
    - **A player in the squad drops out:** the first reserve moves up and is told, and organisers are told. Draft teams are cleared and confirmed teams go back to draft ("Teams need redoing").
    - **A reserve drops out:** they're removed and the others move up.
    - **A late joiner says in:** they go into the squad if it has fewer than 12, otherwise to the end of the reserves.
    - **If no reserves are left:** organisers are warned.
-4. **Fewer than 10 at closing:** the squad is saved. Players are told "we need N more", organisers are warned, and late joiners can still get in.
+4. **Fewer than 10 at closing (4.0):** the squad is **held**, not saved or announced, and organisers are told "only N are in". They choose:
+   - **Cancel game: not enough players:** the round is cancelled and everyone who said in is told "Not enough players: only N were available and we need 10. No payment needed."
+   - **Keep it open:** reopens it for late joiners. A round reopened after its closing time isn't closed again by the 15-minute check (`opened_at` is set on reopen); organisers close it with **Close now**, which holds it again if it's still short.
+   - **Confirm anyway with N:** saves and announces it as before ("we need N more").
+   - A saved game the function is updating stops changing once it's cancelled: drop-outs and late joiners are ignored.
 5. **Privacy:** late flags and the "if it closed now" order are shown only on organisers' screens. Players see their own status and the names of players who said in.
 6. **Identity:** "Who are you?" (`fbv3_me`) is chosen once per phone and shared with notifications. Organisers can answer for any player.
 
@@ -709,7 +731,7 @@ A **Dashboard** page is the first page organisers see after logging in. It only 
 | **Recent answers** | The latest availability answers, including any made by an organiser (only when the switch isn't Off) | |
 | **The group** | On the app, notifications on, not yet; who isn't on the app; Samsung Internet users. Comes from `admin_users`, cached for 5 minutes. | App users; Copy invite message |
 | **League** | This year's table from confirmed teams with a score: P, W, D, L, goal difference and points (3 for a win, 1 for a draw), ordered by points, then goal difference, then wins. Shows as many rows as fit the height of its row (top 6 on a phone), then "+ N more". | Player Stats |
-| **Turnout** | Full width: the last 12 played games as bars, with players at the bottom (cancelled games, under 10, in red) and reserves stacked on top, and each game's numbers above its bar (for example 12+1). A key for Playing, Reserves and Cancelled (under 10). Averages and late counts were removed in 3.9. | |
+| **Turnout** | Full width: the last 12 played games as bars, with players at the bottom (cancelled games, under 10, in red) and reserves stacked on top, and each game's numbers above its bar (for example 12+1). A key for Playing, Reserves and Game cancelled. Cancelled games (by an organiser, or under 10) show a red ✕ instead of numbers (4.0). Averages and late counts were removed in 3.9. | |
 | **This season** | Most games this year (the app's games plus the spreadsheet's 2026 figures), and best win % with 5+ scored games | |
 
 **Phone bar for organisers:** Dashboard, Run game, Teams, Payments and More. Game Log moves under More. Viewers' pages are unchanged.
@@ -727,13 +749,32 @@ When a phone has picked Who are you? (`fbv3_me`), a card under the Brent Footbal
 
 ---
 
+### 7.9 Cancelling a game (release 4.0)
+
+| Where | When | What it shows |
+|---|---|---|
+| **Run game**, squad step | Fewer than 10 picked | A red "Not enough players" warning, the cancelled WhatsApp message, "Tell the N the game is cancelled", **Cancel game: not enough players**, and a **Confirm game anyway with N** link |
+| **Run game**, done step | After cancelling | "Game cancelled: not enough players", who and when, the notification result and **Undo cancel**. The squad and Teams cards are hidden. |
+| **Dashboard**, Next game | A saved game | **Cancel game** (red when fewer than 10 are left, with a warning). Once cancelled: the cancelled box with Copy WhatsApp message, Open WhatsApp and Undo cancel. |
+| **Dashboard and Run game**, availability held | Fewer than 10 in at closing | **Cancel game: not enough players**, **Keep it open** and **Confirm anyway with N** |
+| **Game Log** | Any game | **Cancel game** next to Delete. A cancelled game has a **Game cancelled** badge, its reason, the cancelled box and no late or add-player controls. |
+| **Payments** | Cancelled games | Kept behind **Show paid and cancelled games**: "Game cancelled · weather". Only under-10 games get **Track anyway**. |
+| **Turnout** | Cancelled games | A red **✕** above the bar, key "Game cancelled" |
+| **Front page and availability card** | The next game is cancelled | "✕ {Day}'s game is off", the reason and "No payment needed". The greeting chip says "✕ {Day} cancelled". |
+
+**The cancel dialog** (`<dialog id="cancel-dlg">`) asks for a reason (Drop-outs, Pitch not available, Weather, Other) and an optional note. It shows who will be told and what happens, with a **Send a notification** switch. Nothing changes until **Cancel game** is pressed.
+
+**Notifications** (kind `squad`, tag `squad-{game id}` so they replace the squad notification):
+- "❌ {Day}'s game is cancelled": the reason sentence, then "No payment needed."
+- "✅ {Day}'s game is back on" after Undo: the time and venue for the squad, and their place for reserves.
+
 ## 8. Data design
 
 ### 8.1 Entity relationship
 
 ```mermaid
 erDiagram
-  PLAYERS ||--o{ GAMES : "plays / reserves (id arrays)"
+  PLAYERS ||--o{ GAMES : "plays / reserves (id arrays); cancelled_* columns"
   PLAYERS ||--o| PLAYER_SKILLS : has
   PLAYERS ||--o| PLAYER_RATINGS : "legacy stars"
   PLAYERS ||--o| PLAYER_CREDIT : holds
@@ -760,7 +801,7 @@ Relationships are held as id arrays (`playing_ids`, `paid_ids` and so on) rather
 | Table | Primary key | Columns (type) | Script |
 |---|---|---|---|
 | `players` | `id` bigint | name text, avail text, pref text, guar_mon bool, guar_thu bool, played int, reserved int, last_played text | original |
-| `games` | `id` bigint | date text, day text, iso date-text, manual bool, playing_ids bigint[], reserve_ids bigint[] | original |
+| `games` | `id` bigint | date text, day text, iso date-text, manual bool, playing_ids bigint[], reserve_ids bigint[]; cancelled_reason text, cancelled_note text, cancelled_by text, cancelled_at timestamptz (null unless cancelled) | original; `cancel.sql` (4.0) |
 | `app_state` | `id` int (= 1) | reserve_next bigint[] | original |
 | `game_money` | `game_id` bigint | organiser text, price_p int, pitch_p int, admin_pct numeric, paid_ids bigint[] | `money.sql` |
 | `kitty_spends` | `id` bigint | spent_on text, what text, category text, paid_by text, amount_p int | `money.sql` |
@@ -782,6 +823,8 @@ Relationships are held as id arrays (`playing_ids`, `paid_ids` and so on) rather
 - **Open to the page** (read and write): the original tables, money, teams, skills, late, credit and `availability_settings`.
 - **Read-only to the page:** `availability_rounds` and `availability_answers`. Every change goes through the function.
 - **Closed to the page:** `push_subscriptions`, `push_config` and `app_devices`. RLS is on with no policies and `anon` has no grants, so only the `notify` function (service role) can use them.
+
+**Cancelled columns:** the page only sends the four `cancelled_*` columns once a game on the device has been cancelled or restored, so a database without `cancel.sql` keeps working until someone cancels a game. Then the page says to run `cancel.sql`.
 
 **Ids** are generated in the browser from `Date.now()` at creation.
 
@@ -960,6 +1003,11 @@ For release 3.8, also:
 
 12. `supabase/schedule-3.8.sql`: runs the availability check only from 07:00 to 22:45 UTC, and adds the nightly tidy-up of schedule history. It replaces the schedule by name, so it's safe to run again. No function change. (`availability.sql` carries the same schedules for a fresh setup.)
 
+For release 4.0, also, in this order:
+
+13. `supabase/cancel.sql`: adds the four `cancelled_*` columns to `games`, with grants. Safe to run again.
+14. Redeploy the `notify` function with the latest `supabase/functions/notify/index.ts` (Code tab → paste → Deploy), keeping **Verify JWT** off. It holds short squads, sends the not-enough-players message and ignores cancelled games.
+
 Each script also grants the page (`anon` and `authenticated` roles) select, insert, update and delete on its tables. Supabase stops granting this automatically for tables created from 30 October 2026, so **any new table added in a later release must include the same `grant` line in its script**, or the page gets "permission denied" for it. Re-running the scripts on the existing database is harmless.
 
 ---
@@ -1001,6 +1049,9 @@ Visual changes are reviewed through screenshots or interactive mock-ups before d
 | Dashboard | App in Chromium at 1280px and 390px with the real function and mock database | Covered: the 3.3 layout (Money, League and This season in one row and the same height, The group under To do, Turnout full width, league trimmed to fit); organisers land on the Dashboard; live counts and guaranteed warning; to-do items (guaranteed, money not tracked, score needed, money owed); Money, Recent answers, Turnout and This season cards. Add score opens that game in the Game Log. Close now then Confirm from the dashboard switches the card to the saved squad. No page errors or sideways scroll. |
 | Dashboard trim and cancelled games (3.9) | App in Chromium at 390px and 1280px from a saved data file with 12 games, two of them with 9 playing | Turnout has no averages or late count but keeps the bars, numbers and key (Cancelled (under 10)). Money has no Owes most. To do counts 8 untracked games, not the 2 cancelled. Payments hides the cancelled games behind Show paid and cancelled games, and shows them with Track anyway. No page errors or sideways scroll. |
 | Greeting (3.7) | App in Chromium at 390px from a saved data file | Lewis sees Playing and You owe £8.50, and Pedro sees 1st reserve and All paid up, on the front page. Neal sees the time of day and to-do count on the Dashboard, and his own chips and credit on the front page. Hidden on other pages and with no name. Not you? clears the name. No page errors or sideways scroll. |
+| Cancel a game (4.0), page | App in Chromium at 390px and 1280px from a saved data file | Run game with 8: warning, Cancel game instead of Confirm, cancelled WhatsApp message; cancelling saves it with reason "players" and leaves played and reserve counts and →Next unchanged; Undo counts it again. Dashboard: the dialog cancels a 12-player game for Weather with a note; played count goes down by one; the card, Game Log, front page and greeting show it; this game's reserves keep →Next. A past cancelled game shows ✕ on Turnout and "Game cancelled · drop-outs" with no Track button on Payments. Availability held with 7: Cancel game, Keep it open and Confirm anyway on the Dashboard and Run game. No page errors or sideways scroll. |
+| Cancel a game (4.0), sync | App against the mock database | The reason, note, who and when reach `games`; played counts and `reserve_next` are saved; another phone sees it cancelled, also after a reload; Undo clears the columns and restores the count. |
+| Cancel a game (4.0), function | Deno with a test clock against the mock database and push service | On mode with 8 in at 9pm: held, no game, only organisers told. Reopened at 9:20pm: the 15-minute check leaves it open into the next day. Close now while short: held again. Cancel (not enough players): the 8 are told "only 8 were available and we need 10". Confirm anyway: saved with 8 and announced. A drop-out from a cancelled game changes nothing. The existing availability scenarios still pass, with the under-10 close now held. |
 | Quieter refresh (3.8) | App in Chromium at 390px and 1280px with a fake clock and a fake database counting availability reads | One read on opening. With no round open, none for 5 minutes and then one. With a round open, one every 30 seconds. None while the screen is hidden, and one on coming back. Setup refuses a 7am opening or an 11pm closing and saves a 10:45pm closing. No page errors. |
 | Payment reminders (3.6) | Function in Deno with a test clock against a mock database and push service | Winter: 11:00 UTC sends nothing and 12:00 UTC sends. Summer: 11:00 UTC sends and 12:00 UTC sends nothing. A player owing on two games with two organisers gets one message ("£17.00 for 2 games … Pay Kev £8.50 and Neal £8.50"). Paid players and players with payment reminders off get nothing. `force` skips the time check. Nothing is sent once everyone has paid. |
 | Notifications | App in Chromium with the real function, end to end | Front card, Notifications page in View mode, choices, test, squad, teams, reminders and credit-used notifications, tap opens Payments, Turn off. Nothing shows when the function isn't set up. |
@@ -1069,6 +1120,7 @@ Visual changes are reviewed through screenshots or interactive mock-ups before d
 | ADR-22 | The dashboard is worked out in the page from existing data; no activity log table | No database change, so it shipped as a minor release (3.2, 3.3) | "Recent answers" covers availability only; a full activity feed needs a new table (4.0) |
 | ADR-23 | The league scores players individually: 3 points for their team's win, 1 for a draw, goal difference from their team's score, this calendar year only | Teams change every game, so a player-based table is the fair way to rank | Only games with confirmed teams and a score count; it resets each January |
 | ADR-24 | Poll faster only while a round is open, and run the availability schedule only in the daytime window (3.8) | Keeps Supabase traffic and logs low as the group grows to about 60 players, with no visible change. Push notifications still tell people when something happens. | A round opening shows up on an idle open screen within 5 minutes rather than 30 seconds. Times outside 8am–10:45pm UK can't be used without changing the schedule. |
+| ADR-25 | Cancelled games are kept as rows with `cancelled_*` columns, not deleted (4.0) | Keeps a record of why a game didn't happen, allows Undo, and lets the function avoid making a second game for that date | Every count and statistic has to skip them (`realGames()`); the counters on `players` are adjusted on cancel and undo |
 
 ---
 
@@ -1090,6 +1142,8 @@ Visual changes are reviewed through screenshots or interactive mock-ups before d
 | R-12 | The two copies of the selection rules drift apart | Medium | Low | The copy is marked BEGIN/END and compared before every release. The equivalence test runs on 2,000 cases. |
 | R-13 | The function isn't redeployed after a release that changes it | Medium | Medium | The release notes say so. The 🔔 line on Setup and the function logs show problems. |
 | R-14 | Supabase egress or log volume grows with more players | Low | Low | 3.8 cut availability traffic. About 1–1.5GB a month is expected for 60 players, inside the free plan's 5GB. Watch **Settings → Usage**. |
+| R-15 | The page is updated before `cancel.sql` is run | Low | Medium | Nothing changes until someone cancels a game; then the save fails with "Run supabase/cancel.sql" and the change stays on the device until it's run. The release notes say to run it first. |
+| R-16 | A cancelled game's counts are adjusted twice (two organisers cancel at once) | Low | Low | Cancel and Undo do nothing if the game is already in that state on the device; last write wins per row. |
 | I-01 | README's opening section still describes the old SQLite starter app | Low | | Tidy in a minor release. |
 
 ---
@@ -1153,6 +1207,17 @@ We have {n} and {r} reserve(s) | We have {n} and no reserves | We have {n} and n
 *Pitch has been booked*
 ```
 
+**Cancelled message** (4.0, Run game with fewer than 10, or the cancelled box):
+
+```
+⚽️ {WEEKDAY} FOOTBALL ⚽️
+
+📅 {Weekday} {nth} {Month}
+❌ *Game cancelled: not enough players*   (or *Game cancelled* for pitch, weather or other)
+
+{reason sentence or the organiser's note} No payment needed.
+```
+
 **Teams message:**
 
 ```
@@ -1200,6 +1265,8 @@ The reserves block and the "Pitch has been booked" line appear only when they ap
 | Schedule history kept | 7 days |
 | Minimum players before organisers are warned | 10 |
 | Fewer than this playing and the game counts as cancelled (no money) | 10 |
+| Availability closing with fewer than this | 10: held for the organisers instead of announced |
+| Cancel reasons | Not enough players (Run game, availability), Drop-outs (default in the dialog), Pitch not available, Weather, Other |
 | Dashboard: games in Turnout | Last 12 played |
 | Dashboard: League rows | As many as fit the row on a computer; 6 on a phone |
 | Dashboard: To do look-back for scores and money | 45 days |
@@ -1215,7 +1282,7 @@ Neal, Kev and Gav. They're listed in `ORGANISERS` in the code. Adding one is a m
 |---|---|
 | `index.html` | The application |
 | `manifest.webmanifest`, `sw.js`, `icons/` | Installable app: name, icon, splash colours, offline copy, and the notification badge (`icons/badge-96.png`) |
-| `supabase/*.sql` | Database setup scripts: `policies.sql`, `money.sql`, `teams.sql`, `skills.sql`, `late.sql`, `credit.sql`, `push.sql`, `push-cron.sql`, `availability.sql`, `schedule-3.8.sql` |
+| `supabase/*.sql` | Database setup scripts: `policies.sql`, `money.sql`, `teams.sql`, `skills.sql`, `late.sql`, `credit.sql`, `push.sql`, `push-cron.sql`, `availability.sql`, `schedule-3.8.sql`, `cancel.sql` |
 | `selection.js` | Squad selection rules shared by the page and the function |
 | `supabase/functions/notify/index.ts` | The `notify` Edge Function |
 | `.github/workflows/static.yml` | Pages deployment |
@@ -1246,6 +1313,7 @@ Neal, Kev and Gav. They're listed in `ORGANISERS` in the code. Adding one is a m
 | Availability round | One game's self-service availability: open, held, closed or cancelled |
 | Trial | Availability mode where only organisers see it and are notified, and squads wait for confirmation |
 | Held squad | A squad picked at closing time but not yet saved or announced, waiting for an organiser to confirm |
+| Cancelled game | A game an organiser called off (reason, note, who, when), or a past game with fewer than 10 and no money tracked. Kept on record but never counted or charged (7.4.10) |
 | Edge Function | Server code run by Supabase (`notify`) |
 | Web Push / VAPID | The standard way browsers receive notifications, and the key pair that signs them |
 | Service worker | Background script (`sw.js`) that keeps an offline copy and shows notifications |

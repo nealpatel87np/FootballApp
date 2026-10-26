@@ -33,7 +33,7 @@ This project is a very simple football app that stores player data in a local SQ
 - `data/football.db` - database file created automatically
 
 ## Football organisation page
-The design is documented in [`docs/SOLUTION_DESIGN.md`](docs/SOLUTION_DESIGN.md) (Solution Design Document) and [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md) (functional specification). Both include the versioning policy. Current release: **3.9**. The version is shown at the bottom of the front page.
+The design is documented in [`docs/SOLUTION_DESIGN.md`](docs/SOLUTION_DESIGN.md) (Solution Design Document) and [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md) (functional specification). Both include the versioning policy. Current release: **4.0**. The version is shown at the bottom of the front page.
 
 Every file in `supabase/` grants the page access to its tables. Supabase no longer does this automatically for tables created from 30 October 2026, so any new table needs the same `grant` line.
 
@@ -78,6 +78,17 @@ Teams are picked on the **Teams** tab, separately from the squad, so you can wai
 - **Reshuffle** gives a different balanced split, and **Flip for bibs again** redoes just the coin flip. To swap two players by hand, tap one and then one on the other team.
 - The **Teams message** uses the group's format, with the date, time and venue at the top. **Copy for WhatsApp** copies it and **Open WhatsApp** opens WhatsApp with it filled in.
 - Until you press **Confirm teams**, the teams are a draft. The draft is saved and the other organisers can see it on the Teams tab, but it isn't on the front page. Once confirmed, the teams show on the front page and in History. **Change teams** turns them back into a draft.
+
+### Cancelling a game
+A game with fewer than 10 is off. The app handles that in three places:
+
+- **Run game:** if fewer than 10 of the players who said in are picked, **Confirm game** becomes **Cancel game: not enough players**. Those picked are told "❌ Thursday's game is cancelled. Not enough players: only 8 were available and we need 10. No payment needed.", and the WhatsApp message becomes the cancelled one. **Confirm game anyway** is there for the odd night you play with 8 or 9.
+- **Later drop-outs, pitch or weather:** press **Cancel game** on the Dashboard's Next game card or on the game in the Game Log. Pick a reason (Drop-outs, Pitch not available, Weather, Other), add a note if you like, and confirm. Everyone in the game, and anyone who dropped out, is told.
+- **Self-service availability:** if fewer than 10 are in at closing time, the squad isn't announced. Organisers are told, and choose **Cancel game: not enough players**, **Keep it open** for late joiners, or **Confirm anyway**.
+
+A cancelled game stays in the Game Log with a **Game cancelled** badge, but doesn't count towards games played, attendance, the league or late arrivals, and nobody pays for it. Its reserves keep their place for the next game. **Undo cancel** puts it back and tells everyone it's back on. Players see "✕ Thursday's game is off" on the front page.
+
+**Setup (once, for 4.0):** run `supabase/cancel.sql` in the SQL Editor, then redeploy the `notify` function with the new `supabase/functions/notify/index.ts` (Verify JWT off).
 
 ### Late arrivals
 Mark anyone who turned up late with the **⏰ Late** button next to their name in the History game log, or the ⏰ on their name on the Teams tab. The game log shows how many were late.

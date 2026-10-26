@@ -57,6 +57,27 @@
   .btn.sm { padding: 4px 10px; font-size: 12px; }
   .btn.xs { padding: 2px 8px; font-size: 11px; }
   .btn.dghost { color: var(--text-danger); border-color: transparent; }
+  .btn.danger { background: #e24b4a; color: #fff; border-color: #e24b4a; }
+  .btn.danger:hover { opacity: .9; background: #e24b4a; }
+  .linkbtn { background: none; border: 0; padding: 0; font: inherit; font-size: 12px; color: var(--text-accent); text-decoration: underline; cursor: pointer; margin-top: 8px; }
+  /* Cancelled games (4.0) */
+  .b-cx { background: var(--bg-danger); color: var(--text-danger); }
+  .cx-box { border: 1.5px solid var(--border-danger); border-radius: var(--radius); padding: 10px 12px; margin: 8px 0; }
+  .cx-big { font-size: 16px; font-weight: 600; color: var(--text-danger); }
+  .cx-box .hint { margin-top: 4px; }
+  .notice.cx-warn { background: var(--bg-danger); color: var(--text-danger); }
+  .cx-banner { background: var(--bg-danger); color: var(--text-danger); border-radius: var(--radius); padding: 10px 14px; font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+  dialog.cdlg { border: 0; border-radius: 16px; padding: 18px; width: min(440px, calc(100vw - 24px)); max-height: calc(100vh - 32px); overflow: auto; background: var(--surface-2); color: var(--text-primary); }
+  dialog.cdlg::backdrop { background: rgba(0,0,0,.4); }
+  dialog.cdlg h2 { font-size: 17px; font-weight: 600; margin: 0 0 4px; }
+  .cchips { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 2px; }
+  .cchip input { position: absolute; opacity: 0; pointer-events: none; }
+  .cchip span { display: inline-block; font-size: 13px; padding: 6px 12px; border-radius: 20px; border: 0.5px solid var(--border-strong); cursor: pointer; }
+  .cchip input:checked + span { background: var(--bg-danger); color: var(--text-danger); border-color: var(--text-danger); font-weight: 600; }
+  .cchip input:focus-visible + span { outline: 2px solid var(--fill-accent); outline-offset: 2px; }
+  .cwhat { display: grid; gap: 6px; font-size: 13px; line-height: 1.45; }
+  .cwhat div { display: flex; gap: 8px; }
+  dialog.cdlg textarea { width: 100%; font: inherit; font-size: 13px; padding: 8px; border: 0.5px solid var(--border-strong); border-radius: var(--radius); background: var(--surface-1); color: var(--text-primary); }
   .row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 0.5px solid var(--border); flex-wrap: wrap; }
   .row:last-child { border-bottom: none; }
   .name { flex: 1; font-size: 14px; font-weight: 500; min-width: 60px; }
@@ -644,6 +665,7 @@
         <div class="rh"><i class="ti ti-clock"></i> Reserves</div>
         <div id="squad-reserve"></div>
       </div>
+      <div class="notice cx-warn" id="short-notice" style="display:none"></div>
       <div class="card" id="wa-card">
         <h3><i class="ti ti-brand-whatsapp" style="color:#25a244"></i> WhatsApp message</h3>
         <div class="g2" style="gap:10px">
@@ -661,11 +683,13 @@
         <div id="wa-msg" class="hint" style="margin:6px 0 0"></div>
       </div>
       <p class="hint"><i class="ti ti-info-circle"></i> Adjust the squad before confirming.</p>
-      <label class="chklbl" id="push-squad-row" style="display:none;margin:0 0 12px"><input type="checkbox" id="push-squad" checked> <span>Notify the squad <span class="hint" id="push-squad-n"></span></span></label>
-      <div style="display:flex;gap:10px">
+      <label class="chklbl" id="push-squad-row" style="display:none;margin:0 0 12px"><input type="checkbox" id="push-squad" checked> <span><span id="push-squad-t">Notify the squad</span> <span class="hint" id="push-squad-n"></span></span></label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
         <button class="btn" onclick="backToAvail()"><i class="ti ti-arrow-left"></i> Back</button>
-        <button class="btn primary" onclick="confirmGame()"><i class="ti ti-check"></i> Confirm game</button>
+        <button class="btn primary" id="confirm-btn" onclick="confirmGame()"><i class="ti ti-check"></i> Confirm game</button>
+        <button class="btn danger" id="cancel-run-btn" style="display:none" onclick="runCancel()">✕ Cancel game: not enough players</button>
       </div>
+      <button class="linkbtn" id="confirm-anyway" style="display:none" onclick="confirmGame()"></button>
     </div>
     <div id="step-done" style="display:none">
       <div class="ok" id="done-banner"><i class="ti ti-check"></i> Game saved!</div>
@@ -678,7 +702,7 @@
         <div class="rh"><i class="ti ti-clock"></i> Reserves</div>
         <div id="post-reserve"></div>
       </div>
-      <div class="card">
+      <div class="card" id="post-teams">
         <h3 style="margin-bottom:4px">Teams</h3>
         <p class="hint">Pick the teams closer to kick-off, once you know who's actually coming.</p>
         <button class="btn sm" onclick="teamsOpenGame(S.games[confirmedGameIdx] && S.games[confirmedGameIdx].id)"><i class="ti ti-users-group"></i> Go to Teams</button>
@@ -902,7 +926,12 @@ function cleanGame(g, fallbackId) {
     id: toId(g.id) ?? fallbackId, date: String(g.date ?? ''),
     day: ['mon', 'thu'].includes(g.day) ? g.day : 'adhoc',
     iso: typeof g.iso === 'string' ? g.iso : null, manual: !!g.manual,
-    playingIds: toIds(g.playingIds), reserveIds: toIds(g.reserveIds)
+    playingIds: toIds(g.playingIds), reserveIds: toIds(g.reserveIds),
+    // Cancelled by an organiser (4.0). null after Undo, so the next sync clears the columns
+    ...(g.cancelled && typeof g.cancelled === 'object' ? { cancelled: {
+      reason: ['players', 'dropouts', 'pitch', 'weather', 'other'].includes(g.cancelled.reason) ? g.cancelled.reason : 'other',
+      note: String(g.cancelled.note ?? '').slice(0, 140), by: String(g.cancelled.by ?? '').slice(0, 40), at: typeof g.cancelled.at === 'string' ? g.cancelled.at : '' } }
+      : g.cancelled === null ? { cancelled: null } : {})
   };
 }
 // Money: who organised each game (and so holds its money), who paid, and kitty spends.
@@ -1026,7 +1055,9 @@ function dbToPlayer(p) {
   return { id: p.id, name: p.name, avail: p.avail, pref: p.pref, guarMon: p.guar_mon, guarThu: p.guar_thu, played: p.played, reserved: p.reserved, lastPlayed: p.last_played };
 }
 function dbToGame(g) {
-  return { id: g.id, date: g.date, day: g.day, iso: g.iso, manual: g.manual, playingIds: g.playing_ids || [], reserveIds: g.reserve_ids || [] };
+  const out = { id: g.id, date: g.date, day: g.day, iso: g.iso, manual: g.manual, playingIds: g.playing_ids || [], reserveIds: g.reserve_ids || [] };
+  if (g.cancelled_reason) out.cancelled = { reason: g.cancelled_reason, note: g.cancelled_note || '', by: g.cancelled_by || '', at: g.cancelled_at || '' };
+  return out;
 }
 // Same order the database query uses: by date (undated first), then by id
 function sortGames(games) {
@@ -1270,11 +1301,15 @@ async function syncToSupabase() {
       if (error) throw error;
     }
     if (d.upGames.length) {
+      // The cancelled columns (cancel.sql) are only sent once a game has been cancelled, so older databases keep working
+      const withCancel = d.upGames.some(g => 'cancelled' in g);
       const { error } = await sb.from('games').upsert(d.upGames.map(g => ({
         id: g.id, date: g.date, day: g.day, iso: g.iso || null, manual: !!g.manual,
-        playing_ids: g.playingIds, reserve_ids: g.reserveIds
+        playing_ids: g.playingIds, reserve_ids: g.reserveIds,
+        ...(withCancel ? { cancelled_reason: g.cancelled ? g.cancelled.reason : null, cancelled_note: g.cancelled ? g.cancelled.note : null,
+          cancelled_by: g.cancelled ? g.cancelled.by : null, cancelled_at: g.cancelled ? g.cancelled.at || null : null } : {})
       })));
-      if (error) throw error;
+      if (error) { if (withCancel && /cancelled_/.test(error.message || '')) throw new Error('Run supabase/cancel.sql in Supabase first (cancelled games).'); throw error; }
     }
     if (d.reserveNext) {
       const { error } = await sb.from('app_state').upsert({ id: 1, reserve_next: d.reserveNext });
@@ -1903,8 +1938,14 @@ function deleteGame(gIdx) {
 /* ---- HISTORY ---- */
 // How much of the long lists to show (resets on reload)
 const RECENT_GAMES = 5, LEDGER_ROWS = 15;
-// A game with fewer than 10 playing is cancelled: no money, score or late check is needed
-const MIN_PLAYERS = 10, gameCancelled = g => g.playingIds.length < MIN_PLAYERS;
+// A game is cancelled when an organiser cancels it (g.cancelled = { reason, note, by, at }), or when fewer
+// than 10 played and its money was never tracked. Cancelled games need no money, score or late check.
+const MIN_PLAYERS = 10;
+const CANCEL_REASONS = { players: 'Not enough players', dropouts: 'Drop-outs', pitch: 'Pitch not available', weather: 'Weather', other: 'Other' };
+const gameCancelled = g => !!g.cancelled || (g.playingIds.length < MIN_PLAYERS && !S.money.games.some(m => m.gameId === g.id));
+// Games that went ahead (or will): everything except games an organiser cancelled
+const realGames = () => S.games.filter(g => !g.cancelled);
+const cancelLabel = g => g.cancelled ? (CANCEL_REASONS[g.cancelled.reason] || 'Cancelled') : `Only ${g.playingIds.length}`;
 let histShowAll = false, moneyShowAllGames = false, moneyShowFullLedger = false;
 
 function renderHistory() {
@@ -1925,6 +1966,8 @@ function renderLogEntry(gIdx) {
   const isLatest = gIdx === S.games.length - 1;
   const wasOpen = container.querySelector('.log-body.open') !== null;
 
+  // Cancelled by an organiser, or a past game with fewer than 10 and no money tracked
+  const logOff = !!g.cancelled || (gameCancelled(g) && !!g.iso && g.iso < isoToday());
   const pNames = g.playingIds.map(id => { const p = S.players.find(x => x.id === id); return p ? p.name : '?'; });
   const rNames = g.reserveIds.map(id => { const p = S.players.find(x => x.id === id); return p ? p.name : '?'; });
 
@@ -1935,12 +1978,13 @@ function renderLogEntry(gIdx) {
   const playingRows = g.playingIds.map((id, i) => {
     const p = S.players.find(x => x.id === id); const name = p ? p.name : '?';
     const late = lateIdsOf(g.id).includes(id);
+    if (g.cancelled) return `<div class="row"><span class="num">${i + 1}</span><span class="name">${esc(name)}</span></div>`;
     return `<div class="row"><span class="num">${i + 1}</span><span class="name">${esc(name)}</span>${late ? '<span class="badge b-late late-view">Late</span>' : ''}<button class="mv late${late ? ' on' : ''}" onclick="toggleLate(${g.id},${id})" aria-pressed="${late}" title="Arrived late">⏰ Late</button><button class="mv tor" onclick="postMoveToReserve(${id},${gIdx})"><i class="ti ti-arrow-down"></i> Reserve</button><button class="mv del" onclick="postRemove(${id},${gIdx})"><i class="ti ti-trash"></i> Remove</button></div>`;
   }).join('') || '<p style="font-size:13px;color:var(--text-muted)">No players.</p>';
 
   const reserveRows = g.reserveIds.length ? `<div style="margin-top:10px"><div style="font-size:12px;font-weight:500;color:var(--text-danger);margin-bottom:6px">Reserves</div>${g.reserveIds.map(id => { const p = S.players.find(x => x.id === id); const name = p ? p.name : '?'; return `<div class="row"><span class="name">${esc(name)}</span><button class="mv top" onclick="postMoveToPlaying(${id},${gIdx})"><i class="ti ti-arrow-up"></i> Add to squad</button><button class="mv del" onclick="postRemove(${id},${gIdx})"><i class="ti ti-trash"></i> Remove</button></div>`; }).join('')}</div>` : '';
 
-  const addRow = notInGame.length ? `<div class="log-add-row">
+  const addRow = notInGame.length && !g.cancelled ? `<div class="log-add-row">
     <select id="log-add-sel-${gIdx}" style="margin-top:0">
       <option value="">Add a player…</option>
       ${notInGame.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('')}
@@ -1955,8 +1999,8 @@ function renderLogEntry(gIdx) {
   container.innerHTML = `
     <div class="log-header" onclick="toggleLog(${gIdx})">
       <div>
-        <div class="log-title">${esc(g.date)} — ${dayLabel(g.day)} ${g.manual ? '<span class="badge b-pref" style="font-size:10px;margin-left:4px">Manual</span>' : ''}${isLatest ? '<span class="badge b-guar" style="font-size:10px;margin-left:4px">Latest</span>' : ''}</div>
-        <div class="log-meta">${g.playingIds.length} playing · ${g.reserveIds.length} reserve${g.reserveIds.length !== 1 ? 's' : ''}${logTeamsMeta(g)}${lateIdsOf(g.id).length ? ` · ${lateIdsOf(g.id).length} late` : ''}</div>
+        <div class="log-title">${esc(g.date)} — ${dayLabel(g.day)} ${g.manual ? '<span class="badge b-pref" style="font-size:10px;margin-left:4px">Manual</span>' : ''}${isLatest ? '<span class="badge b-guar" style="font-size:10px;margin-left:4px">Latest</span>' : ''}${logOff ? '<span class="badge b-cx" style="font-size:10px;margin-left:4px">Game cancelled</span>' : ''}</div>
+        <div class="log-meta">${logOff ? `${esc(cancelLabel(g))} · ${g.playingIds.length} left${g.cancelled && g.cancelled.note ? ` · "${esc(g.cancelled.note)}"` : ''}` : `${g.playingIds.length} playing · ${g.reserveIds.length} reserve${g.reserveIds.length !== 1 ? 's' : ''}${logTeamsMeta(g)}${lateIdsOf(g.id).length ? ` · ${lateIdsOf(g.id).length} late` : ''}`}</div>
       </div>
       <i class="ti ti-chevron-down" id="log-chevron-${gIdx}" style="color:var(--text-muted);transition:transform .2s;${wasOpen ? 'transform:rotate(180deg)' : ''}"></i>
     </div>
@@ -1965,12 +2009,12 @@ function renderLogEntry(gIdx) {
         <label for="log-date-${gIdx}" style="margin:0">Game date</label>
         <input type="date" id="log-date-${gIdx}" value="${esc(g.iso || '')}" style="width:auto;margin:0" onchange="logSetDate(${gIdx}, this.value)">
       </div>
-      ${logTeamsBlock(g, gIdx)}
+      ${g.cancelled ? cancelBox(g) : logTeamsBlock(g, gIdx)}
       <div style="font-size:12px;font-weight:500;color:var(--text-success);margin-bottom:6px">Playing</div>
       ${playingRows}
       ${reserveRows}
       ${addRow}
-      <div style="margin-top:12px"><button class="btn sm dghost" onclick="deleteGame(${gIdx})"><i class="ti ti-trash"></i> Delete this game</button></div>
+      <div style="margin-top:12px" class="tactions">${g.cancelled ? '' : `<button class="btn sm dghost edit-only" onclick="cancelOpen(${g.id})">✕ Cancel game</button>`}<button class="btn sm dghost" onclick="deleteGame(${gIdx})"><i class="ti ti-trash"></i> Delete this game</button></div>
     </div>`;
 }
 
@@ -2200,8 +2244,8 @@ function renderMoney() {
     const m = S.money.games.find(x => x.gameId === g.id);
     const head = `<span class="when"><span class="d">${esc(g.date)}</span> <span class="badge ${g.day === 'mon' ? 'b-mon' : g.day === 'thu' ? 'b-thu' : 'b-both'}">${dayLabel(g.day)}</span>`;
     if (!m) {
-      return `<div class="mgame"><div class="mgame-row" style="cursor:default">${head}<span class="m">${gameCancelled(g) ? `Only ${g.playingIds.length} · cancelled, no money` : `${g.playingIds.length} played · money not tracked`}</span></span>` +
-        `<button class="btn xs" onclick="moneyTrack(${g.id})">${gameCancelled(g) ? 'Track anyway' : 'Track money'}</button></div></div>`;
+      return `<div class="mgame"><div class="mgame-row" style="cursor:default">${head}<span class="m">${gameCancelled(g) ? `Game cancelled · ${esc(cancelLabel(g).toLowerCase())}` : `${g.playingIds.length} played · money not tracked`}</span></span>` +
+        (g.cancelled ? '' : `<button class="btn xs" onclick="moneyTrack(${g.id})">${gameCancelled(g) ? 'Track anyway' : 'Track money'}</button>`) + '</div></div>';
     }
     const s = gameSplit(g, m), open = moneyOpenGame === g.id;
     const res = `<span class="res ${s.toKitty >= 0 ? 'up' : 'down'}">${s.toKitty >= 0 ? '+' : ''}${gbp(s.toKitty)}</span>`;
@@ -2326,6 +2370,8 @@ function renderFront() {
   const g = upcoming[0] || S.games[S.games.length - 1];
   const el = document.getElementById('front-game');
   if (!g) el.innerHTML = '<div class="sh" style="margin-top:0">Next game</div><p class="hint">No game booked yet.</p>';
+  else if (g.cancelled) el.innerHTML = `<div class="sh" style="margin-top:0">${upcoming.length ? 'Next game' : 'Last game'}</div>
+      <div class="front-when">${esc(g.iso ? isoToDate(g.iso).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) : g.date)}</div>${cancelPlayerBox(g)}`;
   else {
     const nm = id => { const p = S.players.find(x => x.id === id); return p ? p.name : '?'; };
     const m = S.money.games.find(x => x.gameId === g.id);
@@ -2444,7 +2490,7 @@ function gameTeams(gameId) { return S.teams.games.find(t => t.gameId === gameId)
    guaranteed (or carried over from the reserves) for the next game they're
    available for. Once a later game includes them, as playing or reserve, it's cleared. */
 function lateIdsOf(gameId) { const x = S.teams.late.find(y => y.gameId === gameId); return x ? x.ids : []; }
-function latePenalty(playerId) { return BF_SELECT.latePenaltyFor(S.games, lateIdsOf)(playerId); }
+function latePenalty(playerId) { return BF_SELECT.latePenaltyFor(realGames(), lateIdsOf)(playerId); }
 function toggleLate(gameId, playerId) {
   let x = S.teams.late.find(y => y.gameId === gameId);
   if (!x) { x = { gameId, ids: [] }; S.teams.late.push(x); }
@@ -2531,8 +2577,8 @@ function pickTeams(squad, avoid) {
 /* ---- TEAMS TAB ---- */
 function teamsGameList() {
   const today = isoToday();
-  const upcoming = S.games.filter(g => g.iso && g.iso >= today);
-  const past = S.games.filter(g => !(g.iso && g.iso >= today)).slice(-2).reverse();
+  const upcoming = realGames().filter(g => g.iso && g.iso >= today);
+  const past = realGames().filter(g => !(g.iso && g.iso >= today)).slice(-2).reverse();
   return [...upcoming, ...past];
 }
 function teamsOpenGame(gameId) { teamsGameId = gameId || null; teamsSel = null; teamsNote = ''; goTab('teams'); }
@@ -2812,7 +2858,7 @@ function scoreClear(gameId) {
 function renderStats() {
   const el = document.getElementById('stats-table'); if (!el) return;
   const rec = new Map();
-  S.teams.games.filter(t => t.status === 'confirmed' && hasScore(t) && S.games.some(g => g.id === t.gameId)).forEach(t => [1, 2].forEach(n => t['t' + n].forEach(id => {
+  S.teams.games.filter(t => t.status === 'confirmed' && hasScore(t) && realGames().some(g => g.id === t.gameId)).forEach(t => [1, 2].forEach(n => t['t' + n].forEach(id => {
     const r = rec.get(id) || { w: 0, d: 0, l: 0 }, us = n === 1 ? t.score1 : t.score2, them = n === 1 ? t.score2 : t.score1;
     if (us > them) r.w++; else if (us < them) r.l++; else r.d++;
     rec.set(id, r);
@@ -2953,7 +2999,7 @@ function renderAttendance() {
   if (!S.players.length) { el.innerHTML = '<p class="hint" style="margin:0">No players yet.</p>'; return; }
   const yearOf = g => { const t = gameTime(g); return isNaN(t) ? null : new Date(t).getFullYear(); };
   const appYears = new Map();   // playerId -> { year: games }
-  S.games.forEach(g => { const y = yearOf(g); if (!y) return; g.playingIds.forEach(id => { const m = appYears.get(id) || {}; m[y] = (m[y] || 0) + 1; appYears.set(id, m); }); });
+  realGames().forEach(g => { const y = yearOf(g); if (!y) return; g.playingIds.forEach(id => { const m = appYears.get(id) || {}; m[y] = (m[y] || 0) + 1; appYears.set(id, m); }); });
   const lastYear = Math.max(2026, new Date().getFullYear(), ...S.games.map(yearOf).filter(Boolean));
   const years = []; for (let y = 2026; y <= lastYear; y++) years.push(y);
   const rows = S.players.map(p => {
@@ -3010,7 +3056,15 @@ function waNames() {
   }
   return { playing: builtPlaying.map(p => p.name), reserves: builtReserves.map(p => p.name) };
 }
+function waCancelGame() {
+  if (waGameIdx !== null) { const g = S.games[waGameIdx]; return g && g.cancelled ? g : null; }
+  if (document.getElementById('step-done').style.display === 'block') { const g = confirmedGameIdx !== null && S.games[confirmedGameIdx]; return g && g.cancelled ? g : null; }
+  if (document.getElementById('step-squad').style.display === 'block' && builtPlaying.length < MIN_PLAYERS)
+    return { iso: document.getElementById('wa-date').value, day: currentDay, playingIds: builtPlaying.map(p => p.id), reserveIds: [], date: '', cancelled: { reason: 'players', note: '' } };
+  return null;
+}
 function waText() {
+  const cg = waCancelGame(); if (cg) return cancelWaText(cg);
   const day = waDay || currentDay || 'mon';
   const { playing, reserves } = waNames();
   const n = playing.length;
@@ -3194,7 +3248,7 @@ renderHistory = function () {
    learns which players have them on. Organisers send them when they confirm a game
    or teams and from Outstanding Payments; payment reminders also go out on a
    schedule (supabase/push-cron.sql). */
-const APP_VERSION = '3.9';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
+const APP_VERSION = '4.0';   // shown on the front page; keep in step with docs/SOLUTION_DESIGN.md
 const PUSH_FN = SUPABASE_URL + '/functions/v1/notify';
 const PUSH_KEY = 'fbv3_push';   // this phone only: { playerId, endpoint, prefs, hideCard }
 const PUSH_KINDS = [['availability', 'Availability', 'When it opens, and if you play'], ['squad', 'Squad picked', 'Playing or reserve'], ['teams', 'Teams confirmed', 'Your team and bibs'],
@@ -3470,6 +3524,156 @@ confirmGame = function () {
   const g = S.games[confirmedGameIdx];
   if (notify && g) pushSquad(g);
 };
+
+/* ---- CANCELLED GAMES (release 4.0) ----
+   An organiser can cancel a saved game (drop-outs, pitch, weather), or cancel straight from Run game when
+   fewer than 10 said in. The game stays in the Game Log but doesn't count towards games played, reserves,
+   attendance, the league or late arrivals, and needs no money (nobody pays until the day). Undo puts it back. */
+let cancelGameId = null, cancelMsg = { id: null, text: '' };
+const cancelWho = () => { const p = ME && S.players.find(x => x.id === ME); return p ? p.name : 'An organiser'; };
+const cancelDate = g => g.iso ? avLongDate(g.iso) : g.date;
+// Why it's off, in a sentence for players
+function cancelWhy(g) {
+  const c = g.cancelled || { reason: 'players' }, n = g.playingIds.length;
+  if (c.note) return c.note.replace(/[.!]?$/, m => m || '.');
+  return { players: `Not enough players: only ${n} ${n === 1 ? 'was' : 'were'} available and we need ${MIN_PLAYERS}.`, dropouts: 'Not enough players after late drop-outs.',
+    pitch: "The pitch isn't available.", weather: 'Called off because of the weather.' }[c.reason] || 'Called off by the organisers.';
+}
+// Games played and reserve counts, and each player's last game, without (by -1) or with (by +1) this game
+function cancelCounts(g, by) {
+  S.players.forEach(p => {
+    if (g.playingIds.includes(p.id)) {
+      p.played = Math.max(0, p.played + by);
+      const last = [...realGames()].reverse().find(x => x.playingIds.includes(p.id));
+      if (last) p.lastPlayed = last.date;
+    }
+    if (g.reserveIds.includes(p.id)) p.reserved = Math.max(0, p.reserved + by);
+  });
+}
+// Everyone in the game, plus anyone who dropped out of it through availability
+function cancelPeople(g) {
+  const r = (AV.rounds || []).find(x => Number(x.game_id) === g.id);
+  const outs = r && r.closed_at ? (AV.answers || []).filter(a => a.game_iso === r.game_iso && a.answer === 'out' && a.answered_at > r.closed_at).map(a => Number(a.player_id)) : [];
+  return [...new Set([...g.playingIds, ...g.reserveIds, ...outs])];
+}
+async function pushCancel(g) {
+  const dn = pushDayName(g), tag = 'squad-' + g.id;
+  if (g.cancelled) return pushSend(cancelPeople(g).map(id => ({ playerId: id, kind: 'squad', title: `❌ ${dn}'s game is cancelled`, body: cancelWhy(g) + ' No payment needed.', url: './', tag })));
+  const wa = WA[g.day] || WA.mon, title = `✅ ${dn}'s game is back on`;
+  return pushSend([...g.playingIds.map(id => ({ playerId: id, kind: 'squad', title, body: `${pushShortDate(g.iso)}, ${wa.time}, ${wa.venue}. You're playing.`, url: './', tag })),
+    ...g.reserveIds.map((id, i) => ({ playerId: id, kind: 'squad', title, body: `You're ${avOrdinal(i + 1)} reserve. If someone drops out you'll be told.`, url: './', tag }))]);
+}
+function cancelWaText(g) {
+  const day = g.iso ? isoToDate(g.iso).toLocaleDateString('en-GB', { weekday: 'long' }).toUpperCase() : (g.day === 'mon' ? 'MONDAY' : g.day === 'thu' ? 'THURSDAY' : '');
+  const short = !g.cancelled || ['players', 'dropouts'].includes(g.cancelled.reason);
+  return [`⚽️ ${day} FOOTBALL ⚽️`, '', `📅 ${waPrettyDate(g.iso) || g.date}`, `❌ *Game cancelled${short ? ': not enough players' : ''}*`, '', `${cancelWhy(g)} No payment needed.`].join('\n');
+}
+function cancelCopy(gameId, btn) {
+  const g = S.games.find(x => x.id === gameId); if (!g) return;
+  const text = cancelWaText(g), done = () => { if (btn) btn.textContent = 'Copied ✓'; };
+  const fallback = () => { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) {} ta.remove(); if (ok) done(); };
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done).catch(fallback); else fallback();
+}
+function cancelWa(gameId) { const g = S.games.find(x => x.id === gameId); if (g) window.open('https://wa.me/?text=' + encodeURIComponent(cancelWaText(g)), '_blank'); }
+
+// The organiser's box on the Dashboard, Run game and Game Log
+function cancelBox(g, wa = true) {
+  const c = g.cancelled, when = c.at ? new Date(c.at).toLocaleString('en-GB', { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : '';
+  return `<div class="cx-box"><div class="cx-big">✕ Game cancelled</div>
+    <p class="hint">${esc(cancelDate(g))} · ${esc(cancelLabel(g))}${c.by ? ' · ' + esc(c.by) : ''}${when ? ', ' + esc(when) : ''}</p>
+    <p class="hint">${esc(cancelWhy(g))}</p>${cancelMsg.id === g.id && cancelMsg.text ? `<p class="hint">🔔 ${esc(cancelMsg.text)}</p>` : ''}
+    <div class="tactions edit-only" style="margin-top:8px">${wa ? `<button class="btn sm primary" onclick="cancelCopy(${g.id}, this)">Copy WhatsApp message</button><button class="btn sm" onclick="cancelWa(${g.id})"><i class="ti ti-brand-whatsapp"></i> Open WhatsApp</button>` : ''}<button class="btn sm dghost" onclick="cancelUndo(${g.id})">↶ Undo cancel</button></div></div>`;
+}
+// What players see
+const cancelPlayerBox = g => `<div class="cx-box"><div class="cx-big">✕ ${esc(pushDayName(g))}'s game is off</div><p class="hint">${esc(cancelWhy(g))} No payment needed.</p></div>`;
+
+function cancelOpen(gameId) {
+  const g = S.games.find(x => x.id === gameId); if (!g || g.cancelled) return;
+  cancelGameId = gameId;
+  const n = g.playingIds.length, people = cancelPeople(g), m = S.money.games.some(x => x.gameId === g.id);
+  const d = document.getElementById('cancel-dlg');
+  d.innerHTML = `<h2 id="cancel-h">Cancel ${esc(cancelDate(g))}?</h2>
+    <p class="hint">${n} playing, ${pushPlural(g.reserveIds.length, 'reserve')}.</p>
+    <div class="cchips" role="radiogroup" aria-label="Reason">${['dropouts', 'pitch', 'weather', 'other'].map(k => `<label class="cchip"><input type="radio" name="cx-reason" value="${k}"${k === 'dropouts' ? ' checked' : ''}><span>${CANCEL_REASONS[k]}</span></label>`).join('')}</div>
+    <label for="cx-note">Note for players (optional)</label><textarea id="cx-note" rows="2" maxlength="140" placeholder="Not enough players after late drop-outs."></textarea>
+    <div class="sh">What happens</div>
+    <div class="cwhat"><div>📣<span><b>${pushPlural(people.length, 'player')} ${people.length === 1 ? 'is' : 'are'} told</b>: everyone in the game${people.length > n + g.reserveIds.length ? ' and those who dropped out' : ''}.</span></div>
+      <div>💷<span><b>No money is collected.</b>${m ? ' Money tracking for this game is removed.' : ''}</span></div>
+      <div>📊<span><b>It doesn't count</b> towards games played, attendance, the league or late arrivals.</span></div>
+      <div>🪑<span><b>Reserves keep their place</b> at the front for the next game.</span></div></div>
+    ${pushReady ? `<label class="chklbl"><input type="checkbox" id="cx-notify" checked> <span>Send a notification <span class="hint">(${pushCount(people)} of ${people.length} have notifications on)</span></span></label>` : ''}
+    <div class="tactions" style="margin-top:12px"><button class="btn danger" onclick="cancelConfirm()">✕ Cancel game</button><button class="btn" onclick="document.getElementById('cancel-dlg').close()">Keep the game</button></div>`;
+  if (d.showModal) d.showModal(); else d.setAttribute('open', '');
+}
+function cancelConfirm() {
+  const reason = (document.querySelector('input[name=cx-reason]:checked') || {}).value || 'other';
+  const note = document.getElementById('cx-note').value.trim().slice(0, 140), notify = !!(document.getElementById('cx-notify') || {}).checked;
+  const d = document.getElementById('cancel-dlg'); if (d.close) d.close(); else d.removeAttribute('open');
+  return cancelGame(cancelGameId, reason, note, notify);
+}
+async function cancelGame(gameId, reason, note, notify) {
+  const g = S.games.find(x => x.id === gameId); if (!g || g.cancelled) return null;
+  const latest = S.games[S.games.length - 1] === g;
+  g.cancelled = { reason, note: note || '', by: cancelWho(), at: new Date().toISOString() };
+  cancelCounts(g, -1);
+  S.money.games = S.money.games.filter(m => m.gameId !== g.id);
+  // The last game that went ahead keeps its reserves at the front, and so do this game's
+  if (latest) { const prev = realGames().pop(); S.reserveNext = [...new Set([...(prev ? prev.reserveIds : []), ...g.reserveIds])]; }
+  cancelMsg = { id: g.id, text: '' };
+  save(); cancelRefresh();
+  if (notify) { const r = await pushCancel(g); cancelMsg = { id: g.id, text: pushResult(r) }; cancelRefresh(); }
+  return g;
+}
+async function cancelUndo(gameId) {
+  const g = S.games.find(x => x.id === gameId); if (!g || !g.cancelled) return;
+  if (!confirm(`Put ${cancelDate(g)} back on? Everyone in it is told.`)) return;
+  const latest = S.games[S.games.length - 1] === g;
+  g.cancelled = null;
+  cancelCounts(g, 1);
+  if (latest) S.reserveNext = [...g.reserveIds];
+  cancelMsg = { id: null, text: '' };
+  save(); cancelRefresh();
+  pushCancel(g);
+}
+function cancelRefresh() {
+  renderPlayers(); renderHistory(); renderFront();
+  if (typeof renderMoney === 'function') renderMoney();
+  if (document.getElementById('page-dash').classList.contains('active')) renderDash();
+  if (AV.settings) availRender();
+  runDoneState();
+}
+
+/* Run game: fewer than 10 picked means the game is off */
+function runShortUI() {
+  const n = builtPlaying.length, short = n < MIN_PLAYERS, el = document.getElementById('short-notice');
+  el.style.display = short ? 'block' : 'none';
+  el.innerHTML = short ? `⚠️ <strong>Not enough players.</strong> Only ${n} said they're in, and a game needs at least ${MIN_PLAYERS}.` : '';
+  document.getElementById('confirm-btn').style.display = short ? 'none' : '';
+  document.getElementById('cancel-run-btn').style.display = short ? '' : 'none';
+  const any = document.getElementById('confirm-anyway');
+  any.style.display = short ? '' : 'none'; any.textContent = `Confirm game anyway with ${n}`;
+  document.getElementById('push-squad-t').textContent = short ? `Tell the ${n} the game is cancelled` : 'Notify the squad';
+}
+const _cxRenderSquad = renderSquad; renderSquad = function () { _cxRenderSquad(); runShortUI(); };
+async function runCancel() {
+  const notify = pushReady && document.getElementById('push-squad').checked;
+  _pushConfirm();   // saves the game without the "squad is out" notification
+  const g = S.games[confirmedGameIdx];
+  if (g) await cancelGame(g.id, 'players', '', notify);
+}
+// The done step shows the cancelled box instead of the squad and teams
+function runDoneState() {
+  const g = confirmedGameIdx !== null ? S.games[confirmedGameIdx] : null, banner = document.getElementById('done-banner');
+  if (!g || document.getElementById('step-done').style.display !== 'block') return;
+  const off = !!g.cancelled;
+  banner.className = off ? 'cx-banner' : 'ok';
+  banner.innerHTML = off ? `✕ Game cancelled: ${esc(cancelLabel(g).toLowerCase())}` : `<i class="ti ti-check"></i> Game saved — ${esc(g.date)}`;
+  document.getElementById('done-summary').innerHTML = off ? cancelBox(g, false)
+    : `<p style="font-size:13px;color:var(--text-secondary)">${pushDayName(g)} · ${g.playingIds.length} playing · ${pushPlural(g.reserveIds.length, 'reserve')}</p>`;
+  ['post-playing-wrap', 'post-reserve-wrap', 'post-teams'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = off ? 'none' : ''; });
+  if (!off) renderPostGame();
+  waRefresh();
+}
 const _pushTeamsConfirm = teamsConfirm;
 teamsConfirm = function () {
   const box = document.getElementById('push-teams'), notify = pushReady && box && box.checked;
@@ -3629,6 +3833,7 @@ function avPlayerCard() {
   // Closed: the squad is saved
   const g = S.games.find(x => x.id === Number(r.game_id));
   if (!g) return html + '<p class="hint" style="margin-top:10px">Loading the squad…</p></div>';
+  if (g.cancelled) return html + cancelPlayerBox(g) + '</div>';
   const ri = g.reserveIds.indexOf(ME);
   html += g.playingIds.includes(ME) ? `<div class="ok" style="margin:10px 0 0">⚽ You're <strong>playing</strong>, ${esc(p.name)}.</div><div class="av-btns"><button class="btn av-out" onclick="avAnswer('${r.game_iso}','out')">I can't make it any more</button></div><p class="hint">Your place goes to the first reserve and they're told straight away.</p>`
     : ri !== -1 ? `<div class="notice" style="display:block;margin:10px 0 0">🪑 You're <strong>${avOrdinal(ri + 1)} reserve</strong>. If someone drops out you'll be told straight away.</div><div class="av-btns"><button class="btn av-out" onclick="avAnswer('${r.game_iso}','out')">I can't make it</button></div>`
@@ -3657,6 +3862,13 @@ function avInstallBlock() {
     <div style="margin-top:4px">${avInstallSteps()}</div>${avInstallButton() ? `<div class="tactions" style="margin-top:8px">${avInstallButton()}</div>` : ''}</div>`;
 }
 
+// Availability closed with fewer than 10: the squad is held, not announced
+function avShortButtons(r, n) {
+  return `<div class="notice cx-warn" style="display:block;width:100%;margin:0 0 6px">⚠️ Only ${n} ${n === 1 ? 'is' : 'are'} in. Fewer than ${MIN_PLAYERS} means the game is off.</div>
+    <button class="btn sm danger" onclick="if(confirm('Cancel ${esc(avDayName(r.day))}? Everyone who said in is told: not enough players.'))avAct('avail_cancel',{gameIso:'${r.game_iso}',reason:'players'},'Cancelled: not enough players.')">✕ Cancel game: not enough players</button>
+    <button class="btn sm" onclick="avAct('avail_reopen',{gameIso:'${r.game_iso}'},'Reopened for late joiners.')">Keep it open</button>
+    <button class="linkbtn" onclick="if(confirm('Announce the squad with only ${n}?'))avAct('avail_confirm',{gameIso:'${r.game_iso}'},'Squad saved and announced.')">Confirm anyway with ${n}</button>`;
+}
 /* What organisers see on Run game */
 function avOrgCard() {
   if (!AV.dbOk || avMode() === 'off') return '';
@@ -3682,15 +3894,17 @@ function avOrgCard() {
       ${playing.map((p, i) => `<div class="row"><span class="num">${i + 1}</span><span class="name">${esc(p.name)}</span>${tags(p)}</div>`).join('')}
       ${reserves.map(p => `<div class="row"><span class="num">R</span><span class="name">${esc(p.name)}</span>${tags(p)}</div>`).join('')}
       <div class="tactions" style="margin-top:10px">
-        ${r.status === 'held' ? `<button class="btn primary" onclick="avAct('avail_confirm',{gameIso:'${r.game_iso}'},'Squad saved and announced.')"><i class="ti ti-check"></i> Confirm and announce</button><button class="btn sm" onclick="avAct('avail_reopen',{gameIso:'${r.game_iso}'},'Reopened.')">Reopen</button>`
+        ${r.status === 'held' && playing.length < MIN_PLAYERS ? avShortButtons(r, playing.length) : r.status === 'held' ? `<button class="btn primary" onclick="avAct('avail_confirm',{gameIso:'${r.game_iso}'},'Squad saved and announced.')"><i class="ti ti-check"></i> Confirm and announce</button><button class="btn sm" onclick="avAct('avail_reopen',{gameIso:'${r.game_iso}'},'Reopened.')">Reopen</button>`
           : `<button class="btn sm" onclick="if(confirm('Close availability now and pick the squad?'))avAct('avail_close',{gameIso:'${r.game_iso}'},r=>r.held?'Squad picked. Check it, then Confirm and announce.':'Squad picked and announced.')">Close now</button>`}
         <button class="btn sm" onclick="avAct('avail_nudge',{gameIso:'${r.game_iso}'},r=>'Nudged '+(r.players||0)+' player'+(r.players===1?'':'s')+' with notifications.')">🔔 Nudge ${S.players.length - answered.size}</button>
         <button class="btn sm dghost" onclick="if(confirm('Cancel ${dn}? Everyone who said in is told.'))avAct('avail_cancel',{gameIso:'${r.game_iso}'},'Cancelled.')">Cancel this week</button>
       </div>`;
+  } else if (S.games.some(x => x.id === Number(r.game_id) && x.cancelled)) {
+    html += cancelBox(S.games.find(x => x.id === Number(r.game_id)));
   } else {
     const gi = S.games.findIndex(x => x.id === Number(r.game_id));
     html += `<div class="ok" style="margin-top:8px">✓ Squad picked${r.closed_at ? ' ' + esc(new Date(r.closed_at).toLocaleString('en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit' })) : ''}. Drop-outs and late joiners update it until kick-off.</div>
-      <div class="tactions">${gi !== -1 ? `<button class="btn sm" onclick="goTab('history'); waToggleLog(${gi})"><i class="ti ti-brand-whatsapp"></i> WhatsApp message</button><button class="btn sm primary" onclick="teamsOpenGame(${Number(r.game_id)})">Pick teams →</button>` : '<span class="hint">Loading the game…</span>'}</div>`;
+      <div class="tactions">${gi !== -1 ? `<button class="btn sm" onclick="goTab('history'); waToggleLog(${gi})"><i class="ti ti-brand-whatsapp"></i> WhatsApp message</button><button class="btn sm primary" onclick="teamsOpenGame(${Number(r.game_id)})">Pick teams →</button><button class="btn sm dghost" onclick="cancelOpen(${Number(r.game_id)})">✕ Cancel game</button>` : '<span class="hint">Loading the game…</span>'}</div>`;
   }
   html += `<div class="sh">Answer for a player</div><div class="pwrow"><select id="av-org-who" aria-label="Player">${avOptions(null).replace('Choose your name…', 'Choose a player…')}</select>
     <button class="btn sm" onclick="const v=document.getElementById('av-org-who').value; if(v) avAnswer('${r.game_iso}','in',+v,true)">In</button><button class="btn sm" onclick="const v=document.getElementById('av-org-who').value; if(v) avAnswer('${r.game_iso}','out',+v,true)">Out</button></div>${note}</div>`;
@@ -3848,7 +4062,7 @@ function dashTodos() {
   if (noMoney.length) item('🧾', 'var(--surface-1)', noMoney.length === 1 ? `Money not tracked: ${dashShort(noMoney[0].iso)}` : `Money not tracked: ${noMoney.length} games`,
     noMoney.length === 1 ? `${noMoney[0].playingIds.length} played` : `Latest ${dashShort(noMoney[0].iso)}, oldest ${dashShort(noMoney[noMoney.length - 1].iso)}`, 'Track', "goTab('money')");
   const next = dashNext();
-  if (next) {
+  if (next && !next.cancelled) {
     const t = gameTeams(next.id);
     if (t && t.status === 'draft') item('👕', 'var(--bg-warning)', `Teams still a draft: ${dashShort(next.iso)}`, 'Not on the front page yet', 'Teams', `teamsOpenGame(${next.id})`);
     else if (t && t.status === 'confirmed' && !sameSet([...t.t1, ...t.t2], next.playingIds)) item('🔁', 'var(--bg-warning)', `Squad changed since teams were confirmed`, dashShort(next.iso), 'Teams', `teamsOpenGame(${next.id})`);
@@ -3888,7 +4102,7 @@ function dashNextCard() {
         ${missing.length ? `<div class="notice" style="display:block;margin-top:8px">⭐ ${missing.map(p => esc(p.name)).join(', ')} ${missing.length === 1 ? 'is' : 'are'} guaranteed but ${missing.length === 1 ? "hasn't" : "haven't"} said in.</div>` : ''}
         <div class="tactions" style="margin-top:8px">
           <button class="btn sm" onclick="avAct('avail_nudge',{gameIso:'${r.game_iso}'},x=>'Nudged '+(x.players||0)+'.')">🔔 Nudge ${none}</button>
-          ${r.status === 'held' ? `<button class="btn sm primary" onclick="avAct('avail_confirm',{gameIso:'${r.game_iso}'},'Squad saved and announced.')">Confirm and announce</button>` : `<button class="btn sm" onclick="if(confirm('Close availability now and pick the squad?'))avAct('avail_close',{gameIso:'${r.game_iso}'},x=>x.held?'Squad picked. Confirm it on Run game.':'Squad picked and announced.')">Close now</button>`}
+          ${r.status === 'held' && playing.length < MIN_PLAYERS ? avShortButtons(r, playing.length) : r.status === 'held' ? `<button class="btn sm primary" onclick="avAct('avail_confirm',{gameIso:'${r.game_iso}'},'Squad saved and announced.')">Confirm and announce</button>` : `<button class="btn sm" onclick="if(confirm('Close availability now and pick the squad?'))avAct('avail_close',{gameIso:'${r.game_iso}'},x=>x.held?'Squad picked. Confirm it on Run game.':'Squad picked and announced.')">Close now</button>`}
           <button class="btn sm" onclick="goTab('game')">Answer for a player</button>
         </div></div>
       <div><div class="sh" style="margin-top:0">${r.status === 'held' ? 'Squad to confirm' : 'If it closed now'}</div>
@@ -3896,6 +4110,7 @@ function dashNextCard() {
       ${avNote ? `<p class="hint" style="margin-top:6px">${esc(avNote)}</p>` : ''}</div>`;
   }
   const g = dashNext();
+  if (g && g.cancelled) return `<div class="card dash-next da-next"><h3 class="dash-h">⚽ ${esc(avLongDate(g.iso))} <span class="badge b-cx">Game cancelled</span></h3>${cancelBox(g)}</div>`;
   if (g) {
     const t = gameTeams(g.id), m = S.money.games.find(x => x.gameId === g.id), today = g.iso === isoToday(), wa = WA[g.day] || WA.mon;
     const tile = (ok, label, warn) => `<div class="${ok ? 'i' : warn ? 'w' : 'n'}"><b>${ok ? '✓' : '–'}</b>${label}</div>`;
@@ -3904,7 +4119,8 @@ function dashNextCard() {
       <div class="av-stats dash-check">${tile(true, 'Squad')}${tile(t && t.status === 'confirmed', t ? (t.status === 'confirmed' ? 'Teams' : 'Teams (draft)') : 'Teams', !!t)}${tile(!!m, 'Money', false)}</div>
       ${t && t.status === 'confirmed' && !sameSet([...t.t1, ...t.t2], g.playingIds) ? '<div class="notice" style="display:block">The squad changed after the teams were confirmed: check them.</div>' : ''}
       <div class="dash-names">${g.playingIds.map((id, i) => `<span><em>${i + 1}</em>${esc(pName(id))}</span>`).join('')}${g.reserveIds.map(id => `<span class="res"><em>R</em>${esc(pName(id))}</span>`).join('')}</div>
-      <div class="tactions" style="margin-top:10px"><button class="btn sm primary" onclick="teamsOpenGame(${g.id})">${t ? 'Teams' : 'Pick teams'} →</button><button class="btn sm" onclick="goTab('history'); waToggleLog(${dashGameIdx(g)})"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>${m ? '' : `<button class="btn sm" onclick="goTab('money')">Track money</button>`}</div></div>`;
+      ${g.playingIds.length < MIN_PLAYERS ? `<div class="notice cx-warn" style="display:block;margin-top:8px">⚠️ Only ${g.playingIds.length} playing. Fewer than ${MIN_PLAYERS} means the game is off.</div>` : ''}
+      <div class="tactions" style="margin-top:10px"><button class="btn sm primary" onclick="teamsOpenGame(${g.id})">${t ? 'Teams' : 'Pick teams'} →</button><button class="btn sm" onclick="goTab('history'); waToggleLog(${dashGameIdx(g)})"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>${m ? '' : `<button class="btn sm" onclick="goTab('money')">Track money</button>`}<button class="btn sm ${g.playingIds.length < MIN_PLAYERS ? 'danger' : 'dghost'}" onclick="cancelOpen(${g.id})">✕ Cancel game</button></div></div>`;
   }
   const n = AV.settings && avMode() !== 'off' ? avNextOpening() : null;
   return `<div class="card dash-next da-next"><h3 class="dash-h">⚽ Next game</h3>${n
@@ -3958,15 +4174,15 @@ function dashTurnoutCard() {
   // Each bar: players at the bottom, reserves stacked on top, total above
   const max = Math.max(BF_SELECT.SQUAD_SIZE, ...last.map(g => g.playingIds.length + g.reserveIds.length));
   return `<div class="card da-turn"><h3 class="dash-h">📈 Turnout, last ${last.length} game${last.length === 1 ? '' : 's'}</h3>
-    <div class="dash-spark">${last.map(g => `<div class="tb" title="${esc(dashShort(g.iso))}: ${g.playingIds.length} playing, ${g.reserveIds.length} reserve${g.reserveIds.length === 1 ? '' : 's'}${gameCancelled(g) ? ' (cancelled)' : ''}"><b>${g.playingIds.length}${g.reserveIds.length ? '+' + g.reserveIds.length : ''}</b>${g.reserveIds.length ? `<i class="rs" style="height:${g.reserveIds.length / max * 100}%"></i>` : ''}<i class="pl${gameCancelled(g) ? ' low' : ''}" style="height:${g.playingIds.length / max * 100}%"></i></div>`).join('')}</div>
+    <div class="dash-spark">${last.map(g => `<div class="tb" title="${esc(dashShort(g.iso))}: ${g.playingIds.length} playing, ${g.reserveIds.length} reserve${g.reserveIds.length === 1 ? '' : 's'}${gameCancelled(g) ? ' (cancelled)' : ''}">${gameCancelled(g) ? '<b style="color:var(--text-danger)">✕</b>' : `<b>${g.playingIds.length}${g.reserveIds.length ? '+' + g.reserveIds.length : ''}</b>`}${g.reserveIds.length ? `<i class="rs" style="height:${g.reserveIds.length / max * 100}%"></i>` : ''}<i class="pl${gameCancelled(g) ? ' low' : ''}" style="height:${g.playingIds.length / max * 100}%"></i></div>`).join('')}</div>
     <div class="dash-sparkl">${last.map(g => `<span>${esc(isoToDate(g.iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))}</span>`).join('')}</div>
-    <div class="dash-key"><span><i style="background:var(--border-accent)"></i>Playing</span><span><i style="background:var(--bg-warning);border:0.5px solid var(--text-warning)"></i>Reserves</span><span><i style="background:var(--border-danger)"></i>Cancelled (under 10)</span></div></div>`;
+    <div class="dash-key"><span><i style="background:var(--border-accent)"></i>Playing</span><span><i style="background:var(--bg-warning);border:0.5px solid var(--text-warning)"></i>Reserves</span><span><i style="background:var(--border-danger)"></i>Game cancelled</span></div></div>`;
 }
 // League table for this year: 3 points a win, 1 a draw, from confirmed teams with a score
 function dashLeagueCard() {
   const year = isoToday().slice(0, 4), rec = new Map();
   S.teams.games.filter(t => t.status === 'confirmed' && hasScore(t)).forEach(t => {
-    const g = S.games.find(x => x.id === t.gameId); if (!g || !(g.iso || '').startsWith(year)) return;
+    const g = S.games.find(x => x.id === t.gameId); if (!g || g.cancelled || !(g.iso || '').startsWith(year)) return;
     [1, 2].forEach(n => t['t' + n].forEach(id => {
       const x = rec.get(id) || { w: 0, d: 0, l: 0, gd: 0 }, us = n === 1 ? t.score1 : t.score2, them = n === 1 ? t.score2 : t.score1;
       if (us > them) x.w++; else if (us < them) x.l++; else x.d++;
@@ -4000,10 +4216,10 @@ function dashFitLeague() {
 }
 function dashSeasonCard() {
   const year = isoToday().slice(0, 4);
-  const apps = new Map(); S.games.filter(g => g.iso && g.iso.startsWith(year)).forEach(g => g.playingIds.forEach(id => apps.set(id, (apps.get(id) || 0) + 1)));
+  const apps = new Map(); realGames().filter(g => g.iso && g.iso.startsWith(year)).forEach(g => g.playingIds.forEach(id => apps.set(id, (apps.get(id) || 0) + 1)));
   const most = S.players.map(p => ({ p, n: (apps.get(p.id) || 0) + (year === '2026' ? legacyOf(p.name).y2026 : 0) })).filter(x => x.n).sort((a, b) => b.n - a.n).slice(0, 3);
   const rec = new Map();
-  S.teams.games.filter(t => t.status === 'confirmed' && hasScore(t)).forEach(t => { const g = S.games.find(x => x.id === t.gameId); if (!g || !(g.iso || '').startsWith(year)) return; [1, 2].forEach(n => t['t' + n].forEach(id => {
+  S.teams.games.filter(t => t.status === 'confirmed' && hasScore(t)).forEach(t => { const g = S.games.find(x => x.id === t.gameId); if (!g || g.cancelled || !(g.iso || '').startsWith(year)) return; [1, 2].forEach(n => t['t' + n].forEach(id => {
     const r = rec.get(id) || { w: 0, n: 0 }, us = n === 1 ? t.score1 : t.score2, them = n === 1 ? t.score2 : t.score1; r.n++; if (us > them) r.w++; rec.set(id, r); })); });
   const best = [...rec.entries()].filter(([, r]) => r.n >= 5).map(([id, r]) => ({ id, pct: Math.round(r.w / r.n * 100) })).sort((a, b) => b.pct - a.pct).slice(0, 3);
   return `<div class="card da-season"><h3 class="dash-h">🏆 This season (${year})</h3>
@@ -4017,7 +4233,8 @@ function dashSeasonCard() {
 function hiChips() {
   const out = [], chip = (cls, text) => out.push(`<span class="${cls}">${esc(text)}</span>`);
   const r = avVisible() ? avRound() : null;
-  if (r && (r.status === 'open' || r.status === 'held')) {
+  if (r && r.status === 'cancelled') chip('c-bad', `✕ ${avDayName(r.day)} cancelled`);
+  else if (r && (r.status === 'open' || r.status === 'held')) {
     const mine = avMine(r.game_iso), dn = avDayName(r.day);
     if (mine === 'in') chip('c-ok', `✓ You're in for ${dn}`);
     else if (mine === 'out') chip('c-grey', `You're out for ${dn}`);
@@ -4026,7 +4243,8 @@ function hiChips() {
     const g = S.games.filter(x => x.iso && x.iso >= isoToday()).sort((a, b) => a.iso.localeCompare(b.iso))[0];
     if (g) {
       const dn = isoToDate(g.iso).toLocaleDateString('en-GB', { weekday: 'long' }), ri = g.reserveIds.indexOf(ME);
-      if (g.playingIds.includes(ME)) chip('c-ok', `⚽ Playing ${dn}`);
+      if (g.cancelled) chip('c-bad', `✕ ${dn} cancelled`);
+      else if (g.playingIds.includes(ME)) chip('c-ok', `⚽ Playing ${dn}`);
       else if (ri !== -1) chip('c-warn', `🪑 ${avOrdinal(ri + 1)} reserve for ${dn}`);
       else chip('c-grey', `Not in ${dn}'s squad`);
     }
@@ -4094,5 +4312,6 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
   addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
 </script>
+<dialog id="cancel-dlg" class="cdlg" aria-labelledby="cancel-h"></dialog>
 </body>
 </html>
