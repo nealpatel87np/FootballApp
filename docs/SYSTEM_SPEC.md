@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Document version** | 3.9 |
-| **Release** | Production Release 3.9 |
+| **Document version** | 4.0 |
+| **Release** | Production Release 4.0 |
 | **Status** | Released |
 | **Date** | 24 October 2026 |
 | **Application** | `index.html` (repository root), published with GitHub Pages |
@@ -62,6 +62,7 @@ If you aren't sure, treat it as minor unless it changes the data model or a core
 | 3.7 | 25 Oct 2026 | "Hi {name}" greeting on the front page (and the Dashboard for organisers) once a phone has picked Who are you?, with chips for the next game, availability, money and credit, and a Not you? link. |
 | 3.8 | 25 Oct 2026 | Quieter Supabase traffic: availability refreshes every 30 seconds only while a round is open (otherwise every 5 minutes, and when the app comes back on screen). The availability check runs from 8am to 10:45pm UK time, so Setup only accepts opening and closing times in that window. Nightly tidy-up of schedule history. Run `supabase/schedule-3.8.sql`. |
 | 3.9 | 26 Oct 2026 | Dashboard Turnout shows just the numbers, and Money drops who owes most. A game with fewer than 10 playing counts as cancelled: no money, score or late prompts, and Payments shows it only under Show paid and cancelled games, with Track anyway. |
+| 4.0 | 26 Oct 2026 | **Cancel a game.** Run game offers Cancel game: not enough players when fewer than 10 are picked. Organisers can cancel any saved game from the Dashboard, Run game or Game Log (Drop-outs, Pitch not available, Weather, Other, plus a note), and Undo it. Availability that closes with fewer than 10 is held: Cancel game, Keep it open or Confirm anyway. Cancelled games stay in the Game Log but don't count and need no money. Players are told and the front page says the game is off. Run `supabase/cancel.sql`, then redeploy the `notify` function. |
 
 ---
 
@@ -175,6 +176,10 @@ The repository also contains an unrelated starter app (`server.js`, `public/`, S
    - Sets this game's reserves as the next game's reserve guarantee.
    - Money is **not** tracked automatically.
    - The confirmation screen lets you adjust the squad and offers **Go to Teams**.
+5. **Fewer than 10 picked (4.0):** a red "Not enough players" warning replaces the usual note, and the WhatsApp message becomes the cancelled one (8.3).
+   - **Cancel game: not enough players** (instead of Confirm game) saves the game as cancelled. It tells those picked "❌ {Day}'s game is cancelled. Not enough players: only N were available and we need 10. No payment needed." (if "Tell the N the game is cancelled" is ticked). Nobody's games played or reserve count changes, and the last game's reserves keep →Next.
+   - The confirmation screen then says **Game cancelled: not enough players**, with **Undo cancel**. The squad and Teams cards are hidden.
+   - **Confirm game anyway with N** saves and announces it as normal.
 
 ### 6.4 Teams (organisers)
 
@@ -220,8 +225,9 @@ The repository also contains an unrelated starter app (`server.js`, `public/`, S
   - the playing list with ⏰ Late, Reserve and Remove;
   - the reserves list;
   - add a player;
-  - **WhatsApp update** (the squad message for that game);
-  - **Delete this game**.
+  - **WhatsApp update** (the squad message for that game, or the cancelled message for a cancelled game);
+  - **Cancel game** (organisers, 4.0) and **Delete this game**.
+- **Cancelled games** have a **Game cancelled** badge and their reason in the summary ("Weather · 12 left · note"). Open, they show who cancelled and when, **Copy WhatsApp message**, **Open WhatsApp** and **Undo cancel**, with no late or add-player controls. A past game with fewer than 10 and no money tracked also shows the badge ("Only 9").
 - **Add game** records a game by hand. It takes a date, a type (Monday, Thursday or ad hoc), players and reserves, an optional organiser (which starts money tracking), and an option to carry the reserves to the next game.
 
 ### 6.7 Player Stats (everyone)
@@ -257,7 +263,7 @@ Sections, from top to bottom:
    - one card per organiser showing the money they hold, the number of games, what's still owed to them, and a warning if they've paid out more than they hold.
 3. **Games:**
    - Only games that still need something are listed: money still owed, a recent game whose money isn't tracked (with **Track money**), or the game that's open. When nothing is left, it shows **All games paid up 🎉**.
-   - **Show paid games** lists every game. A game with fewer than 10 playing was cancelled, so it isn't listed as waiting for money; the button then says **Show paid and cancelled games**, and the game shows "Only N · cancelled, no money" with **Track anyway**.
+   - **Show paid games** lists every game. A game with fewer than 10 playing was cancelled, so it isn't listed as waiting for money; the button then says **Show paid and cancelled games**, and the game shows "Game cancelled · only N" with **Track anyway**. A game an organiser cancelled shows "Game cancelled · {reason}" and can't be tracked.
    - An open game shows: Organised by, the Paid ticks, **Mark all paid**, **Stop tracking money**, and the split (collected, pitch, to or from the kitty).
 4. **Kitty ledger:**
    - starting balances (shown only when starting balances are shown), each tracked game's amount to or from the kitty, and kitty spends, with a running balance;
@@ -303,7 +309,7 @@ Shown on the front page and on the **Availability** page, but only when Self-ser
 - **When closed:** players see whether they're playing or which reserve they are (e.g. 2nd).
   - Players in the squad and reserves can drop out with **I can't make it any more**.
   - Others can say **I'm in** to be added if there's space, or join the reserves.
-- **Cancelled:** "{day} is cancelled".
+- **Cancelled:** "{day} is cancelled". If the saved game is cancelled later (4.0), the card says "✕ {Day}'s game is off", the reason and "No payment needed", with no answer buttons.
 - **After kick-off:** no changes.
 
 ### 6.12 Self-service availability for organisers
@@ -320,6 +326,8 @@ Shown on the front page and on the **Availability** page, but only when Self-ser
   - the squad "if it closed now", with Guaranteed, →Next and Late last time tags;
   - **Close now**, **Nudge N**, **Cancel this week**, and **Answer for a player** (In or Out);
   - when held, **Confirm and announce** and **Reopen**;
+  - when held with fewer than 10 in (4.0), a warning with **Cancel game: not enough players**, **Keep it open** and **Confirm anyway with N**. Availability that closes with fewer than 10 is always held, even in On mode with auto-announce, and organisers are told "only N are in";
+  - when the saved game has been cancelled, the cancelled box with Undo;
   - when closed, **WhatsApp message** and **Pick teams →**;
   - when nothing is open, **Open Monday now** and **Open Thursday now**.
 - **Availability message:** when the switch is On, the message asks players to answer in the app, with the link.
@@ -332,7 +340,9 @@ Shown on the front page and on the **Availability** page, but only when Self-ser
 The first page after logging in. It's a grid on a computer and one column on a phone, with the next game first on a phone.
 - **Next game:**
   - **While availability is open:** live counts, time left, guaranteed players who haven't said in, and the squad "if it closed now". Buttons: Nudge, Close now (or Confirm and announce when held), and Answer for a player.
-  - **Once the squad is saved:** a checklist (Squad, Teams, Money), the squad, and buttons for Pick teams, WhatsApp and Track money. On the day it's titled "Tonight".
+  - **Once the squad is saved:** a checklist (Squad, Teams, Money), the squad, and buttons for Pick teams, WhatsApp, Track money and **Cancel game** (4.0). With fewer than 10 left, a warning shows and Cancel game is red. On the day it's titled "Tonight".
+  - **Cancel game** opens a dialog: a reason (Drop-outs, Pitch not available, Weather, Other), an optional note for players, what will happen, and **Send a notification**. Once cancelled, the card shows **Game cancelled**, who and when, the notification result, **Copy WhatsApp message**, **Open WhatsApp** and **Undo cancel**.
+  - **Held with fewer than 10:** Cancel game: not enough players, Keep it open, Confirm anyway.
   - **When nothing is open:** when availability opens next, with Open now.
 - **To do:** a confirmed squad waiting, guaranteed players not in, missing scores, money not tracked, draft or changed teams, money owed, and late arrivals (optional). Cancelled games (under 10 playing) are left out. Each has a button. "All caught up" when there's nothing.
 - **Money:** kitty, owed, credit, each organiser's holdings, and Send reminders.
@@ -437,6 +447,16 @@ Amounts are stored in pence.
 - **Matching:** figures are matched to players by exact name, ignoring capitals. Someone added later with a matching name picks up their figures.
 - **Display only:** the figures appear on Attendance only. They never affect played or reserve counts, selection, teams, stats or money.
 
+### 7.10 Cancelled games (4.0)
+
+- A game is **cancelled** when an organiser cancels it, or when it's past, had fewer than 10 playing and its money was never tracked.
+- **Cancelling** takes one off each player's games played or times reserved, moves "last played" back, and removes any money tracking. If it's the latest game, the last real game's reserves and this game's reserves keep →Next.
+- **Cancelled games don't count** for games played, Attendance, Player Stats, the league, This season, the Teams picker or the late rule.
+- **Undo** adds the counts back and tells everyone it's back on ("✅ {Day}'s game is back on").
+- **Who's told** about a cancellation: the squad, the reserves and anyone who dropped out through availability (Squad notifications).
+- **Front page:** "✕ {Day}'s game is off" with the reason and "No payment needed". The greeting chip says "✕ {Day} cancelled".
+- **Payments:** "Game cancelled · {reason}", behind Show paid and cancelled games, with no Track button. **Turnout:** a red ✕.
+
 ## 8. WhatsApp messages
 
 Both messages are built from the game's date and the time and venue saved for that day type. Time and venue are remembered per day type on the device, with defaults of 6:30 PM and Harrow Powerleague.
@@ -512,6 +532,21 @@ See you later. Please be on time for the {time} kick-off
 
 **Copy for WhatsApp** copies the text, falling back to selecting it. **Open WhatsApp** opens `wa.me` with the text filled in.
 
+### 8.3 Cancelled message (4.0)
+
+Shown on Run game when fewer than 10 are picked, and from the cancelled box.
+
+```
+⚽️ {WEEKDAY} FOOTBALL ⚽️
+
+📅 {Weekday} {nth} {Month}
+❌ *Game cancelled: not enough players*
+
+Only {n} were available and we need 10. No payment needed.
+```
+
+For pitch, weather or other reasons the heading is `❌ *Game cancelled*`, and the organiser's note replaces the sentence if there is one.
+
 ## 9. Data model
 
 ### 9.1 Supabase tables
@@ -519,7 +554,7 @@ See you later. Please be on time for the {time} kick-off
 | Table | Key | Columns | Created by |
 |---|---|---|---|
 | `players` | `id` | name, avail (mon/thu/both), pref (none/mon/thu), guar_mon, guar_thu, played, reserved, last_played | original setup |
-| `games` | `id` | date (display text), day (mon/thu/adhoc), iso (YYYY-MM-DD), manual, playing_ids[], reserve_ids[] | original setup |
+| `games` | `id` | date (display text), day (mon/thu/adhoc), iso (YYYY-MM-DD), manual, playing_ids[], reserve_ids[]; cancelled_reason (players/dropouts/pitch/weather/other), cancelled_note, cancelled_by, cancelled_at | original setup; `cancel.sql` (4.0) |
 | `app_state` | `id` = 1 | reserve_next[] | original setup |
 | `game_money` | `game_id` | organiser, price_p, pitch_p, admin_pct, paid_ids[] | `money.sql` |
 | `kitty_spends` | `id` | spent_on, what, category, paid_by, amount_p | `money.sql` |
@@ -607,6 +642,11 @@ For self-service availability (release 3.0):
 For release 3.8:
 
 12. Run `supabase/schedule-3.8.sql`. It limits the availability check to 8am–10:45pm UK time and clears schedule history older than 7 days each night.
+
+For release 4.0 (in this order):
+
+13. Run `supabase/cancel.sql` (adds the cancelled columns to `games`).
+14. Redeploy the `notify` function with the latest `supabase/functions/notify/index.ts`, keeping Verify JWT off.
 
 Each script also grants the page (`anon` and `authenticated` roles) select, insert, update and delete on its tables. Supabase stops granting this automatically for tables created from 30 October 2026, so **any new table added in a later release must include the same `grant` line in its script**, or the page gets "permission denied" for it. Re-running the scripts on the existing database is harmless.
 

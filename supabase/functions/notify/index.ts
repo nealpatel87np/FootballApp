@@ -222,10 +222,10 @@ async function settings(): Promise<Row> {
 // UK date and time now, whatever the server's clock zone. Tests can set the clock
 // (only when the function runs with BF_TEST=1, never in Supabase).
 let testNow: Date | null = null;
-function londonNow() {
+function londonNow(at?: Date) {
   const parts = Object.fromEntries(new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
-  }).formatToParts(testNow ?? new Date()).map(p => [p.type, p.value]));
+  }).formatToParts(at ?? testNow ?? new Date()).map(p => [p.type, p.value]));
   return { iso: `${parts.year}-${parts.month}-${parts.day}`, hm: `${parts.hour}:${parts.minute}` };
 }
 const isoDate = (iso: string) => { const [y, m, d] = iso.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d)); };
@@ -271,13 +271,14 @@ async function openRound(s: Row, day: string, gameIso: string) {
 async function pickFor(round: Row) {
   const [playersRaw, games, state, late, answers] = await Promise.all([
     must(db.from('players').select('*')),
-    must(db.from('games').select('id, iso, day, playing_ids, reserve_ids')),
+    must(db.from('games').select('*')),
     must(db.from('app_state').select('reserve_next').eq('id', 1).maybeSingle()),
     db.from('game_late').select('game_id, player_ids').then(r => r.error ? [] : r.data ?? []),
     must(db.from('availability_answers').select('*').eq('game_iso', round.game_iso)),
   ]);
   const players = (playersRaw as Row[]).map(toPlayer);
-  const sorted = (games as Row[]).map(g => ({ id: Number(g.id), iso: g.iso || '', day: g.day, playingIds: (g.playing_ids ?? []).map(Number), reserveIds: (g.reserve_ids ?? []).map(Number) }))
+  // Cancelled games (4.0) don't count for the late rule
+  const sorted = (games as Row[]).filter(g => !g.cancelled_reason).map(g => ({ id: Number(g.id), iso: g.iso || '', day: g.day, playingIds: (g.playing_ids ?? []).map(Number), reserveIds: (g.reserve_ids ?? []).map(Number) }))
     .sort((a, b) => a.iso.localeCompare(b.iso) || a.id - b.id);
   const lateMap = new Map((late as Row[]).map(x => [Number(x.game_id), (x.player_ids ?? []).map(Number)]));
   const inRows = (answers as Row[]).filter(a => a.answer === 'in');
@@ -286,17 +287,27 @@ async function pickFor(round: Row) {
     day: round.day, reserveNext: ((state as Row | null)?.reserve_next ?? []).map(Number),
     late: SEL.latePenaltyFor(sorted, (id: number) => lateMap.get(id) ?? []), answeredAt,
   });
-  return { players, games: sorted, ...SEL.splitSquad(ordered) };
+  // games: every game, including cancelled ones, so a date already used (even if called off) isn't made twice
+  return { players, games: games as Row[], ...SEL.splitSquad(ordered) };
 }
 
 // Picks the squad. announce: save the game and tell everyone; otherwise hold it for an organiser
-async function closeRound(s: Row, round: Row, announce: boolean) {
+// allowShort: an organiser pressed Confirm anyway. Otherwise fewer than 10 holds the squad for the organisers
+// to cancel the game or keep it open (4.0), instead of announcing it.
+async function closeRound(s: Row, round: Row, announce: boolean, allowShort = false) {
   const from = round.status;
+  const { players, games, playing, reserves } = await pickFor(round);
+  // A game made by hand for that date is linked below whatever the numbers
+  const handMade = (games as Row[]).some(g => g.iso === round.game_iso && g.day === round.day);
+  const dn = DAY_NAME[round.day], short = announce && !allowShort && !handMade && playing.length < MIN_PLAYERS;
+  if (short) announce = false;
   const lock = await must(db.from('availability_rounds').update({ status: announce ? 'closed' : 'held', closed_at: new Date().toISOString() })
     .eq('game_iso', round.game_iso).eq('status', from).select());
   if (!(lock as Row[]).length) return { closed: false };   // someone else got there first
-  const { players, games, playing, reserves } = await pickFor(round);
-  const dn = DAY_NAME[round.day];
+  if (short) {
+    await availSend(s, toOrganisers(s, `⚠️ ${dn}: only ${playing.length} ${playing.length === 1 ? 'is' : 'are'} in`, `Not enough for a game. Open the app to cancel it (everyone who said in is told) or keep it open for late joiners.`, round.game_iso));
+    return { closed: true, held: true, short: true, playing: playing.length, reserves: reserves.length };
+  }
   if (!announce) {
     await availSend(s, toOrganisers(s, `📋 ${dn} squad ready to confirm`, `${playing.length} would play, ${reserves.length} reserve${reserves.length === 1 ? '' : 's'}. Open Run game to check it and announce it.`, round.game_iso));
     return { closed: true, held: true, playing: playing.length, reserves: reserves.length };
@@ -338,7 +349,7 @@ async function announceSquad(s: Row, round: Row, playIds: number[], resIds: numb
 // An answer after the squad was saved: drop-outs and late joiners
 async function changeAfterClose(s: Row, round: Row, playerId: number, answer: string) {
   const g = await must(db.from('games').select('*').eq('id', round.game_id).maybeSingle()) as Row | null;
-  if (!g) return;
+  if (!g || g.cancelled_reason) return;   // nothing to update for a cancelled game
   const playing: number[] = (g.playing_ids ?? []).map(Number), reserves: number[] = (g.reserve_ids ?? []).map(Number);
   const players = (await must(db.from('players').select('*'))).map(toPlayer);
   const P = (id: number) => players.find(p => p.id === id);
@@ -411,6 +422,9 @@ async function tick() {
       // Closes at closing time on the opening day (or straight away if that has passed)
       const closeIso = openIsoFor(s, round.day, round.game_iso);
       if (!(now.iso > closeIso || (now.iso === closeIso && now.hm >= s.close_time))) continue;
+      // Reopened after closing time ("Keep it open" for late joiners): organisers close it themselves
+      const re = round.opened_at ? londonNow(new Date(round.opened_at)) : null;
+      if (re && (re.iso > closeIso || (re.iso === closeIso && re.hm >= s.close_time))) continue;
       if ((await closeRound(s, round, s.mode === 'on' && s.auto_announce !== false)).closed) done.push('closed ' + gameIso);
     }
   }
@@ -432,16 +446,21 @@ async function availAction(action: string, b: Row) {
     case 'avail_close': if (round.status !== 'open') return { error: 'Already closed.' };
       return closeRound(s, round, s.mode === 'on' && s.auto_announce !== false);
     case 'avail_confirm': if (round.status !== 'held') return { error: 'Nothing waiting to be confirmed.' };
-      return closeRound(s, round, true);
+      return closeRound(s, round, true, true);
     case 'avail_cancel': {
       if (!['open', 'held'].includes(round.status)) return { error: 'Only open or held availability can be cancelled. Delete a saved game in the Game Log.' };
       await must(db.from('availability_rounds').update({ status: 'cancelled' }).eq('game_iso', round.game_iso).select());
       const ins = (await must(db.from('availability_answers').select('player_id, answer').eq('game_iso', round.game_iso)) as Row[]).filter(a => a.answer === 'in');
+      if (b.reason === 'players') {
+        const n = ins.length, title = `❌ ${dn}'s game is cancelled`, body = `Not enough players: only ${n} ${n === 1 ? 'was' : 'were'} available and we need ${MIN_PLAYERS}. No payment needed.`;
+        await availSend(s, ins.map(a => msg(Number(a.player_id), title, body, round.game_iso)));
+        return { ok: true };
+      }
       await availSend(s, ins.map(a => msg(Number(a.player_id), `❌ ${dn} is cancelled`, `No game on ${isoDate(round.game_iso).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })}. See you next time.`, round.game_iso)));
       return { ok: true };
     }
     case 'avail_reopen': if (!['held', 'cancelled'].includes(round.status)) return { error: 'Only held or cancelled availability can be reopened.' };
-      await must(db.from('availability_rounds').update({ status: 'open', closed_at: null }).eq('game_iso', round.game_iso).select());
+      await must(db.from('availability_rounds').update({ status: 'open', closed_at: null, opened_at: (testNow ?? new Date()).toISOString() }).eq('game_iso', round.game_iso).select());
       return { ok: true };
     case 'avail_nudge': {
       if (!['open', 'held'].includes(round.status)) return { error: 'Availability is not open.' };
