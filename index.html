@@ -325,6 +325,11 @@
   }
   /* Outstanding Payments and credit */
   .owe-shortcuts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  /* View mode: players see only their own balance (4.0); organisers see the whole Payments page */
+  body.mode-view #page-money > :not(#my-balance) { display: none !important; }
+  body:not(.mode-view) #my-balance { display: none; }
+  .owe-short.paid { background: var(--bg-success); color: var(--text-success); cursor: default; }
+  #my-balance .owe-short { cursor: default; }
   .owe-short { text-align: left; border-radius: 12px; padding: 14px; border: 1.5px solid transparent; cursor: pointer; font: inherit; color: inherit; display: grid; gap: 2px; min-width: 0; }
   .owe-short .l { font-size: 13px; font-weight: 500; }
   .owe-short .n { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -822,6 +827,7 @@
   </div>
 
   <div id="page-money" class="page">
+    <div class="card" id="my-balance"></div>
     <div id="money-notice" class="notice" style="display:none"></div>
     <div class="owe-shortcuts" id="owe-shortcuts"></div>
     <div class="card" id="owe-panel"></div>
@@ -2120,6 +2126,7 @@ function applyCredit(gameId) {
   return used;
 }
 function renderOwes() {
+  if (appMode !== 'edit') return;   // organisers only
   const debts = debtsOwed(), people = [...new Set(debts.map(d => d.pid))], credits = [...S.money.credit];
   const owed = debts.reduce((s, d) => s + d.amt, 0), held = credits.reduce((s, x) => s + x.amount, 0);
   document.getElementById('owe-shortcuts').innerHTML = `
@@ -2184,7 +2191,31 @@ function renderMoneyNotice() {
   el.textContent = msg;
 }
 
+// What a player sees on Payments: only their own balance (the phone's "Who are you?" name)
+function renderMyBalance() {
+  const el = document.getElementById('my-balance'); if (!el) return;
+  const p = ME && S.players.find(x => x.id === ME);
+  if (!p) {
+    el.innerHTML = `<h3>💷 Your balance</h3><p class="hint" style="margin-bottom:8px">Choose your name to see what you owe and any credit.</p>
+      <select aria-label="Your name" onchange="if (this.value) { avSetMe(+this.value); renderMyBalance(); }">${avOptions(null)}</select>`;
+    return;
+  }
+  const mine = debtsOwed().filter(d => d.pid === ME), owed = mine.reduce((t, d) => t + d.amt, 0), credit = creditOf(ME);
+  el.innerHTML = `<h3>💷 Your balance, ${esc(p.name)}</h3>
+    <div class="owe-shortcuts">${owed
+      ? `<div class="owe-short owe"><span class="l">🔴 You owe</span><span class="n">${gbp(owed)}</span><span class="s">${pushPlural(mine.length, 'game')}</span></div>`
+      : `<div class="owe-short paid"><span class="l">✓ All paid up</span><span class="n">${gbp(0)}</span><span class="s">Nothing owed</span></div>`}
+      <div class="owe-short cred"><span class="l">💷 Credit</span><span class="n">${gbp(credit)}</span><span class="s">${credit ? 'Used for your next games' : 'None held'}</span></div></div>
+    ${mine.map(d => `<div class="row"><span class="name">${esc(d.g.iso ? dashShort(d.g.iso) : d.g.date)}</span><span class="hint">Pay ${esc(d.m.org)}</span><strong>${gbp(d.amt)}</strong></div>`).join('')}
+    <p class="hint" style="margin-top:8px">Pay the organiser on the day. Only your own balance is shown here; organisers see everyone's. <button class="linkbtn" style="margin:0" onclick="hiNotYou(); renderMyBalance()">Not you?</button></p>`;
+}
 function renderMoney() {
+  renderMyBalance();
+  // Players (View mode) get only their own balance: other players' payments aren't put on the page at all
+  if (appMode !== 'edit') {
+    ['owe-shortcuts', 'owe-panel', 'money-tiles', 'money-holders', 'money-games', 'money-games-more', 'money-ledger', 'money-ledger-more'].forEach(id => { const e = document.getElementById(id); if (e) e.innerHTML = ''; });
+    return;
+  }
   renderMoneyNotice();
   renderOwes();
   const h = moneyHoldings(), tracked = trackedGames();
@@ -4256,6 +4287,7 @@ function hiChips() {
   return out;
 }
 function renderHi() {
+  renderMyBalance();
   const el = document.getElementById('hi'), p = ME && S.players.find(x => x.id === ME);
   const onFront = document.body.classList.contains('on-front'), onDash = document.getElementById('page-dash').classList.contains('active') && appMode === 'edit';
   if (!p || !(onFront || onDash)) { el.style.display = 'none'; return; }

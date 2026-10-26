@@ -250,7 +250,11 @@ The repository also contains an unrelated starter app (`server.js`, `public/`, S
   - Reserve = the app's reserve count.
 - **Legacy Player Data:** a section closed until **Show** is tapped. It lists every name in `LEGACY_APPS` with Before 2026, 2026 (before the app) and Total, and a ✓ for names already in the app. It's view-only.
 
-### 6.9 Payments (everyone; changes need an organiser)
+### 6.9 Payments (organisers; players see only their own balance)
+
+**Players (View mode):** only a **Your balance** card for the phone's Who are you? name. It shows **You owe** (total and number of games) or **All paid up**, **Credit**, each unpaid game with its date, who to pay and the amount, and **Not you?**. With no name chosen, it asks them to choose one. Nothing about other players is shown or put on the page.
+
+**Organisers** see the full page:
 
 Sections, from top to bottom:
 
