@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Document version** | 4.0 |
-| **Release** | Production Release 4.0 |
+| **Document version** | 4.1 |
+| **Release** | Production Release 4.1 |
 | **Status** | Released |
 | **Date** | 24 October 2026 |
 | **Application** | `index.html` (repository root), published with GitHub Pages |
@@ -63,6 +63,7 @@ If you aren't sure, treat it as minor unless it changes the data model or a core
 | 3.8 | 25 Oct 2026 | Quieter Supabase traffic: availability refreshes every 30 seconds only while a round is open (otherwise every 5 minutes, and when the app comes back on screen). The availability check runs from 8am to 10:45pm UK time, so Setup only accepts opening and closing times in that window. Nightly tidy-up of schedule history. Run `supabase/schedule-3.8.sql`. |
 | 3.9 | 26 Oct 2026 | Dashboard Turnout shows just the numbers, and Money drops who owes most. A game with fewer than 10 playing counts as cancelled: no money, score or late prompts, and Payments shows it only under Show paid and cancelled games, with Track anyway. |
 | 4.0 | 26 Oct 2026 | **Cancel a game.** Run game offers Cancel game: not enough players when fewer than 10 are picked. Organisers can cancel any saved game from the Dashboard, Run game or Game Log (Drop-outs, Pitch not available, Weather, Other, plus a note), and Undo it. Availability that closes with fewer than 10 is held: Cancel game, Keep it open or Confirm anyway. Cancelled games stay in the Game Log but don't count and need no money. Players are told and the front page says the game is off. Run `supabase/cancel.sql`, then redeploy the `notify` function. |
+| 4.1 | 26 Oct 2026 | Payments shows players only their own balance; organisers see everything. |
 
 ---
 
@@ -250,7 +251,11 @@ The repository also contains an unrelated starter app (`server.js`, `public/`, S
   - Reserve = the app's reserve count.
 - **Legacy Player Data:** a section closed until **Show** is tapped. It lists every name in `LEGACY_APPS` with Before 2026, 2026 (before the app) and Total, and a ✓ for names already in the app. It's view-only.
 
-### 6.9 Payments (everyone; changes need an organiser)
+### 6.9 Payments (organisers; players see only their own balance)
+
+**Players (View mode, 4.1):** only a **Your balance** card for the phone's Who are you? name. It shows **You owe** (total and number of games) or **All paid up**, **Credit**, each unpaid game with its date, who to pay and the amount, and **Not you?**. With no name chosen, it asks them to choose one. Nothing about other players is shown or put on the page.
+
+**Organisers** see the full page:
 
 Sections, from top to bottom:
 

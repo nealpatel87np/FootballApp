@@ -33,7 +33,7 @@ This project is a very simple football app that stores player data in a local SQ
 - `data/football.db` - database file created automatically
 
 ## Football organisation page
-The design is documented in [`docs/SOLUTION_DESIGN.md`](docs/SOLUTION_DESIGN.md) (Solution Design Document) and [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md) (functional specification). Both include the versioning policy. Current release: **4.0**. The version is shown at the bottom of the front page.
+The design is documented in [`docs/SOLUTION_DESIGN.md`](docs/SOLUTION_DESIGN.md) (Solution Design Document) and [`docs/SYSTEM_SPEC.md`](docs/SYSTEM_SPEC.md) (functional specification). Both include the versioning policy. Current release: **4.1**. The version is shown at the bottom of the front page.
 
 Every file in `supabase/` grants the page access to its tables. Supabase no longer does this automatically for tables created from 30 October 2026, so any new table needs the same `grant` line.
 
@@ -52,7 +52,7 @@ The page can write the weekly WhatsApp message for you.
 - The time and venue are remembered separately for Monday, Thursday and ad hoc games, and the pitch-booked tick is remembered too. These settings are saved on your device only, not in the database.
 
 ### Money
-The **Money** tab tracks payments, the pitch cost and the kitty.
+The **Money** tab tracks payments, the pitch cost and the kitty. Organisers see everything. Players (View) see only **Your balance**: what they owe, who to pay, and any credit, for the name picked on their phone.
 
 - Each player pays £8.50 and the pitch costs £80. Anything collected over the pitch cost is the surplus: 10% of it goes to admin and the rest to the kitty. If too few pay to cover the pitch, the shortfall comes out of the kitty. These amounts can be changed on the Money tab, and changes apply to games booked after that.
 - The money is held by Neal, Kev or Gav. A new game's money isn't tracked until you're ready: on the Money tab, press **Track money** on the game. The organiser chosen on **Run game** is used by default; that person collects the money and pays for the pitch, and the price and pitch cost are taken from the settings at that moment. Once a game is tracked you can change its organiser, tick who has paid, or mark everyone as paid.

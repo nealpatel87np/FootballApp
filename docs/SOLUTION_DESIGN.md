@@ -3,8 +3,8 @@
 | | |
 |---|---|
 | **Document** | Solution Design Document (SDD) |
-| **Version** | 4.0 |
-| **Release** | Production Release 4.0 |
+| **Version** | 4.1 |
+| **Release** | Production Release 4.1 |
 | **Status** | Approved for production |
 | **Date** | 24 October 2026 |
 | **System** | Brent Football: the web app (`index.html`, `selection.js`, `sw.js`) on GitHub Pages, the Supabase database, the `notify` Edge Function and two scheduled jobs |
@@ -87,6 +87,7 @@ If a change only alters how something looks, it gets **no new version**. If you 
 | 3.8 | 25 Oct 2026 | Organisers with Claude Code | **Lower Supabase traffic** (12, 13.3): the app re-reads availability every 30 seconds only while a round is open, every 5 minutes otherwise, and straight away when it comes back on screen. The availability schedule runs from 07:00 to 22:45 UTC instead of all day (64 calls a day, down from 96), so opening and closing times must be between 8am and 10:45pm UK time, which Setup checks. A nightly job deletes schedule history older than 7 days. New `supabase/schedule-3.8.sql`, run by hand; no function change. |
 | 3.9 | 26 Oct 2026 | Organisers with Claude Code | **Simpler dashboard and cancelled games** (7.4.7, 7.7): Turnout shows only each game's numbers (no averages, short or late counts), and Money no longer lists who owes most. A game with fewer than 10 playing counts as **cancelled**: it isn't asked for money, a score or late arrivals on To do, and Payments keeps it behind **Show paid and cancelled games** with **Track anyway**. Page only. |
 | 4.0 | 26 Oct 2026 | Organisers with Claude Code | **Cancel a game** (7.4.10, 7.6.3, 7.9): organisers can cancel a saved game (Drop-outs, Pitch not available, Weather or Other, with an optional note) from the Dashboard, Run game or Game Log, and Undo it. Run game offers **Cancel game: not enough players** when fewer than 10 are picked. Availability that closes with fewer than 10 is **held** for organisers to cancel, keep open or confirm anyway. Cancelled games stay in the Game Log but don't count towards games played, reserves, attendance, the league or late arrivals, and need no money. Players get a "game is cancelled" notification and the front page says the game is off. Major: new `games` columns (`cancel.sql`) and changed squad and availability logic; the `notify` function changes. |
+| 4.1 | 26 Oct 2026 | Organisers with Claude Code | **Payments privacy** (10.1, 10.3): in View mode, Payments shows only the player's own balance (from Who are you?): what they owe, which games, who to pay, and their credit. Other players' payments, credit, the kitty, the games list and the ledger are only shown to organisers, and aren't put on the page for players. Without a name, Payments asks them to choose one. Page only. |
 
 ### 1.4 Approval
 
@@ -374,7 +375,7 @@ The web app deploys automatically on merge. The function and the SQL scripts are
 | **Team picker** | Generate, draft, confirm, swap, messages | `pickTeams`, `teamRulesFor`, `keeperScore`, `renderTeamsPage`, `teamsConfirm`, `teamsText` |
 | **Stats** | Player stats, attendance, legacy list | `renderStats`, `renderAttendance`, `renderLegacyList`, `legacyOf` |
 | **Money** | Tracking, split, kitty, ledger, spends, settings | `gameSplit`, `moneyHoldings`, `moneyTrack`, `renderMoney`, `moneyAddSpend` |
-| **Payments** | Outstanding payments and credit | `debtsOwed`, `oweClear`, `creditAdd`, `applyCredit`, `renderOwes` |
+| **Payments** | Outstanding payments and credit (organisers); each player's own balance in View mode (4.1) | `debtsOwed`, `oweClear`, `creditAdd`, `applyCredit`, `renderOwes`, `renderMyBalance` |
 | **WhatsApp** | Availability, squad and teams messages, copy, open | `pollText`, `waText`, `teamsText`, `waCopy`, `teamsCopy`, `waOpen` |
 | **Installable app** (`sw.js`, manifest) | Offline copy, fresh files on each release, shows push notifications, opens the right page when tapped | `install`, `fetch`, `push` and `notificationclick` handlers |
 | **Server** (`supabase/functions/notify/index.ts`) | Keys and push sending, daily reminders, availability timetable and close, drop-outs and late joiners, app users | `vapid`, `send`, `daily`, `tick`, `openRound`, `closeRound`, `changeAfterClose`, `answerAvail`, `hello`, `adminUsers` |
@@ -890,6 +891,7 @@ Relationships are held as id arrays (`playing_ids`, `paid_ids` and so on) rather
 | Mode | Entry | Capability |
 |---|---|---|
 | View | "View" on the front page | Read-only UI. Edit controls hidden by CSS (`body.mode-view`). Organiser-only pages blocked in `goTab`. |
+| Payments in View mode (4.1) | Payments in View mode | Only **Your balance** for the phone's Who are you? name: owed games with who to pay, and credit. `renderMoney` and `renderOwes` render nothing else unless `appMode` is `edit`. The front page still shows the group totals (kitty, still owed). |
 | Organiser | "Log in" with the password, checked against a SHA-256 hash in the page | Full UI, including Dashboard, App users and the availability settings. Remembered on the device until "Log out". |
 | Player identity | "Who are you?" picked once per phone | Says in or out as that player and receives their notifications. Not authentication (ADR-15). |
 | Trial | Availability switch set to Trial | Self-service availability shows only on logged-in organiser devices, and only organisers are notified. |
@@ -911,7 +913,7 @@ Relationships are held as id arrays (`playing_ids`, `paid_ids` and so on) rather
 
 ### 10.3 Personal data
 
-The app stores **first names or nicknames**, attendance, ratings, scores and payment status only. There are no contact details, payment cards or passwords for players. With notifications on, a phone's push address is stored against the player's id in a closed table. A phone that has picked "Who are you?" also stores its browser, platform, whether it's installed and when it was last seen (`app_devices`, closed). No full addresses or postcodes are stored. Ratings are hidden from viewers in the UI but can be read via the API (known limitation).
+The app stores **first names or nicknames**, attendance, ratings, scores and payment status only. There are no contact details, payment cards or passwords for players. With notifications on, a phone's push address is stored against the player's id in a closed table. A phone that has picked "Who are you?" also stores its browser, platform, whether it's installed and when it was last seen (`app_devices`, closed). No full addresses or postcodes are stored. Ratings are hidden from viewers in the UI but can be read via the API (known limitation). From 4.1, players see only their own balance on Payments; everyone's payments are organiser-only in the UI (the API limitation is the same). A players' FAQ explains what's kept and who sees it.
 
 ---
 
