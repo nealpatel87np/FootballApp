@@ -45,10 +45,11 @@ This document and the application share one version number, **MAJOR.MINOR**.
 
 | Change | Version | Examples |
 |---|---|---|
-| **Minor adjustment** | 1.0 → 1.1 → 1.2 | Wording or labels, layout tweaks, an extra column, a small rule change, bug fixes, legacy data corrections |
+| **Visual only** | No new version | Wording or labels, layout, colours, removing a figure from a card. The version stays the same; affected sections are still updated (decided 26 Oct 2026). |
+| **Minor adjustment** | 1.0 → 1.1 → 1.2 | A new feature, an extra column, a small rule change, bug fixes, legacy data corrections |
 | **Major overhaul** | 1.x → 2.0 | A new page or workflow, a change to squad, team or money logic, new or restructured database tables, new hosting or database |
 
-If you aren't sure, treat the change as **minor** unless it changes the data model (section 8) or a core rule (section 7.4).
+If a change only alters how something looks, it gets **no new version**. If you aren't sure, treat the change as **minor** unless it changes the data model (section 8) or a core rule (section 7.4).
 
 ### 1.2 Change procedure
 

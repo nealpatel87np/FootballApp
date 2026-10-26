@@ -5,7 +5,8 @@ The app is `index.html` (plus `selection.js`, `sw.js`) on GitHub Pages, with Sup
 ## Every release, without exception
 
 1. **Version:** use MAJOR.MINOR (see `docs/SOLUTION_DESIGN.md` section 1.1).
-   - **Minor:** wording, layout, small rule changes and fixes.
+   - **No new version:** visual-only changes (wording, labels, layout, colours, removing a stat from a card). Keep the current version: don't bump `APP_VERSION` or add a revision row. Still update any doc section whose description changes, and still show the organisers before deploying.
+   - **Minor:** a new feature, a behaviour or rule change, or a fix.
    - **Major:** new workflows, new or changed tables, or changes to squad, team or money logic.
 2. **Update `docs/SOLUTION_DESIGN.md`** in the same pull request:
    - the version and release in the header;
