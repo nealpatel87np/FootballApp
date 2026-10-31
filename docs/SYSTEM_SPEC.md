@@ -63,6 +63,7 @@ If you aren't sure, treat it as minor unless it changes the data model or a core
 | 3.8 | 25 Oct 2026 | Quieter Supabase traffic: availability refreshes every 30 seconds only while a round is open (otherwise every 5 minutes, and when the app comes back on screen). The availability check runs from 8am to 10:45pm UK time, so Setup only accepts opening and closing times in that window. Nightly tidy-up of schedule history. Run `supabase/schedule-3.8.sql`. |
 | 3.9 | 26 Oct 2026 | Dashboard Turnout shows just the numbers, and Money drops who owes most. A game with fewer than 10 playing counts as cancelled: no money, score or late prompts, and Payments shows it only under Show paid and cancelled games, with Track anyway. |
 | 4.0 | 26 Oct 2026 | **Cancel a game.** Run game offers Cancel game: not enough players when fewer than 10 are picked. Organisers can cancel any saved game from the Dashboard, Run game or Game Log (Drop-outs, Pitch not available, Weather, Other, plus a note), and Undo it. Availability that closes with fewer than 10 is held: Cancel game, Keep it open or Confirm anyway. Cancelled games stay in the Game Log but don't count and need no money. Players are told and the front page says the game is off. Run `supabase/cancel.sql`, then redeploy the `notify` function. |
+| 4.0 (update) | 31 Oct 2026 | No version change. Payments shows players only their own balance. Once availability's closing time has passed, players can't say they're in (they can still drop out); organisers can still add players, and Keep it open lets players in again. Redeploy the `notify` function. |
 
 ---
 
@@ -309,10 +310,11 @@ Shown on the front page and on the **Availability** page, but only when Self-ser
 - **When open:** the card shows the game, then **I'm in** and **I'm out**, the closing time and how long is left, plus counts and the names of players who said in.
   - Guaranteed players see that they must say in by the closing time, or count as out.
   - Players never see late flags.
-- **When held** (closed, waiting for an organiser): players can still change their answer until it's announced.
+- **After closing time** (4.0 update): **I'm in** disappears. Players who said in see that the squad is being picked and can still tap **I can't make it any more**. Everyone else sees "Availability closed at 9pm. Ask Neal, Kev or Gav if you'd like to play." This applies as soon as closing time passes, even before the squad is picked, and while it's held for an organiser.
 - **When closed:** players see whether they're playing or which reserve they are (e.g. 2nd).
   - Players in the squad and reserves can drop out with **I can't make it any more**.
-  - Others can say **I'm in** to be added if there's space, or join the reserves.
+  - Others can't join themselves any more: they see "The squad has been picked and availability is closed. Ask Neal, Kev or Gav if you'd like to play." An organiser can add them with **Answer for a player**.
+- **Kept open:** if organisers choose **Keep it open** after closing time, **I'm in** comes back with "Kept open for late joiners until the organisers close it."
 - **Cancelled:** "{day} is cancelled". If the saved game is cancelled later (4.0), the card says "✕ {Day}'s game is off", the reason and "No payment needed", with no answer buttons.
 - **After kick-off:** no changes.
 

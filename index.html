@@ -3743,6 +3743,10 @@ const avGuar = (p, day) => !!p && (day === 'mon' ? p.guarMon : p.guarThu);
 const avAnswersFor = iso => AV.answers.filter(a => a.game_iso === iso);
 const avMine = iso => { const a = avAnswersFor(iso).find(x => Number(x.player_id) === ME); return a ? a.answer : null; };
 const avStarted = r => { const now = new Date(), [h, m] = String(AV.settings.kickoff_time || '18:30').split(':').map(Number), k = isoToDate(r.game_iso); k.setHours(h, m); return now >= k; };
+// The window has shut for players: closed or held, or past closing time (unless reopened after it by an organiser)
+const avReopenedLate = r => !!r.opened_at && new Date(r.opened_at) >= avCloseDate(r);
+const avWindowShut = r => r.status !== 'open' || (Date.now() >= avCloseDate(r) && !avReopenedLate(r));
+const AV_ASK = 'Ask Neal, Kev or Gav if you’d like to play.';
 function avCloseDate(r) { const [h, m] = String(AV.settings.close_time || '21:00').split(':').map(Number), d = isoToDate(avOpenIso(r.day, r.game_iso)); d.setHours(h, m); return d; }
 // The round to show: the earliest upcoming game that isn't cancelled (or a cancelled one if that's all there is)
 function avRound() {
@@ -3844,16 +3848,24 @@ function avPlayerCard() {
       : '<p class="hint">Nothing open right now.</p>'}</div>`;
   }
   const dn = avDayName(r.day), mine = avMine(r.game_iso), closes = avClock(AV.settings.close_time);
-  let html = `<div class="card"><div class="sh" style="margin-top:0">Next game · ${r.status === 'open' ? 'availability open' : r.status === 'held' ? 'availability closed' : r.status === 'closed' ? 'squad picked' : 'cancelled'}</div>
+  let html = `<div class="card"><div class="sh" style="margin-top:0">Next game · ${r.status === 'open' && !avWindowShut(r) ? 'availability open' : r.status === 'open' || r.status === 'held' ? 'availability closed' : r.status === 'closed' ? 'squad picked' : 'cancelled'}</div>
     <div class="front-when">${esc(avLongDate(r.game_iso))}</div><div class="front-facts"><span>⏰ ${esc(avKick())}</span><span>📍 ${esc(AV.settings.venue || '')}</span></div>`;
   if (r.status === 'cancelled') return html + `<div class="notice" style="display:block;margin-top:10px">❌ ${dn} is cancelled.</div></div>`;
   if (avStarted(r)) return html + '<p class="hint" style="margin-top:10px">This game has started.</p></div>';
+  if ((r.status === 'open' || r.status === 'held') && avWindowShut(r)) {
+    // Closing time has passed: players can only drop out (an organiser can still add them)
+    html += mine === 'in' ? `<div class="ok" style="margin:10px 0 0">✓ You're <strong>in</strong>, ${esc(p.name)}. The squad is being picked and you'll be told if you're playing or a reserve.</div><div class="av-btns"><button class="btn av-out" onclick="avAnswer('${r.game_iso}','out')">I can't make it any more</button></div>`
+      : `<div class="notice" style="display:block;margin:10px 0 0">Availability closed at ${esc(closes)}. ${mine === 'out' ? "You said you're out. " : ''}${AV_ASK}</div>`;
+    const ins = avAnswersFor(r.game_iso).filter(a => a.answer === 'in');
+    return html + `${note}</div><div class="card"><h3>Who's in</h3><div class="av-names">${ins.map(a => `<span>${esc(pName(Number(a.player_id)))}</span>`).join('') || '<span class="hint">Nobody</span>'}</div></div>`;
+  }
   if (r.status === 'open' || r.status === 'held') {
     if (avGuar(p, r.day) && mine !== 'in') html += `<div class="notice av-guar">⭐ You're on the guaranteed list for ${dn}. Say you're in by ${closes} to keep your place, or you'll count as out.</div>`;
     html += mine === 'in' ? `<div class="ok" style="margin:10px 0 0">✓ You're <strong>in</strong>, ${esc(p.name)}. ${r.status === 'open' ? `We'll tell you at ${closes} if you're playing or a reserve.` : "We'll tell you when the squad is announced."}</div>`
       : mine === 'out' ? `<p class="hint" style="margin-top:10px">You've said you're <strong>out</strong>.</p>` : `<p class="hint" style="margin-top:10px">Are you in, <strong>${esc(p.name)}</strong>?</p>`;
     html += `<div class="av-btns"><button class="btn av-in${mine === 'in' ? ' on' : ''}" onclick="avAnswer('${r.game_iso}','in')" aria-pressed="${mine === 'in'}">✓ I'm in</button><button class="btn av-out${mine === 'out' ? ' on' : ''}" onclick="avAnswer('${r.game_iso}','out')" aria-pressed="${mine === 'out'}">✗ I'm out</button></div>`;
-    if (r.status === 'open') { const left = avCloseDate(r) - Date.now(); html += `<div class="av-timer"><span>${mine ? 'You can change until' : 'Closes'} <strong>${esc(avClock(AV.settings.close_time))}${avCloseDate(r).toDateString() === new Date().toDateString() ? ' tonight' : ' ' + esc(avCloseDate(r).toLocaleDateString('en-GB', { weekday: 'short' }))}</strong></span>${left > 0 ? `<span><strong>${Math.floor(left / 36e5)}h ${Math.floor(left / 6e4) % 60}m</strong> left</span>` : ''}</div>`; }
+    if (r.status === 'open' && avReopenedLate(r)) html += `<div class="av-timer"><span>Kept open for late joiners until the organisers close it.</span></div>`;
+    else if (r.status === 'open') { const left = avCloseDate(r) - Date.now(); html += `<div class="av-timer"><span>${mine ? 'You can change until' : 'Closes'} <strong>${esc(avClock(AV.settings.close_time))}${avCloseDate(r).toDateString() === new Date().toDateString() ? ' tonight' : ' ' + esc(avCloseDate(r).toLocaleDateString('en-GB', { weekday: 'short' }))}</strong></span>${left > 0 ? `<span><strong>${Math.floor(left / 36e5)}h ${Math.floor(left / 6e4) % 60}m</strong> left</span>` : ''}</div>`; }
     else html += `<p class="hint" style="margin-top:8px">Availability has closed and the squad is being confirmed. You can still change your answer until it's announced.</p>`;
     const ans = avAnswersFor(r.game_iso), ins = ans.filter(a => a.answer === 'in').sort((a, b) => a.answered_at.localeCompare(b.answered_at));
     html += `${note}</div><div class="card"><h3>So far</h3><div class="av-stats"><div class="i"><b>${ins.length}</b>In</div><div class="o"><b>${ans.length - ins.length}</b>Out</div><div class="n"><b>${Math.max(0, S.players.length - ans.length)}</b>Not answered</div></div>
@@ -3868,7 +3880,7 @@ function avPlayerCard() {
   const ri = g.reserveIds.indexOf(ME);
   html += g.playingIds.includes(ME) ? `<div class="ok" style="margin:10px 0 0">⚽ You're <strong>playing</strong>, ${esc(p.name)}.</div><div class="av-btns"><button class="btn av-out" onclick="avAnswer('${r.game_iso}','out')">I can't make it any more</button></div><p class="hint">Your place goes to the first reserve and they're told straight away.</p>`
     : ri !== -1 ? `<div class="notice" style="display:block;margin:10px 0 0">🪑 You're <strong>${avOrdinal(ri + 1)} reserve</strong>. If someone drops out you'll be told straight away.</div><div class="av-btns"><button class="btn av-out" onclick="avAnswer('${r.game_iso}','out')">I can't make it</button></div>`
-    : `<p class="hint" style="margin-top:10px">The squad has been picked. Want to play? Say you're in: you'll be added if there's space, or join the reserves.</p><div class="av-btns"><button class="btn av-in" onclick="avAnswer('${r.game_iso}','in')">✓ I'm in</button></div>`;
+    : `<div class="notice" style="display:block;margin:10px 0 0">The squad has been picked and availability is closed. ${AV_ASK}</div>`;
   return html + `${note}<div class="sh">Squad · ${g.playingIds.length}${g.reserveIds.length ? ` + ${g.reserveIds.length} reserve${g.reserveIds.length === 1 ? '' : 's'}` : ''}</div>
     <div class="front-squad">${g.playingIds.map((id, i) => `<span><em>${i + 1}</em>${esc(pName(id))}</span>`).join('')}</div>
     ${g.reserveIds.length ? `<p class="hint" style="margin-top:8px">Reserves: ${g.reserveIds.map(id => esc(pName(id))).join(', ')}</p>` : ''}</div>`;
@@ -4268,6 +4280,7 @@ function hiChips() {
   else if (r && (r.status === 'open' || r.status === 'held')) {
     const mine = avMine(r.game_iso), dn = avDayName(r.day);
     if (mine === 'in') chip('c-ok', `✓ You're in for ${dn}`);
+    else if (avWindowShut(r)) chip('c-grey', `${dn}'s availability has closed`);
     else if (mine === 'out') chip('c-grey', `You're out for ${dn}`);
     else chip('c-warn', "❓ You haven't said if you're in");
   } else {
@@ -4299,7 +4312,7 @@ function renderHi() {
     if (r && (r.status === 'open' || r.status === 'held')) chips.push(`<span class="c-ok">⚽ ${avAnswersFor(r.game_iso).filter(a => a.answer === 'in').length} in for ${esc(avDayName(r.day))}</span>`);
   } else {
     const r = avVisible() ? avRound() : null;
-    sub = r && r.status === 'open' ? `${avDayName(r.day)}'s availability is open until ${avClock(AV.settings.close_time)}.` : "Here's what's coming up for you.";
+    sub = r && r.status === 'open' && !avWindowShut(r) ? `${avDayName(r.day)}'s availability is open until ${avClock(AV.settings.close_time)}.` : "Here's what's coming up for you.";
     chips = hiChips();
   }
   el.innerHTML = `<div><strong>Hi ${esc(p.name)} 👋</strong><span class="sub">${esc(sub)}</span><div class="chips">${chips.join('')}</div></div><button class="notyou" onclick="hiNotYou()">Not you?</button>`;

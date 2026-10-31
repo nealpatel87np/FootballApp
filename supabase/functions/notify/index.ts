@@ -397,12 +397,23 @@ async function teamsNeedRedoing(gameId: number, playing: number[]) {
   return ' Teams need redoing.';
 }
 
+// Closing time has passed for this round, unless an organiser reopened it after closing time ("Keep it open")
+function pastClosing(s: Row, round: Row) {
+  const now = londonNow(), closeIso = openIsoFor(s, round.day, round.game_iso);
+  if (!(now.iso > closeIso || (now.iso === closeIso && now.hm >= s.close_time))) return false;
+  const re = round.opened_at ? londonNow(new Date(round.opened_at)) : null;
+  return !(re && (re.iso > closeIso || (re.iso === closeIso && re.hm >= s.close_time)));
+}
+
 async function answerAvail(s: Row, b: Row) {
   const playerId = toId(b.playerId), answer = String(b.answer), gameIso = clip(b.gameIso, 10);
   if (playerId === null || !['in', 'out'].includes(answer)) return { error: 'Bad answer' };
   const round = await must(db.from('availability_rounds').select('*').eq('game_iso', gameIso).maybeSingle()) as Row | null;
   if (!round || round.status === 'cancelled') return { error: 'That game is not open for availability.' };
   if (started(s, gameIso)) return { error: "The game has started, so changes are closed." };
+  // Once the window has closed, players can only drop out; organisers can still add someone
+  if (answer === 'in' && !b.byOrganiser && (round.status !== 'open' || pastClosing(s, round)))
+    return { error: `Availability for ${DAY_NAME[round.day]} has closed. Ask an organiser if you'd like to play.` };
   await must(db.from('availability_answers').upsert({ game_iso: gameIso, player_id: playerId, answer, answered_at: new Date().toISOString(), by_organiser: !!b.byOrganiser }).select());
   if (round.status === 'closed') await changeAfterClose(s, round, playerId, answer);
   return { ok: true, status: round.status };
@@ -419,12 +430,9 @@ async function tick() {
     if (!round && now.iso === openIso && now.hm >= s.open_time && now.hm < s.close_time) {
       if ((await openRound(s, day, gameIso)).opened) done.push('opened ' + gameIso);
     } else if (round && round.status === 'open') {
-      // Closes at closing time on the opening day (or straight away if that has passed)
-      const closeIso = openIsoFor(s, round.day, round.game_iso);
-      if (!(now.iso > closeIso || (now.iso === closeIso && now.hm >= s.close_time))) continue;
-      // Reopened after closing time ("Keep it open" for late joiners): organisers close it themselves
-      const re = round.opened_at ? londonNow(new Date(round.opened_at)) : null;
-      if (re && (re.iso > closeIso || (re.iso === closeIso && re.hm >= s.close_time))) continue;
+      // Closes at closing time on the opening day (or straight away if that has passed). A round
+      // reopened after closing time ("Keep it open" for late joiners) is closed by the organisers.
+      if (!pastClosing(s, round)) continue;
       if ((await closeRound(s, round, s.mode === 'on' && s.auto_announce !== false)).closed) done.push('closed ' + gameIso);
     }
   }

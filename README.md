@@ -159,8 +159,8 @@ Players can say whether they're in for the next game in the app. At closing time
   - Players never see late flags. Late arrivals still count when the squad is picked.
 - **After 9pm:**
   - **I can't make it any more** moves the first reserve up, and they're told. Organisers are told, and the teams are flagged for redoing.
-  - Anyone who says in late joins the squad if there's space, or the reserves.
-  - With fewer than 10, the squad is saved and organisers are warned.
+  - Players can't say they're in any more: the app says availability has closed and to ask Neal, Kev or Gav. An organiser can still add someone with **Answer for a player** (they join the squad if there's space, or the reserves).
+  - With fewer than 10, the squad is held and organisers choose to cancel, keep it open (players can say in again) or confirm anyway.
   - Changes stop at kick-off.
 - **Run game:** shows organisers the live counts, who's guaranteed but hasn't answered, the squad "if it closed now" (with late tags), and buttons for Nudge, Close now, Cancel this week, answering for a player, and Confirm and announce.
 - **App users** (organisers, under More) shows who has set up the app, whether it's installed, on which browser, and which notifications they have on.
