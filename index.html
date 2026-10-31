@@ -2478,7 +2478,7 @@ async function frontLogin() {
     const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
     hash = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
   } catch (e) {}
-  if (hash !== ORGANISER_PASS_SHA256) { document.getElementById('front-err').textContent = "That password isn't right. Ask Neal, Kev or Gav."; return; }
+  if (hash !== ORGANISER_PASS_SHA256) { document.getElementById('front-err').textContent = "That password isn't right. Contact the organiser."; return; }
   document.getElementById('front-err').textContent = '';
   document.getElementById('front-pw').value = '';
   document.getElementById('front-login').style.display = 'none';
@@ -3833,7 +3833,7 @@ function avWhoCard(id) {
   return `<div class="card av-hi"><h3>Who are you?</h3><p class="hint">So we know who's saying in or out. You only do this once on this phone.</p>
     <select id="${id}" style="margin-top:8px">${avOptions(null)}</select>
     <div class="tactions" style="margin-top:10px"><button class="btn primary" onclick="avSetMe(document.getElementById('${id}').value)">Continue</button></div>
-    <p class="hint" style="margin-top:8px">Not on the list? Ask Neal, Kev or Gav to add you.</p></div>`;
+    <p class="hint" style="margin-top:8px">Not on the list? Contact the organiser to add you.</p></div>`;
 }
 function avPlayerCard() {
   const r = avRound(), p = S.players.find(x => x.id === ME);
