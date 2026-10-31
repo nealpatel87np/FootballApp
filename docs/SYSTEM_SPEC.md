@@ -310,10 +310,10 @@ Shown on the front page and on the **Availability** page, but only when Self-ser
 - **When open:** the card shows the game, then **I'm in** and **I'm out**, the closing time and how long is left, plus counts and the names of players who said in.
   - Guaranteed players see that they must say in by the closing time, or count as out.
   - Players never see late flags.
-- **After closing time** (4.0 update): **I'm in** disappears. Players who said in see that the squad is being picked and can still tap **I can't make it any more**. Everyone else sees "Availability closed at 9pm. Ask Neal, Kev or Gav if you'd like to play." This applies as soon as closing time passes, even before the squad is picked, and while it's held for an organiser.
+- **After closing time** (4.0 update): **I'm in** disappears. Players who said in see that the squad is being picked and can still tap **I can't make it any more**. Everyone else sees "Availability closed at 9pm. Contact the organiser if you'd like to play." This applies as soon as closing time passes, even before the squad is picked, and while it's held for an organiser.
 - **When closed:** players see whether they're playing or which reserve they are (e.g. 2nd).
   - Players in the squad and reserves can drop out with **I can't make it any more**.
-  - Others can't join themselves any more: they see "The squad has been picked and availability is closed. Ask Neal, Kev or Gav if you'd like to play." An organiser can add them with **Answer for a player**.
+  - Others can't join themselves any more: they see "The squad has been picked and availability is closed. Contact the organiser if you'd like to play." An organiser can add them with **Answer for a player**.
 - **Kept open:** if organisers choose **Keep it open** after closing time, **I'm in** comes back with "Kept open for late joiners until the organisers close it."
 - **Cancelled:** "{day} is cancelled". If the saved game is cancelled later (4.0), the card says "✕ {Day}'s game is off", the reason and "No payment needed", with no answer buttons.
 - **After kick-off:** no changes.

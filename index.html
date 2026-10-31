@@ -3746,7 +3746,7 @@ const avStarted = r => { const now = new Date(), [h, m] = String(AV.settings.kic
 // The window has shut for players: closed or held, or past closing time (unless reopened after it by an organiser)
 const avReopenedLate = r => !!r.opened_at && new Date(r.opened_at) >= avCloseDate(r);
 const avWindowShut = r => r.status !== 'open' || (Date.now() >= avCloseDate(r) && !avReopenedLate(r));
-const AV_ASK = 'Ask Neal, Kev or Gav if you’d like to play.';
+const AV_ASK = 'Contact the organiser if you’d like to play.';
 function avCloseDate(r) { const [h, m] = String(AV.settings.close_time || '21:00').split(':').map(Number), d = isoToDate(avOpenIso(r.day, r.game_iso)); d.setHours(h, m); return d; }
 // The round to show: the earliest upcoming game that isn't cancelled (or a cancelled one if that's all there is)
 function avRound() {
