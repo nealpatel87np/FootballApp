@@ -330,6 +330,7 @@
   body:not(.mode-view) #my-balance { display: none; }
   .owe-short.paid { background: var(--bg-success); color: var(--text-success); cursor: default; }
   #my-balance .owe-short { cursor: default; }
+  #my-balance .my-pay { font-size: 12px; color: var(--text-secondary); }
   .owe-short { text-align: left; border-radius: 12px; padding: 14px; border: 1.5px solid transparent; cursor: pointer; font: inherit; color: inherit; display: grid; gap: 2px; min-width: 0; }
   .owe-short .l { font-size: 13px; font-weight: 500; }
   .owe-short .n { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -2209,7 +2210,7 @@ function renderMyBalance() {
       ? `<div class="owe-short owe"><span class="l">🔴 You owe</span><span class="n">${gbp(owed)}</span><span class="s">${pushPlural(mine.length, 'game')}</span></div>`
       : `<div class="owe-short paid"><span class="l">✓ All paid up</span><span class="n">${gbp(0)}</span><span class="s">Nothing owed</span></div>`}
       <div class="owe-short cred"><span class="l">💷 Credit</span><span class="n">${gbp(credit)}</span><span class="s">${credit ? 'Used for your next games' : 'None held'}</span></div></div>
-    ${mine.map(d => `<div class="row"><span class="name">${esc(d.g.iso ? dashShort(d.g.iso) : d.g.date)}</span><span class="hint">Pay ${esc(d.m.org)}</span><strong>${gbp(d.amt)}</strong></div>`).join('')}
+    ${mine.map(d => `<div class="row"><span class="name">${esc(d.g.iso ? dashShort(d.g.iso) : d.g.date)}</span><span class="my-pay">Pay ${esc(d.m.org)}</span><strong>${gbp(d.amt)}</strong></div>`).join('')}
     <p class="hint" style="margin-top:8px">Pay the organiser on the day. Only your own balance is shown here; organisers see everyone's. <button class="linkbtn" style="margin:0" onclick="hiNotYou(); renderMyBalance()">Not you?</button></p>`;
 }
 function renderMoney() {
