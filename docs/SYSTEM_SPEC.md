@@ -63,7 +63,7 @@ If you aren't sure, treat it as minor unless it changes the data model or a core
 | 3.8 | 25 Oct 2026 | Quieter Supabase traffic: availability refreshes every 30 seconds only while a round is open (otherwise every 5 minutes, and when the app comes back on screen). The availability check runs from 8am to 10:45pm UK time, so Setup only accepts opening and closing times in that window. Nightly tidy-up of schedule history. Run `supabase/schedule-3.8.sql`. |
 | 3.9 | 26 Oct 2026 | Dashboard Turnout shows just the numbers, and Money drops who owes most. A game with fewer than 10 playing counts as cancelled: no money, score or late prompts, and Payments shows it only under Show paid and cancelled games, with Track anyway. |
 | 4.0 | 26 Oct 2026 | **Cancel a game.** Run game offers Cancel game: not enough players when fewer than 10 are picked. Organisers can cancel any saved game from the Dashboard, Run game or Game Log (Drop-outs, Pitch not available, Weather, Other, plus a note), and Undo it. Availability that closes with fewer than 10 is held: Cancel game, Keep it open or Confirm anyway. Cancelled games stay in the Game Log but don't count and need no money. Players are told and the front page says the game is off. Run `supabase/cancel.sql`, then redeploy the `notify` function. |
-| 4.0 (update) | 31 Oct 2026 | No version change. Payments shows players only their own balance. Once availability's closing time has passed, players can't say they're in (they can still drop out); organisers can still add players, and Keep it open lets players in again. Redeploy the `notify` function. |
+| 4.0 (update) | 31 Oct 2026 | No version change. Payments shows players only their own balance. Once availability's closing time has passed, players can't say they're in (they can still drop out); organisers can still add players, and Keep it open lets players in again. Redeploy the `notify` function. Scores only count from 9 Oct 2026: earlier scores stay in the Game Log but don't count in the league, win % or Player Stats. |
 
 ---
 
@@ -419,6 +419,7 @@ Nothing is saved for a player until a score is changed.
 - A score can be entered only for a game with confirmed teams, dated today or earlier.
 - Scores are whole numbers, 0 or more.
 - The team with more goals is marked **Won**. Equal goals is a draw.
+- **Scores count from 9 October 2026.** Earlier scores (the 8 October game) stay in the Game Log, marked "before launch, not counted", but aren't used for Player Stats, the league or This season, and nobody is asked for a score before that date. Those games still count for attendance and games played.
 
 ### 7.7 Money
 
