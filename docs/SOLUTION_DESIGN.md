@@ -1262,7 +1262,7 @@ The reserves block and the "Pitch has been booked" line appear only when they ap
 | Admin share of surplus | 10% |
 | Time and venue | 6:30 PM, Harrow Powerleague (per day type, per device) |
 | Recent games shown (Game Log) | 5 |
-| Ledger rows shown | 15 |
+| Ledger rows shown | 5 (Show full ledger for the rest); the Spend from the kitty form is folded behind Show / Hide |
 | Phone layout breakpoint | 720px (Dashboard grid from 900px) |
 | Self-service availability | Off. When on: Thursday games open Tuesday, Monday games open Friday, 09:00 to 21:00 UK time, kick-off 18:30, announce automatically |
 | Notification choices | Availability, Squad, Teams and Payments on; Credit used off |

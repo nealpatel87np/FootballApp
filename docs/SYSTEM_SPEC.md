@@ -272,7 +272,8 @@ Sections, from top to bottom:
    - An open game shows: Organised by, the Paid ticks, **Mark all paid**, **Stop tracking money**, and the split (collected, pitch, to or from the kitty).
 4. **Kitty ledger:**
    - starting balances (shown only when starting balances are shown), each tracked game's amount to or from the kitty, and kitty spends, with a running balance;
-   - the latest 15 rows, with **Show full ledger**;
+   - the latest 5 rows, with **Show full ledger** (and **Show only the latest 5** to collapse it);
+   - **Spend from the kitty** (what, type, paid by, amount, **Add spend**), folded behind **Show** / **Hide** and closed by default;
    - an **Add spend** form: what, type (Dinner, Drinks, Football, Other), paid by and amount.
 5. **How each game is split**, at the bottom and closed until **Show** is tapped:
    - the price per player, pitch cost and admin share;

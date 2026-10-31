@@ -850,8 +850,10 @@
         </table>
       </div>
       <div id="money-ledger-more"></div>
-      <div class="spend-form edit-only">
-        <div class="wide"><label for="sp-what">Spend from the kitty</label><input type="text" id="sp-what" placeholder="e.g. Curry after Thursday"></div>
+      <div class="fold-h edit-only" style="margin-top:12px"><h3 style="margin:0">Spend from the kitty</h3><button class="btn xs" onclick="toggleFold('sp-box', this)" aria-expanded="false" aria-controls="sp-box">Show</button></div>
+      <div id="sp-box" class="edit-only" hidden>
+      <div class="spend-form">
+        <div class="wide"><label for="sp-what">What was it?</label><input type="text" id="sp-what" placeholder="e.g. Curry after Thursday"></div>
         <div><label for="sp-cat">Type</label><select id="sp-cat"><option>Dinner</option><option>Drinks</option><option>Football</option><option>Other</option></select></div>
         <div><label for="sp-from">Paid by</label><select id="sp-from"><option>Neal</option><option>Kev</option><option>Gav</option></select></div>
         <div><label for="sp-amt">Amount (£)</label><input type="number" id="sp-amt" step="0.01" min="0" placeholder="0.00"></div>
@@ -859,6 +861,7 @@
       <div class="edit-only" style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
         <button class="btn primary sm" onclick="moneyAddSpend()"><i class="ti ti-plus"></i> Add spend</button>
         <span id="sp-err" class="err" style="margin:0"></span>
+      </div>
       </div>
     </div>
     <div class="card edit-only">
@@ -1943,7 +1946,7 @@ function deleteGame(gIdx) {
 
 /* ---- HISTORY ---- */
 // How much of the long lists to show (resets on reload)
-const RECENT_GAMES = 5, LEDGER_ROWS = 15;
+const RECENT_GAMES = 5, LEDGER_ROWS = 5;
 // A game is cancelled when an organiser cancels it (g.cancelled = { reason, note, by, at }), or when fewer
 // than 10 played and its money was never tracked. Cancelled games need no money, score or late check.
 const MIN_PLAYERS = 10;
@@ -2321,7 +2324,7 @@ function renderMoney() {
   if (!moneyShowOpening) rows.splice(0, rows.length, ...rows.filter(r => r.order !== 0));
   const ledgerRows = moneyShowFullLedger ? rows : rows.slice(0, LEDGER_ROWS);
   document.getElementById('money-ledger-more').innerHTML = rows.length > LEDGER_ROWS
-    ? `<button class="btn sm" style="margin-top:8px" onclick="moneyShowFullLedger = !moneyShowFullLedger; renderMoney()">${moneyShowFullLedger ? 'Show only the latest 15' : `Show full ledger (${rows.length - LEDGER_ROWS} more)`}</button>` : '';
+    ? `<button class="btn sm" style="margin-top:8px" onclick="moneyShowFullLedger = !moneyShowFullLedger; renderMoney()">${moneyShowFullLedger ? `Show only the latest ${LEDGER_ROWS}` : `Show full ledger (${rows.length - LEDGER_ROWS} more)`}</button>` : '';
   document.getElementById('money-ledger').innerHTML = ledgerRows.map(r => {
     const when = r.date || (r.iso ? fmtGameDate(isoToDate(r.iso)) : '—');
     const del = r.spendId ? ` <button class="btn xs dghost" style="padding:0 4px" title="Delete this spend" onclick="moneyDeleteSpend(${r.spendId})"><i class="ti ti-x"></i></button>` : '';
