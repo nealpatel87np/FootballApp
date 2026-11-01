@@ -584,6 +584,41 @@
   #modebar { border: 1px solid var(--border); border-radius: 12px; }
   body.mode-view #modebar { background: var(--surface-2); }
   body.mode-edit #modebar { background: var(--bg-accent); color: var(--text-accent); border-color: transparent; }
+
+  /* ---- Look, part 2: Dashboard, Game Log, Teams ---- */
+  .dash-h { justify-content: flex-start; }
+  .dash-h > .btn, .dash-h > small, .dash-h > .badge { margin-left: auto; }
+  .dash-i { font-size: 18px; color: var(--text-muted); margin-right: -2px; }
+  .dash-item { padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .dash-item .ic { width: 34px; height: 34px; border-radius: 10px; font-size: 17px; }
+  .dash-item .tx { font-weight: 600; } .dash-item small { font-weight: 400; font-size: 12px; margin-top: 1px; }
+  .dash-clear div { font-size: 34px; color: var(--text-success); }
+  .hi .chips span .ti { font-size: 14px; }
+  .log-entry { border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); background: var(--surface-2); }
+  .log-header { padding: 12px 16px; gap: 10px; }
+  .log-header .log-main { flex: 1; min-width: 0; }
+  .log-header .log-title { font-weight: 650; font-size: 14.5px; }
+  .log-header .log-meta { font-size: 12.5px; color: var(--text-muted); margin-top: 1px; }
+  .log-right { flex-shrink: 0; }
+  .lday { font-size: 12px; font-weight: 500; color: var(--text-muted); margin-left: 4px; }
+  .lscore { font-size: 17px; font-weight: 800; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  .lscore.old { color: var(--text-muted); }
+  .lpill { font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 12px; background: var(--surface-1); color: var(--text-secondary); white-space: nowrap; }
+  .lpill.amb { background: var(--bg-warning); color: var(--text-warning); }
+  .log-body { border-top: 1px solid var(--border); padding: 14px 16px; }
+  .tteam { background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; }
+  .tteam.bibs { background: var(--surface-2); border-color: color-mix(in srgb, var(--bib) 55%, var(--border)); }
+  .tteam-h { font-weight: 700; }
+  .tteam.bibs .tteam-h { color: var(--text-primary); }
+  .tdot { border-radius: 50%; width: 11px; height: 11px; }
+  .tnames { display: grid; gap: 6px; margin-top: 6px; font-size: 13.5px; }
+  .tnames span { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .avi.sm { width: 26px; height: 26px; font-size: 10px; flex-shrink: 0; }
+  .tpl { gap: 8px; padding: 6px 8px; border-radius: 12px; border: 1px solid var(--border); }
+  .tpl.sel { border-color: var(--fill-accent); background: var(--bg-accent); }
+  .tscore { border-radius: 14px; }
+  .tscore .big { font-weight: 800; }
+  .tscore .side { white-space: nowrap; font-weight: 650; }
 </style>
 </head>
 <body class="on-front">
@@ -2116,10 +2151,11 @@ function renderLogEntry(gIdx) {
 
   container.innerHTML = `
     <div class="log-header" onclick="toggleLog(${gIdx})">
-      <div>
-        <div class="log-title">${esc(g.date)} — ${dayLabel(g.day)} ${g.manual ? '<span class="badge b-pref" style="font-size:10px;margin-left:4px">Manual</span>' : ''}${isLatest ? '<span class="badge b-guar" style="font-size:10px;margin-left:4px">Latest</span>' : ''}${logOff ? '<span class="badge b-cx" style="font-size:10px;margin-left:4px">Game cancelled</span>' : ''}</div>
+      <div class="log-main">
+         <div class="log-title">${esc(g.date)} <span class="lday">${dayLabel(g.day)}</span> ${g.manual ? '<span class="badge b-pref" style="font-size:10px;margin-left:4px">Manual</span>' : ''}${isLatest ? '<span class="badge b-guar" style="font-size:10px;margin-left:4px">Latest</span>' : ''}${logOff ? '<span class="badge b-cx" style="font-size:10px;margin-left:4px">Game cancelled</span>' : ''}</div>
         <div class="log-meta">${logOff ? `${esc(cancelLabel(g))} · ${g.playingIds.length} left${g.cancelled && g.cancelled.note ? ` · "${esc(g.cancelled.note)}"` : ''}` : `${g.playingIds.length} playing · ${g.reserveIds.length} reserve${g.reserveIds.length !== 1 ? 's' : ''}${logTeamsMeta(g)}${lateIdsOf(g.id).length ? ` · ${lateIdsOf(g.id).length} late` : ''}`}</div>
       </div>
+      <span class="log-right">${logStatus(g, logOff)}</span>
       <i class="ti ti-chevron-down" id="log-chevron-${gIdx}" style="color:var(--text-muted);transition:transform .2s;${wasOpen ? 'transform:rotate(180deg)' : ''}"></i>
     </div>
     <div class="log-body${wasOpen ? ' open' : ''}" id="log-body-${gIdx}">
@@ -2804,7 +2840,7 @@ function renderTeamsPage() {
     const list = t['t' + n], bib = t.bibs === n, avg = list.length ? list.reduce((s, id) => s + overallOf(skillOf(id)), 0) / list.length : 0;
     return `<div class="tteam${bib ? ' bibs' : ''}"><div class="tteam-h"><span class="tdot"></span>Team ${n}${bib ? ' · bibs' : ''}<span class="ttot">avg ${avg.toFixed(1)}</span></div>
       <div class="tmix">${teamCount(list, x => posOf(x) === 'def')} DEF · ${teamCount(list, x => posOf(x) === 'att')} ATT · ${teamCount(list, x => posOf(x) === 'any')} ANY</div>
-      ${teamOrder(list).map(id => { const x = skillOf(id), ps = posOf(x); return `<button class="tpl${teamsSel === id ? ' sel' : ''}" ${locked ? 'disabled' : `onclick="teamsTap(${id})"`} aria-pressed="${teamsSel === id}"><span class="nm">${esc(pName(id))}</span>${x.keeper ? '<span class="badge b-gk">GK</span>' : ''}<span class="badge b-${ps}">${POS_SHORT[ps]}</span><span class="tovr">${overallOf(x).toFixed(1)}</span></button>`; }).join('')}</div>`;
+      ${teamOrder(list).map(id => { const x = skillOf(id), ps = posOf(x); return `<button class="tpl${teamsSel === id ? ' sel' : ''}" ${locked ? 'disabled' : `onclick="teamsTap(${id})"`} aria-pressed="${teamsSel === id}">${avInitials(pName(id), 'sm')}<span class="nm">${esc(pName(id))}</span>${x.keeper ? '<span class="badge b-gk">GK</span>' : ''}<span class="badge b-${ps}">${POS_SHORT[ps]}</span><span class="tovr">${overallOf(x).toFixed(1)}</span></button>`; }).join('')}</div>`;
   };
   html += `<div class="tteams">${col(1)}${col(2)}</div>
     <p class="hint">${locked ? 'These teams are confirmed and show on the front page.' : teamsSel ? `Now tap a player on the other team to swap with ${esc(pName(teamsSel))}.` : 'Tap a player, then a player on the other team, to swap them.'}</p>
@@ -2952,7 +2988,7 @@ function ruleDelete(id) { S.teams.rules = S.teams.rules.filter(x => x.id !== id)
 const hasScore = t => t && t.score1 !== null && t.score2 !== null;
 function teamColumns(t) {
   const won = n => hasScore(t) && (n === 1 ? t.score1 > t.score2 : t.score2 > t.score1) ? ' <span class="twon">Won</span>' : '';
-  const col = n => `<div class="tteam${t.bibs === n ? ' bibs' : ''}" style="padding:10px"><div class="tteam-h"><span class="tdot"></span>Team ${n}${t.bibs === n ? ' · bibs' : ''}${won(n)}</div><div style="font-size:13px;line-height:1.7">${teamOrder(t['t' + n]).map(id => esc(pName(id))).join('<br>')}</div></div>`;
+  const col = n => `<div class="tteam${t.bibs === n ? ' bibs' : ''}" style="padding:10px"><div class="tteam-h"><span class="tdot"></span>Team ${n}${t.bibs === n ? ' · bibs' : ''}${won(n)}</div><div class="tnames">${teamOrder(t['t' + n]).map(id => `<span>${avInitials(pName(id), 'sm')}${esc(pName(id))}</span>`).join('')}</div></div>`;
   return `<div class="tteams" style="margin:0">${col(1)}${col(2)}</div>`;
 }
 function frontTeams(g) {
@@ -2961,11 +2997,16 @@ function frontTeams(g) {
 }
 function logTeamsMeta(g) {
   const t = gameTeams(g.id);
-  if (!t) return '';
-  if (t.status === 'draft') return ' · Draft teams';
-  if (hasScore(t)) return ` · <strong style="color:var(--text-primary)">Score ${t.score1}–${t.score2}</strong>${scoreCounts(g) ? '' : ' <span class="hint" style="margin:0">(before launch, not counted)</span>'}`;
+  return t && hasScore(t) && !scoreCounts(g) ? ' · before launch, not counted' : '';
+}
+// The right-hand side of a Game Log row: the score, or what the game still needs
+function logStatus(g, off) {
+  const t = gameTeams(g.id);
+  if (off || !t) return '';
+  if (t.status === 'draft') return '<span class="lpill amb">Draft teams</span>';
+  if (hasScore(t)) return `<span class="lscore${scoreCounts(g) ? '' : ' old'}" aria-label="Score ${t.score1} to ${t.score2}">${t.score1}–${t.score2}</span>`;
   if (!scoreCounts(g)) return '';
-  return g.iso && g.iso > isoToday() ? ' · Teams picked' : ' · <span style="color:var(--text-warning)">Score needed</span>';
+  return g.iso && g.iso > isoToday() ? '<span class="lpill">Teams picked</span>' : '<span class="lpill amb">Score needed</span>';
 }
 function logTeamsBlock(g, gIdx) {
   const t = gameTeams(g.id), edit = appMode === 'edit';
@@ -4207,8 +4248,8 @@ function dashTodos() {
   if (r && (r.status === 'open' || r.status === 'held')) {
     const ins = avAnswersFor(r.game_iso).filter(a => a.answer === 'in');
     const missing = S.players.filter(p => avGuar(p, r.day) && !ins.some(a => Number(a.player_id) === p.id));
-    if (r.status === 'held') item('📋', 'var(--bg-accent)', `${avDayName(r.day)} squad waiting for you to confirm`, `${avPreview(r).playing.length} would play`, 'Check', "goTab('game')");
-    if (missing.length) item('⭐', 'var(--bg-warning)', `${missing.length} guaranteed player${missing.length === 1 ? " hasn't" : "s haven't"} said in`, missing.map(p => p.name).join(', '), 'Nudge', `avAct('avail_nudge',{gameIso:'${r.game_iso}'},x=>'Nudged '+(x.players||0)+'.')`);
+    if (r.status === 'held') item('clipboard-check', 'var(--bg-accent)', `${avDayName(r.day)} squad waiting for you to confirm`, `${avPreview(r).playing.length} would play`, 'Check', "goTab('game')");
+    if (missing.length) item('star', 'var(--bg-warning)', `${missing.length} guaranteed player${missing.length === 1 ? " hasn't" : "s haven't"} said in`, missing.map(p => p.name).join(', '), 'Nudge', `avAct('avail_nudge',{gameIso:'${r.game_iso}'},x=>'Nudged '+(x.players||0)+'.')`);
   }
   // Missing scores and untracked money: one line each, however many games
   const since = avAddDays(today, -45), noScore = [], noMoney = [];
@@ -4218,32 +4259,32 @@ function dashTodos() {
     if (t && t.status === 'confirmed' && !hasScore(t) && scoreCounts(g)) noScore.push(g);
     if (!S.money.games.some(m => m.gameId === g.id)) noMoney.push(g);
   });
-  if (noScore.length) item('⚽', 'var(--bg-accent)', noScore.length === 1 ? `Score needed: ${dashShort(noScore[0].iso)}` : `Scores needed: ${noScore.length} games`,
+  if (noScore.length) item('trophy', 'var(--bg-accent)', noScore.length === 1 ? `Score needed: ${dashShort(noScore[0].iso)}` : `Scores needed: ${noScore.length} games`,
     noScore.length === 1 ? 'Teams were confirmed' : noScore.slice(0, 3).map(g => dashShort(g.iso)).join(', ') + (noScore.length > 3 ? '…' : ''), 'Add score', `dashOpenLog(${noScore[0].id})`);
-  if (noMoney.length) item('🧾', 'var(--surface-1)', noMoney.length === 1 ? `Money not tracked: ${dashShort(noMoney[0].iso)}` : `Money not tracked: ${noMoney.length} games`,
+  if (noMoney.length) item('receipt', 'var(--surface-1)', noMoney.length === 1 ? `Money not tracked: ${dashShort(noMoney[0].iso)}` : `Money not tracked: ${noMoney.length} games`,
     noMoney.length === 1 ? `${noMoney[0].playingIds.length} played` : `Latest ${dashShort(noMoney[0].iso)}, oldest ${dashShort(noMoney[noMoney.length - 1].iso)}`, 'Track', "goTab('money')");
   const next = dashNext();
   if (next && !next.cancelled) {
     const t = gameTeams(next.id);
-    if (t && t.status === 'draft') item('👕', 'var(--bg-warning)', `Teams still a draft: ${dashShort(next.iso)}`, 'Not on the front page yet', 'Teams', `teamsOpenGame(${next.id})`);
-    else if (t && t.status === 'confirmed' && !sameSet([...t.t1, ...t.t2], next.playingIds)) item('🔁', 'var(--bg-warning)', `Squad changed since teams were confirmed`, dashShort(next.iso), 'Teams', `teamsOpenGame(${next.id})`);
+    if (t && t.status === 'draft') item('shirt', 'var(--bg-warning)', `Teams still a draft: ${dashShort(next.iso)}`, 'Not on the front page yet', 'Teams', `teamsOpenGame(${next.id})`);
+    else if (t && t.status === 'confirmed' && !sameSet([...t.t1, ...t.t2], next.playingIds)) item('refresh', 'var(--bg-warning)', `Squad changed since teams were confirmed`, dashShort(next.iso), 'Teams', `teamsOpenGame(${next.id})`);
   }
   const debts = debtsOwed();
   if (debts.length) {
     const people = new Set(debts.map(d => d.pid)), total = debts.reduce((s, d) => s + d.amt, 0);
     const oldest = debts[0] && debts[0].g.iso ? Math.round((isoToDate(today) - isoToDate(debts[0].g.iso)) / 864e5) : null;
-    item('💷', 'var(--bg-danger)', `${gbp(total)} still owed`, `${people.size} player${people.size === 1 ? '' : 's'}${oldest !== null ? ` · oldest ${oldest} day${oldest === 1 ? '' : 's'}` : ''}`, pushReady ? 'Remind' : 'View', pushReady ? 'pushRemind()' : "goTab('money')");
+    item('currency-pound', 'var(--bg-danger)', `${gbp(total)} still owed`, `${people.size} player${people.size === 1 ? '' : 's'}${oldest !== null ? ` · oldest ${oldest} day${oldest === 1 ? '' : 's'}` : ''}`, pushReady ? 'Remind' : 'View', pushReady ? 'pushRemind()' : "goTab('money')");
   }
   const last = S.games.filter(g => g.iso && g.iso <= today).sort((a, b) => b.iso.localeCompare(a.iso))[0];
   if (last && !gameCancelled(last) && last.iso >= avAddDays(today, -1) && !lateIdsOf(last.id).length && (last.iso < today || (AV.settings && avStarted({ game_iso: last.iso }))))
-    item('⏰', 'var(--bg-pro)', `Anyone late on ${dashShort(last.iso)}?`, 'Optional', 'Game Log', `dashOpenLog(${last.id})`);
+    item('clock', 'var(--bg-pro)', `Anyone late on ${dashShort(last.iso)}?`, 'Optional', 'Game Log', `dashOpenLog(${last.id})`);
   return out;
 }
 function dashTodoCard() {
   const todos = dashTodos();
-  return `<div class="card dash-todo da-todo"><h3 class="dash-h">✅ To do <small>${todos.length ? todos.length + ' thing' + (todos.length === 1 ? '' : 's') : ''}</small></h3>${todos.length
-    ? todos.map(t => `<div class="dash-item"><span class="ic" style="background:${t.bg}">${t.ic}</span><span class="tx">${esc(t.text)}<small>${esc(t.sub)}</small></span><button class="btn xs" onclick="${t.act}">${t.label}</button></div>`).join('')
-    : '<div class="dash-clear"><div>🎉</div><strong>All caught up</strong><p class="hint">Scores in, money tracked, nobody owes.</p></div>'}</div>`;
+  return `<div class="card dash-todo da-todo"><h3 class="dash-h"><i class="ti ti-list-check dash-i"></i>To do <small>${todos.length ? todos.length + ' thing' + (todos.length === 1 ? '' : 's') : ''}</small></h3>${todos.length
+    ? todos.map(t => `<div class="dash-item"><span class="ic" style="background:${t.bg};color:${t.bg.replace('--bg-', '--text-').replace('--surface-1', '--text-secondary')}"><i class="ti ti-${t.ic}"></i></span><span class="tx">${esc(t.text)}<small>${esc(t.sub)}</small></span><button class="btn xs" onclick="${t.act}">${t.label}</button></div>`).join('')
+    : '<div class="dash-clear"><div><i class="ti ti-circle-check"></i></div><strong>All caught up</strong><p class="hint">Scores in, money tracked, nobody owes.</p></div>'}</div>`;
 }
 function dashNextCard() {
   const r = AV.settings && avMode() !== 'off' ? avRound() : null;
@@ -4254,7 +4295,7 @@ function dashNextCard() {
     const missing = S.players.filter(p => avGuar(p, r.day) && !ins.some(a => Number(a.player_id) === p.id));
     const left = avCloseDate(r) - Date.now();
     const tags = p => `${avGuar(p, r.day) ? '<span class="badge b-guar">Guar</span>' : ''}${rn.includes(p.id) ? '<span class="badge b-guar">→Next</span>' : ''}${latePenalty(p.id) ? '<span class="badge b-late">Late last time</span>' : ''}`;
-    return `<div class="card dash-next da-next"><h3 class="dash-h">⚽ ${esc(avLongDate(r.game_iso))} <span class="badge ${r.status === 'open' ? 'b-thu' : 'b-guar'}">${r.status === 'open' ? `Availability open${left > 0 ? ` · ${Math.floor(left / 36e5)}h ${Math.floor(left / 6e4) % 60}m left` : ''}` : 'Waiting for you to confirm'}</span></h3>
+    return `<div class="card dash-next da-next"><h3 class="dash-h"><i class="ti ti-ball-football dash-i"></i>${esc(avLongDate(r.game_iso))} <span class="badge ${r.status === 'open' ? 'b-thu' : 'b-guar'}">${r.status === 'open' ? `Availability open${left > 0 ? ` · ${Math.floor(left / 36e5)}h ${Math.floor(left / 6e4) % 60}m left` : ''}` : 'Waiting for you to confirm'}</span></h3>
       <p class="hint"><i class="ti ti-clock"></i> ${esc(avKick())} · <i class="ti ti-map-pin"></i> ${esc(AV.settings.venue || '')}${avMode() === 'trial' ? ' · Trial' : ''}</p>
       <div class="dash-cols"><div>
         <div class="av-stats"><div class="i"><b>${ins.length}</b>In</div><div class="o"><b>${ans.length - ins.length}</b>Out</div><div class="n"><b>${none}</b>No answer</div></div>
@@ -4271,11 +4312,11 @@ function dashNextCard() {
       ${avNote ? `<p class="hint" style="margin-top:6px">${esc(avNote)}</p>` : ''}</div>`;
   }
   const g = dashNext();
-  if (g && g.cancelled) return `<div class="card dash-next da-next"><h3 class="dash-h">⚽ ${esc(avLongDate(g.iso))} <span class="badge b-cx">Game cancelled</span></h3>${cancelBox(g)}</div>`;
+  if (g && g.cancelled) return `<div class="card dash-next da-next"><h3 class="dash-h"><i class="ti ti-ball-football dash-i"></i>${esc(avLongDate(g.iso))} <span class="badge b-cx">Game cancelled</span></h3>${cancelBox(g)}</div>`;
   if (g) {
     const t = gameTeams(g.id), m = S.money.games.find(x => x.gameId === g.id), today = g.iso === isoToday(), wa = WA[g.day] || WA.mon;
     const tile = (ok, label, warn) => `<div class="${ok ? 'i' : warn ? 'w' : 'n'}"><b>${ok ? '✓' : '–'}</b>${label}</div>`;
-    return `<div class="card dash-next da-next"><h3 class="dash-h">⚽ ${today ? `Tonight ${esc(wa.time)}` : esc(avLongDate(g.iso))} <span class="badge ${today ? 'b-thu' : 'b-guar'}">${today ? 'Game day' : 'Squad picked'}</span></h3>
+    return `<div class="card dash-next da-next"><h3 class="dash-h"><i class="ti ti-ball-football dash-i"></i>${today ? `Tonight ${esc(wa.time)}` : esc(avLongDate(g.iso))} <span class="badge ${today ? 'b-thu' : 'b-guar'}">${today ? 'Game day' : 'Squad picked'}</span></h3>
       <p class="hint">${today ? esc(isoToDate(g.iso).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })) + ' · ' : ''}${g.playingIds.length} playing${g.reserveIds.length ? ` · ${g.reserveIds.length} reserve${g.reserveIds.length === 1 ? '' : 's'}` : ''} · 📍 ${esc(wa.venue)}</p>
       <div class="av-stats dash-check">${tile(true, 'Squad')}${tile(t && t.status === 'confirmed', t ? (t.status === 'confirmed' ? 'Teams' : 'Teams (draft)') : 'Teams', !!t)}${tile(!!m, 'Money', false)}</div>
       ${t && t.status === 'confirmed' && !sameSet([...t.t1, ...t.t2], g.playingIds) ? '<div class="notice" style="display:block">The squad changed after the teams were confirmed: check them.</div>' : ''}
@@ -4284,14 +4325,14 @@ function dashNextCard() {
       <div class="tactions" style="margin-top:10px"><button class="btn sm primary" onclick="teamsOpenGame(${g.id})">${t ? 'Teams' : 'Pick teams'} →</button><button class="btn sm" onclick="goTab('history'); waToggleLog(${dashGameIdx(g)})"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>${m ? '' : `<button class="btn sm" onclick="goTab('money')">Track money</button>`}<button class="btn sm ${g.playingIds.length < MIN_PLAYERS ? 'danger' : 'dghost'}" onclick="cancelOpen(${g.id})">✕ Cancel game</button></div></div>`;
   }
   const n = AV.settings && avMode() !== 'off' ? avNextOpening() : null;
-  return `<div class="card dash-next da-next"><h3 class="dash-h">⚽ Next game</h3>${n
+  return `<div class="card dash-next da-next"><h3 class="dash-h"><i class="ti ti-ball-football dash-i"></i>Next game</h3>${n
     ? `<p class="hint">${esc(avLongDate(n.iso))}. Availability opens ${esc(dashShort(n.open))} at ${esc(avClock(AV.settings.open_time))}. Nothing to do yet.</p><div class="tactions" style="margin-top:8px"><button class="btn sm" onclick="avAct('avail_open',{day:'${n.day}'},'Opened.')">Open now</button></div>`
     : `<p class="hint">No game booked yet.</p><div class="tactions" style="margin-top:8px"><button class="btn sm primary" onclick="goTab('game')">Run game</button></div>`}</div>`;
 }
 function dashMoneyCard() {
   const t = moneyTotals(), h = moneyHoldings(), credit = S.money.credit.reduce((s, x) => s + x.amount, 0), debts = debtsOwed();
   const owing = [...new Set(debts.map(d => d.pid))];
-  return `<div class="card da-money"><h3 class="dash-h">💷 Money <button class="btn xs" onclick="goTab('money')">Payments →</button></h3>
+  return `<div class="card da-money"><h3 class="dash-h"><i class="ti ti-currency-pound dash-i"></i>Money <button class="btn xs" onclick="goTab('money')">Payments →</button></h3>
     <div class="av-stats"><div class="i"><b>${gbp(t.kitty)}</b>In the kitty</div><div class="o"><b>${gbp(t.owed)}</b>Still owed</div><div class="b"><b>${gbp(credit)}</b>Credit held</div></div>
     <table class="ledger" style="min-width:0"><thead><tr><th>Organiser</th><th class="r">Holds</th><th class="r">Owed to them</th></tr></thead><tbody>${ORGANISERS.map(o => `<tr><td>${esc(o)}</td><td class="r">${gbp(h[o].kitty)}</td><td class="r">${h[o].owed ? gbp(h[o].owed) : '–'}</td></tr>`).join('')}</tbody></table>
     ${pushReady && pushCount(owing) ? `<div class="tactions" style="margin-top:8px"><button class="btn sm primary" onclick="pushRemind()">🔔 Send reminders (${pushCount(owing)})</button></div>` : ''}</div>`;
@@ -4303,7 +4344,7 @@ function dashActivityCard() {
     const r = AV.rounds.find(x => x.game_iso === a.game_iso);
     return `<div><time>${esc(when(a.answered_at))}</time><span><strong>${esc(pName(Number(a.player_id)))}</strong> ${a.answer === 'in' ? 'is in' : 'is out'} for ${r ? avDayName(r.day) : esc(a.game_iso)}${a.by_organiser ? ' <span class="hint">(by an organiser)</span>' : ''}</span></div>`;
   });
-  return `<div class="card da-act"><h3 class="dash-h">🕒 Recent answers</h3><div class="dash-feed">${rows.join('')}</div></div>`;
+  return `<div class="card da-act"><h3 class="dash-h"><i class="ti ti-history dash-i"></i>Recent answers</h3><div class="dash-feed">${rows.join('')}</div></div>`;
 }
 function dashGroupCard() {
   if (!pushReady) return '';
@@ -4311,12 +4352,12 @@ function dashGroupCard() {
     dashUsersAt = Date.now();
     pushCall('admin_users', {}).then(d => { dashUsers = d; if (document.getElementById('page-dash').classList.contains('active')) renderDash(); }).catch(() => {});
   }
-  if (!dashUsers) return '<div class="card da-group"><h3 class="dash-h">👥 The group</h3><p class="hint">Loading…</p></div>';
+  if (!dashUsers) return '<div class="card da-group"><h3 class="dash-h"><i class="ti ti-users dash-i"></i>The group</h3><p class="hint">Loading…</p></div>';
   const has = new Set([...dashUsers.devices.map(d => Number(d.player_id)), ...dashUsers.subscriptions.map(s => Number(s.player_id))]);
   const notes = new Set(dashUsers.subscriptions.map(s => Number(s.player_id)));
   const samsung = new Set(dashUsers.devices.filter(d => /Samsung/i.test(d.browser)).map(d => Number(d.player_id)));
   const not = S.players.filter(p => !has.has(p.id));
-  return `<div class="card da-group"><h3 class="dash-h">👥 The group <button class="btn xs" onclick="goTab('users')">App users →</button></h3>
+  return `<div class="card da-group"><h3 class="dash-h"><i class="ti ti-users dash-i"></i>The group <button class="btn xs" onclick="goTab('users')">App users →</button></h3>
     <div class="av-stats"><div class="i"><b>${S.players.filter(p => has.has(p.id)).length}</b>On the app</div><div class="b"><b>${S.players.filter(p => notes.has(p.id)).length}</b>Notifications</div><div class="n"><b>${not.length}</b>Not yet</div></div>
     ${not.length ? `<p class="hint"><strong>Not on the app:</strong> ${not.slice(0, 12).map(p => esc(p.name)).join(', ')}${not.length > 12 ? ` and ${not.length - 12} more` : ''}</p>` : '<p class="hint">Everyone is on the app 🎉</p>'}
     ${samsung.size ? `<p class="hint" style="margin-top:6px"><strong>Samsung Internet:</strong> ${samsung.size} player${samsung.size === 1 ? '' : 's'} (told to use Chrome)</p>` : ''}
@@ -4334,7 +4375,7 @@ function dashTurnoutCard() {
   if (!last.length) return '';
   // Each bar: players at the bottom, reserves stacked on top, total above
   const max = Math.max(BF_SELECT.SQUAD_SIZE, ...last.map(g => g.playingIds.length + g.reserveIds.length));
-  return `<div class="card da-turn"><h3 class="dash-h">📈 Turnout, last ${last.length} game${last.length === 1 ? '' : 's'}</h3>
+  return `<div class="card da-turn"><h3 class="dash-h"><i class="ti ti-chart-bar dash-i"></i>Turnout, last ${last.length} game${last.length === 1 ? '' : 's'}</h3>
     <div class="dash-spark">${last.map(g => `<div class="tb" title="${esc(dashShort(g.iso))}: ${g.playingIds.length} playing, ${g.reserveIds.length} reserve${g.reserveIds.length === 1 ? '' : 's'}${gameCancelled(g) ? ' (cancelled)' : ''}">${gameCancelled(g) ? '<b style="color:var(--text-danger)">✕</b>' : `<b>${g.playingIds.length}${g.reserveIds.length ? '+' + g.reserveIds.length : ''}</b>`}${g.reserveIds.length ? `<i class="rs" style="height:${g.reserveIds.length / max * 100}%"></i>` : ''}<i class="pl${gameCancelled(g) ? ' low' : ''}" style="height:${g.playingIds.length / max * 100}%"></i></div>`).join('')}</div>
     <div class="dash-sparkl">${last.map(g => `<span>${esc(isoToDate(g.iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))}</span>`).join('')}</div>
     <div class="dash-key"><span><i style="background:var(--border-accent)"></i>Playing</span><span><i style="background:var(--bg-warning);border:0.5px solid var(--text-warning)"></i>Reserves</span><span><i style="background:var(--border-danger)"></i>Game cancelled</span></div></div>`;
@@ -4352,7 +4393,7 @@ function dashLeagueCard() {
   });
   const rows = [...rec.entries()].filter(([id]) => S.players.some(p => p.id === id)).map(([id, x]) => ({ id, ...x, p: x.w + x.d + x.l, pts: x.w * 3 + x.d }))
     .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.w - a.w || pName(a.id).localeCompare(pName(b.id)));
-  return `<div class="card da-league"><h3 class="dash-h">🥇 League (${year}) <button class="btn xs" onclick="goTab('stats')">Player Stats →</button></h3>${rows.length
+  return `<div class="card da-league"><h3 class="dash-h"><i class="ti ti-trophy dash-i"></i>League (${year}) <button class="btn xs" onclick="goTab('stats')">Player Stats →</button></h3>${rows.length
     ? `<table class="ledger dash-league" style="min-width:0"><thead><tr><th></th><th>Player</th><th class="r">P</th><th class="r">W</th><th class="r">D</th><th class="r">L</th><th class="r">GD</th><th class="r">Pts</th></tr></thead><tbody>${rows.map((x, i) =>
         `<tr><td>${i + 1}</td><td>${esc(pName(x.id))}</td><td class="r">${x.p}</td><td class="r">${x.w}</td><td class="r">${x.d}</td><td class="r">${x.l}</td><td class="r">${x.gd > 0 ? '+' : ''}${x.gd}</td><td class="r"><strong>${x.pts}</strong></td></tr>`).join('')}</tbody></table>
        <p class="hint dash-league-more" style="margin-top:6px"></p>`
@@ -4383,7 +4424,7 @@ function dashSeasonCard() {
   S.teams.games.filter(t => t.status === 'confirmed' && hasScore(t)).forEach(t => { const g = S.games.find(x => x.id === t.gameId); if (!g || g.cancelled || !scoreCounts(g) || !(g.iso || '').startsWith(year)) return; [1, 2].forEach(n => t['t' + n].forEach(id => {
     const r = rec.get(id) || { w: 0, n: 0 }, us = n === 1 ? t.score1 : t.score2, them = n === 1 ? t.score2 : t.score1; r.n++; if (us > them) r.w++; rec.set(id, r); })); });
   const best = [...rec.entries()].filter(([, r]) => r.n >= 5).map(([id, r]) => ({ id, pct: Math.round(r.w / r.n * 100) })).sort((a, b) => b.pct - a.pct).slice(0, 3);
-  return `<div class="card da-season"><h3 class="dash-h">🏆 This season (${year})</h3>
+  return `<div class="card da-season"><h3 class="dash-h"><i class="ti ti-award dash-i"></i>This season (${year})</h3>
     <table class="ledger" style="min-width:0"><thead><tr><th>Most games</th><th class="r"></th></tr></thead><tbody>${most.map(x => `<tr><td>${esc(x.p.name)}</td><td class="r">${x.n}</td></tr>`).join('') || '<tr><td class="hint">No games yet</td><td></td></tr>'}</tbody></table>
     <table class="ledger" style="min-width:0;margin-top:6px"><thead><tr><th>Best win % (5+ scored games)</th><th class="r"></th></tr></thead><tbody>${best.map(x => `<tr><td>${esc(pName(x.id))}</td><td class="r">${x.pct}%</td></tr>`).join('') || '<tr><td class="hint">Needs more scores</td><td></td></tr>'}</tbody></table></div>`;
 }
@@ -4426,7 +4467,7 @@ function renderHi() {
   if (onDash) {
     const h = new Date().getHours(), todos = dashTodos().length, r = avVisible() ? avRound() : null;
     sub = `Good ${h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening'}. Here's where things stand.`;
-    chips = [todos ? `<span class="c-info">✅ ${todos} thing${todos === 1 ? '' : 's'} to do</span>` : '<span class="c-ok">🎉 All caught up</span>'];
+    chips = [todos ? `<span class="c-info"><i class="ti ti-list-check"></i> ${todos} thing${todos === 1 ? '' : 's'} to do</span>` : '<span class="c-ok"><i class="ti ti-circle-check"></i> All caught up</span>'];
     if (r && (r.status === 'open' || r.status === 'held')) chips.push(`<span class="c-ok">⚽ ${avAnswersFor(r.game_iso).filter(a => a.answer === 'in').length} in for ${esc(avDayName(r.day))}</span>`);
   } else {
     const r = avVisible() ? avRound() : null;

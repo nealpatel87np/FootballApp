@@ -221,7 +221,7 @@ The repository also contains an unrelated starter app (`server.js`, `public/`, S
 ### 6.6 Game Log (everyone)
 
 - Games newest first. The latest 5 are shown, with **Show older games**.
-- Each game's summary shows playing and reserve counts, the score, **Score needed**, draft teams, and how many were late.
+- Each game's row shows the date and day, playing and reserve counts, and how many were late. On the right it shows the score, or a pill for **Score needed**, **Draft teams** or **Teams picked**.
 - An open game shows:
   - the date, which can be corrected (the day type follows the weekday);
   - teams and score: organisers enter scores with **Save score** or **Clear score**, and the winning team is marked **Won**;
