@@ -922,6 +922,14 @@ The app stores **first names or nicknames**, attendance, ratings, scores and pay
 
 ## 11. User experience design
 
+- **Look (style B "clean pro", 4.0 update, visual only):**
+  - One font (Inter, falling back to the phone's own), with numbers that line up for scores and money.
+  - Quiet grey surfaces, white or near-black cards with fine borders, and one green accent used for things you can tap and the current page. Green, amber and red appear only for status.
+  - **Light, dark and Auto:** Auto follows the phone. The round button at the top right cycles Auto → Light → Dark and is remembered on the device (`fbv3_theme`, `data-theme` on the page). Dark mode is near-black with slightly lighter cards.
+  - An app bar with the icon and name; a bottom bar with line icons and a green pill on the current page.
+  - Icons instead of emojis on screen (clock, pin, chips, money). Emojis stay in WhatsApp messages and notifications.
+  - Front page next game: a big date, tiles for playing, reserves and price per player, and the squad as initials avatars.
+  - Rolled out page by page; the front page, Availability and Payments come first.
 - **Navigation:**
   - Phones (720px or less): organisers get a bottom bar with Dashboard, Run game, Teams, Payments and More (a sheet with Setup, Ratings, Availability, Game Log, Player Stats, Attendance, Notifications and App users).
   - Desktop: one row of tabs.
