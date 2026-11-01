@@ -619,6 +619,27 @@
   .tscore { border-radius: 14px; }
   .tscore .big { font-weight: 800; }
   .tscore .side { white-space: nowrap; font-weight: 650; }
+
+  /* ---- Look, part 3: Setup, Ratings, Player Stats, Attendance, Notifications, App users ---- */
+  .h-i { font-size: 18px; color: var(--text-muted); margin-right: 7px; vertical-align: -3px; }
+  .setup-count { background: var(--surface-2); border: 1px solid var(--border); box-shadow: var(--shadow); border-radius: 16px; }
+  .ledger.stats { border: none; }
+  .ledger.stats th, .ledger.stats td { border: none; border-bottom: 1px solid var(--border); padding: 8px 6px; vertical-align: middle; }
+  .ledger.stats thead th { background: transparent; color: var(--text-muted); font-weight: 600; text-align: right; }
+  .ledger.stats thead th:first-child { text-align: left; }
+  .ledger.stats tbody tr:last-child td { border-bottom: none; }
+  .ledger.stats td:first-child { font-weight: 600; }
+  .ledger.stats td.r { text-align: right; }
+  .ledger.stats tr.mine td { background: var(--bg-accent); }
+  .ledger.stats tr.mine td:first-child { border-radius: 10px 0 0 10px; } .ledger.stats tr.mine td:last-child { border-radius: 0 10px 10px 0; }
+  .pn { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+  .avi.xs { width: 24px; height: 24px; font-size: 9.5px; flex-shrink: 0; }
+  .sk-bar, .skbar { border-radius: 4px; }
+
+  /* Stat tiles: numbers shrink to fit their tile, so large amounts (e.g. a £1,683.13 kitty) never spill over */
+  .av-stats { container-type: inline-size; }
+  .av-stats div { min-width: 0; padding: 9px 8px; }
+  .av-stats b { font-size: clamp(12px, 5cqi, 20px); letter-spacing: -0.03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 </style>
 </head>
 <body class="on-front">
@@ -674,7 +695,7 @@
 
   <!-- SETUP -->
   <div id="page-setup" class="page active">
-    <div class="stat" style="margin-bottom:12px"><div class="n" id="setup-count">0</div><div class="l">Players</div></div>
+    <div class="stat setup-count" style="margin-bottom:12px"><div class="n" id="setup-count">0</div><div class="l">Players</div></div>
     <p class="hint" id="push-diag" style="margin:-4px 0 12px"></p>
     <div class="card" id="avail-settings"></div>
     <div class="card">
@@ -3058,7 +3079,7 @@ function renderStats() {
   const rows = [...S.players].sort((a, b) => (played(get(b.id)) - played(get(a.id))) || (get(b.id).w - get(a.id).w) || a.name.localeCompare(b.name));
   el.innerHTML = `<div class="tablewrap"><table class="ledger stats" style="min-width:0"><thead><tr><th>Player</th><th class="r">Played</th><th class="r">Won</th><th class="r">Drawn</th><th class="r">Lost</th><th class="r">Win %</th></tr></thead><tbody>${rows.map(p => {
     const r = get(p.id), n = played(r);
-    return `<tr><td>${esc(p.name)}</td><td class="r">${n}</td><td class="r">${r.w}</td><td class="r">${r.d}</td><td class="r">${r.l}</td><td class="r">${n ? Math.round(r.w / n * 100) + '%' : '–'}</td></tr>`;
+    return `<tr${p.id === ME ? ' class="mine"' : ''}><td><span class="pn">${avInitials(p.name, 'xs')}${esc(p.name)}</span></td><td class="r">${n}</td><td class="r">${r.w}</td><td class="r">${r.d}</td><td class="r">${r.l}</td><td class="r">${n ? Math.round(r.w / n * 100) + '%' : '–'}</td></tr>`;
   }).join('')}</tbody></table></div>`;
 }
 /* Appearances before the app, from the old spreadsheet: [name, before 2026, 2026 before the app].
@@ -3198,7 +3219,7 @@ function renderAttendance() {
     return { p, upTo2025: l.upTo2025, byYear, total: l.upTo2025 + byYear.reduce((a, b) => a + b, 0) };
   }).sort((a, b) => (b.total - a.total) || a.p.name.localeCompare(b.p.name));
   el.innerHTML = `<div class="tablewrap"><table class="ledger stats" style="min-width:0"><thead><tr><th>Player</th><th class="r">Before 2026</th>${years.map(y => `<th class="r">${y}</th>`).join('')}<th class="r">Total</th><th class="r">Reserve</th></tr></thead><tbody>${rows.map(r =>
-    `<tr><td>${esc(r.p.name)}</td><td class="r">${r.upTo2025}</td>${r.byYear.map(v => `<td class="r">${v}</td>`).join('')}<td class="r"><strong>${r.total}</strong></td><td class="r">${r.p.reserved}</td></tr>`).join('')}</tbody></table></div>`;
+    `<tr${r.p.id === ME ? ' class="mine"' : ''}><td><span class="pn">${avInitials(r.p.name, 'xs')}${esc(r.p.name)}</span></td><td class="r">${r.upTo2025}</td>${r.byYear.map(v => `<td class="r">${v}</td>`).join('')}<td class="r"><strong>${r.total}</strong></td><td class="r">${r.p.reserved}</td></tr>`).join('')}</tbody></table></div>`;
   renderLegacyList();
 }
 // Every name from the old spreadsheet, view only, with whether they're in the app yet
@@ -3613,7 +3634,7 @@ function renderPushCard() {
   const show = pushReady && !pushOn() && !PUSH.hideCard && (iosAdd || (pushCan() && Notification.permission !== 'denied'));
   el.style.display = show ? '' : 'none';
   if (!show) return;
-  el.innerHTML = `<h3>🔔 Get notified</h3>` + (iosAdd
+  el.innerHTML = `<h3><i class="ti ti-bell h-i"></i>Get notified</h3>` + (iosAdd
     ? `<p class="hint">Find out when you're playing, which team you're on and if you owe money. On iPhone, add Brent Football to your Home Screen first (Share → Add to Home Screen), then open it from there.</p>
        <div style="margin-top:10px"><button class="btn sm" onclick="pushHideCard()">Not now</button></div>`
     : `<p class="hint">Find out when you're playing, which team you're on and if you owe money, without checking WhatsApp.</p>${pushSamsungNote()}
@@ -3626,7 +3647,7 @@ function renderPushCard() {
 function renderNotify() {
   const el = document.getElementById('notify-card');
   const note = pushNote ? `<p class="hint" style="margin-top:8px">${esc(pushNote)}</p>` : '';
-  let html = '<h3>🔔 Notifications</h3>' + avInstallBlock() + (pushReady && pushInstalled() ? pushSamsungNote() : '');
+  let html = '<h3><i class="ti ti-bell h-i"></i>Notifications</h3>' + avInstallBlock() + (pushReady && pushInstalled() ? pushSamsungNote() : '');
   if (!pushCan()) {
     html += pushIos() && !pushInstalled()
       ? '<p class="hint">On iPhone, notifications only work in the installed app. In Safari, tap Share → Add to Home Screen, then open Brent Football from your home screen and come back here.</p>'
@@ -4048,19 +4069,19 @@ function avPlayerCard() {
 function avInstallSteps() {
   return `<p class="hint"><strong>Android:</strong> tap Install app, or ⋮ → Install app in Chrome.<br><strong>iPhone:</strong> in Safari, tap Share → Add to Home Screen.</p>${pushSamsungNote()}`;
 }
-const avInstallButton = () => pushSamsung() || pushIos() ? '' : '<button class="btn primary" onclick="avInstall()">⬇ Install app</button>';
+const avInstallButton = () => pushSamsung() || pushIos() ? '' : '<button class="btn primary" onclick="avInstall()"><i class="ti ti-download"></i> Install app</button>';
 // Shown in the browser (not the installed app) whatever the availability switch, until dismissed
 function avInstallCard() {
   let hidden = false; try { hidden = localStorage.getItem(INSTALL_HIDE_KEY) === '1'; } catch (e) {}
   if (pushInstalled() || hidden) return '';
-  return `<div class="card av-hi"><h3>👋 Welcome to Brent Football</h3><p class="hint">${avMode() === 'on' ? "Say if you're playing, see the squad and teams, and check what you owe." : 'See the next game, the squad and teams, and what you owe, and get notifications.'}</p>
+  return `<div class="card av-hi"><h3><i class="ti ti-sparkles h-i"></i>Welcome to Brent Football</h3><p class="hint">${avMode() === 'on' ? "Say if you're playing, see the squad and teams, and check what you owe." : 'See the next game, the squad and teams, and what you owe, and get notifications.'}</p>
     <div class="sh">Install it (once)</div>${avInstallSteps()}
     <div class="tactions" style="margin-top:10px">${avInstallButton()}<button class="btn" onclick="avHideInstall()">Continue in the browser</button></div></div>`;
 }
 // On the Notifications page, always available until the app is installed
 function avInstallBlock() {
   if (pushInstalled()) return '';
-  return `<div class="notice" style="display:block;background:var(--bg-accent);color:var(--text-accent);margin:8px 0 10px"><strong>📲 Install the app</strong>
+  return `<div class="notice" style="display:block;background:var(--bg-accent);color:var(--text-accent);margin:8px 0 10px"><strong><i class="ti ti-device-mobile-down"></i> Install the app</strong>
     <div style="margin-top:4px">${avInstallSteps()}</div>${avInstallButton() ? `<div class="tactions" style="margin-top:8px">${avInstallButton()}</div>` : ''}</div>`;
 }
 
@@ -4075,7 +4096,7 @@ function avShortButtons(r, n) {
 function avOrgCard() {
   if (!AV.dbOk || avMode() === 'off') return '';
   const r = avRound(), note = avNote ? `<p class="hint" style="margin-top:8px">${esc(avNote)}</p>` : '';
-  let html = `<div class="card"><div class="fold-h"><h3>📋 Self-service availability</h3><span class="badge ${avMode() === 'on' ? 'b-thu' : 'b-guar'}">${avMode() === 'on' ? 'On' : 'Trial'}</span></div>
+  let html = `<div class="card"><div class="fold-h"><h3><i class="ti ti-clipboard-check h-i"></i>Self-service availability</h3><span class="badge ${avMode() === 'on' ? 'b-thu' : 'b-guar'}">${avMode() === 'on' ? 'On' : 'Trial'}</span></div>
     ${avMode() === 'trial' ? '<p class="hint" style="margin-top:6px">Trial: only organisers see this and get its notifications, and squads wait for you to confirm.</p>' : ''}`;
   if (!r || r.status === 'cancelled') {
     const n = avNextOpening();
@@ -4164,17 +4185,17 @@ async function avSaveSettings() {
 /* Organisers: App users */
 async function renderUsers() {
   const el = document.getElementById('users-card');
-  el.innerHTML = '<h3>📱 App users</h3><p class="hint">Loading…</p>';
-  if (!pushReady) { el.innerHTML = '<h3>📱 App users</h3><p class="hint">Needs the notify function. See the 🔔 line on Setup.</p>'; return; }
+  el.innerHTML = '<h3><i class="ti ti-device-mobile h-i"></i>App users</h3><p class="hint">Loading…</p>';
+  if (!pushReady) { el.innerHTML = '<h3><i class="ti ti-device-mobile h-i"></i>App users</h3><p class="hint">Needs the notify function. See the 🔔 line on Setup.</p>'; return; }
   let data;
-  try { data = await pushCall('admin_users', {}); } catch (e) { el.innerHTML = `<h3>📱 App users</h3><p class="hint">${esc(e.message)}</p>`; return; }
+  try { data = await pushCall('admin_users', {}); } catch (e) { el.innerHTML = `<h3><i class="ti ti-device-mobile h-i"></i>App users</h3><p class="hint">${esc(e.message)}</p>`; return; }
   const KIND_SHORT = { availability: 'Avail', squad: 'Squad', teams: 'Teams', payments: 'Pay', credit: 'Credit' };
   const rows = S.players.map(p => {
     const devs = data.devices.filter(d => Number(d.player_id) === p.id), subs = data.subscriptions.filter(s => Number(s.player_id) === p.id);
     return { p, devs, subs, has: devs.length || subs.length };
   }).sort((a, b) => (b.has ? 1 : 0) - (a.has ? 1 : 0) || a.p.name.localeCompare(b.p.name));
   const withApp = rows.filter(r => r.has).length, withNote = rows.filter(r => r.subs.length).length, installed = rows.filter(r => r.devs.some(d => d.installed)).length;
-  el.innerHTML = `<h3>📱 App users</h3>
+  el.innerHTML = `<h3><i class="ti ti-device-mobile h-i"></i>App users</h3>
     <div class="av-stats" style="margin-top:8px"><div class="i"><b>${withApp}</b>Set up</div><div class="n"><b>${installed}</b>Installed</div><div class="i"><b>${withNote}</b>Notifications on</div><div class="o"><b>${S.players.length - withApp}</b>Not yet</div></div>
     <div class="tablewrap"><table class="ledger stats" style="min-width:0"><thead><tr><th>Player</th><th>App</th><th>Notifications</th></tr></thead><tbody>${rows.map(r =>
       `<tr><td>${esc(r.p.name)}</td><td>${r.devs.length ? r.devs.map(d => `${d.installed ? '📱 Installed' : '🌐 Browser'}<br><span class="hint">${esc(d.browser)} · ${esc(d.platform)}</span>`).join('<br>') : r.subs.length ? '📱 Yes' : '<span class="hint">–</span>'}</td>
@@ -4303,7 +4324,7 @@ function dashNextCard() {
         <p class="hint">${BF_SELECT.SQUAD_SIZE} places${reserves.length ? ` · ${reserves.length} would be reserve${reserves.length === 1 ? '' : 's'}` : playing.length < BF_SELECT.SQUAD_SIZE ? ` · ${BF_SELECT.SQUAD_SIZE - playing.length} short` : ''}</p>
         ${missing.length ? `<div class="notice" style="display:block;margin-top:8px">⭐ ${missing.map(p => esc(p.name)).join(', ')} ${missing.length === 1 ? 'is' : 'are'} guaranteed but ${missing.length === 1 ? "hasn't" : "haven't"} said in.</div>` : ''}
         <div class="tactions" style="margin-top:8px">
-          <button class="btn sm" onclick="avAct('avail_nudge',{gameIso:'${r.game_iso}'},x=>'Nudged '+(x.players||0)+'.')">🔔 Nudge ${none}</button>
+          <button class="btn sm" onclick="avAct('avail_nudge',{gameIso:'${r.game_iso}'},x=>'Nudged '+(x.players||0)+'.')"><i class="ti ti-bell"></i> Nudge ${none}</button>
           ${r.status === 'held' && playing.length < MIN_PLAYERS ? avShortButtons(r, playing.length) : r.status === 'held' ? `<button class="btn sm primary" onclick="avAct('avail_confirm',{gameIso:'${r.game_iso}'},'Squad saved and announced.')">Confirm and announce</button>` : `<button class="btn sm" onclick="if(confirm('Close availability now and pick the squad?'))avAct('avail_close',{gameIso:'${r.game_iso}'},x=>x.held?'Squad picked. Confirm it on Run game.':'Squad picked and announced.')">Close now</button>`}
           <button class="btn sm" onclick="goTab('game')">Answer for a player</button>
         </div></div>
@@ -4335,7 +4356,7 @@ function dashMoneyCard() {
   return `<div class="card da-money"><h3 class="dash-h"><i class="ti ti-currency-pound dash-i"></i>Money <button class="btn xs" onclick="goTab('money')">Payments →</button></h3>
     <div class="av-stats"><div class="i"><b>${gbp(t.kitty)}</b>In the kitty</div><div class="o"><b>${gbp(t.owed)}</b>Still owed</div><div class="b"><b>${gbp(credit)}</b>Credit held</div></div>
     <table class="ledger" style="min-width:0"><thead><tr><th>Organiser</th><th class="r">Holds</th><th class="r">Owed to them</th></tr></thead><tbody>${ORGANISERS.map(o => `<tr><td>${esc(o)}</td><td class="r">${gbp(h[o].kitty)}</td><td class="r">${h[o].owed ? gbp(h[o].owed) : '–'}</td></tr>`).join('')}</tbody></table>
-    ${pushReady && pushCount(owing) ? `<div class="tactions" style="margin-top:8px"><button class="btn sm primary" onclick="pushRemind()">🔔 Send reminders (${pushCount(owing)})</button></div>` : ''}</div>`;
+    ${pushReady && pushCount(owing) ? `<div class="tactions" style="margin-top:8px"><button class="btn sm primary" onclick="pushRemind()"><i class="ti ti-bell"></i> Send reminders (${pushCount(owing)})</button></div>` : ''}</div>`;
 }
 function dashActivityCard() {
   if (!AV.settings || avMode() === 'off' || !AV.answers.length) return '';
