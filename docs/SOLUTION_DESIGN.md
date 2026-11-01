@@ -929,7 +929,8 @@ The app stores **first names or nicknames**, attendance, ratings, scores and pay
   - An app bar with the icon and name; a bottom bar with line icons and a green pill on the current page.
   - Icons instead of emojis on screen (clock, pin, chips, money). Emojis stay in WhatsApp messages and notifications.
   - Front page next game: a big date, tiles for playing, reserves and price per player, and the squad as initials avatars.
-  - Rolled out page by page: first the front page, Availability and Payments; then the Dashboard (line icons on every card heading and To do item, tinted to match), the Game Log (the score, or Score needed / Draft teams / Teams picked, on the right of each row) and Teams (neutral team cards with a bib-colour dot and initials avatars).
+  - Rolled out page by page: first the front page, Availability and Payments; then the Dashboard (line icons on every card heading and To do item, tinted to match), the Game Log (the score, or Score needed / Draft teams / Teams picked, on the right of each row) and Teams (neutral team cards with a bib-colour dot and initials avatars); then Setup, Ratings, Player Stats and Attendance (clean tables with initials and your own row highlighted), Notifications and App users (icons instead of emojis).
+  - Stat tiles (for example the Dashboard's kitty, owed and credit) shrink their numbers to fit the tile, so large amounts never spill over on narrow phones.
 - **Navigation:**
   - Phones (720px or less): organisers get a bottom bar with Dashboard, Run game, Teams, Payments and More (a sheet with Setup, Ratings, Availability, Game Log, Player Stats, Attendance, Notifications and App users).
   - Desktop: one row of tabs.
