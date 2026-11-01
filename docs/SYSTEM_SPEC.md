@@ -139,6 +139,8 @@ The repository also contains an unrelated starter app (`server.js`, `public/`, S
 
 ### 6.1 Front page
 
+- **Top bar:** the app icon and name, and a round theme button that cycles **Auto** (follows the phone), **Light** and **Dark**. The choice is remembered on the device.
+- **Next game card:** the date in large type, time and venue, tiles for players, reserves and the price per player, then the squad as initials avatars (reserves in amber), or the teams once they're confirmed.
 - When the phone has picked **Who are you?**, a greeting card says **"Hi {name} 👋"**. It has chips for:
   - **the next game:** playing, which reserve, or not in the squad; or, while availability is open, whether they've said in;
   - **money:** what they owe, or All paid up, plus any credit.

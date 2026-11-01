@@ -9,35 +9,51 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Brent Football">
-<meta name="theme-color" content="#f3f3f0" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#1a1a18" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a0b0d" media="(prefers-color-scheme: dark)">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<script>try { const t = localStorage.getItem('fbv3_theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="selection.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  /* Colours (style B, 4.0): light by default, dark when the phone is dark (Auto) or chosen in the theme switch */
   :root {
-    --surface-0: #f3f3f0; --surface-1: #ebebea; --surface-2: #ffffff;
-    --border: rgba(0,0,0,0.12); --border-strong: rgba(0,0,0,0.2);
-    --text-primary: #1a1a18; --text-secondary: #5f5e5a; --text-muted: #9a9994;
-    --radius: 8px;
-    --bg-accent: #e6f1fb; --text-accent: #185fa5; --fill-accent: #378add; --on-accent: #fff; --border-accent: #85b7eb;
-    --bg-success: #eaf3de; --text-success: #3b6d11; --border-success: #97c459;
-    --bg-danger: #fcebeb; --text-danger: #a32d2d; --border-danger: #f09595;
-    --bg-warning: #faeeda; --text-warning: #854f0b;
-    --bg-pro: #eeedfe; --text-pro: #534ab7;
+    --surface-0: #f5f6f8; --surface-1: #eef0f3; --surface-2: #ffffff;
+    --border: rgba(16,24,40,0.09); --border-strong: rgba(16,24,40,0.16);
+    --text-primary: #0e1116; --text-secondary: #4b5563; --text-muted: #8b9099;
+    --radius: 10px; --shadow: 0 1px 2px rgba(16,24,40,0.05);
+    --bg-accent: #e3f6ea; --text-accent: #15803d; --fill-accent: #16a34a; --on-accent: #fff; --border-accent: #86efac;
+    --bg-success: #e3f6ea; --text-success: #15803d; --border-success: #86efac;
+    --bg-danger: #fdecec; --text-danger: #dc2626; --border-danger: #fca5a5;
+    --bg-warning: #fdf3e2; --text-warning: #b45309;
+    --bg-pro: #eef0ff; --text-pro: #4f46e5;
   }
   @media (prefers-color-scheme: dark) {
-    :root {
-      --surface-0: #1a1a18; --surface-1: #232320; --surface-2: #2c2c2a;
-      --border: rgba(255,255,255,0.1); --border-strong: rgba(255,255,255,0.18);
-      --text-primary: #f0ede8; --text-secondary: #9a9994; --text-muted: #5f5e5a;
-      --bg-accent: #0c447c; --text-accent: #85b7eb; --fill-accent: #378add; --on-accent: #fff;
-      --bg-success: #27500a; --text-success: #c0dd97; --border-success: #3b6d11;
-      --bg-danger: #791f1f; --text-danger: #f09595; --border-danger: #a32d2d;
-      --bg-warning: #633806; --text-warning: #fac775;
-      --bg-pro: #3c3489; --text-pro: #afa9ec;
+    :root:not([data-theme="light"]) {
+    --surface-0: #0a0b0d; --surface-1: #1d2025; --surface-2: #15171b;
+    --border: rgba(255,255,255,0.07); --border-strong: rgba(255,255,255,0.14);
+    --text-primary: #f3f4f6; --text-secondary: #a1a6b0; --text-muted: #6b7280;
+    --shadow: none;
+    --bg-accent: #0f2a1a; --text-accent: #4ade80; --fill-accent: #22c55e; --on-accent: #052e12; --border-accent: #166534;
+    --bg-success: #0f2a1a; --text-success: #4ade80; --border-success: #166534;
+    --bg-danger: #2a1416; --text-danger: #f87171; --border-danger: #7f1d1d;
+    --bg-warning: #2a2210; --text-warning: #fbbf24;
+    --bg-pro: #1e1b4b; --text-pro: #a5b4fc;
     }
+  }
+  :root[data-theme="dark"] {
+    --surface-0: #0a0b0d; --surface-1: #1d2025; --surface-2: #15171b;
+    --border: rgba(255,255,255,0.07); --border-strong: rgba(255,255,255,0.14);
+    --text-primary: #f3f4f6; --text-secondary: #a1a6b0; --text-muted: #6b7280;
+    --shadow: none;
+    --bg-accent: #0f2a1a; --text-accent: #4ade80; --fill-accent: #22c55e; --on-accent: #052e12; --border-accent: #166534;
+    --bg-success: #0f2a1a; --text-success: #4ade80; --border-success: #166534;
+    --bg-danger: #2a1416; --text-danger: #f87171; --border-danger: #7f1d1d;
+    --bg-warning: #2a2210; --text-warning: #fbbf24;
+    --bg-pro: #1e1b4b; --text-pro: #a5b4fc;
   }
   body { font-family: system-ui, -apple-system, sans-serif; background: var(--surface-0); color: var(--text-primary); font-size: 14px; min-height: 100vh; }
   .app { max-width: 680px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
@@ -481,11 +497,99 @@
     .rule-form { grid-template-columns: 1fr 1fr; }
     .rule-form > div:first-child { grid-column: 1 / -1; }
   }
+
+  /* ---- Look (style B "clean pro", 4.0): one font, quiet surfaces, one green accent ---- */
+  body { font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; letter-spacing: -0.005em; }
+  .card { border-radius: 16px; border: 1px solid var(--border); box-shadow: var(--shadow); padding: 14px 16px; }
+  h3 { font-weight: 650; font-size: 15px; letter-spacing: -0.01em; }
+  .btn { border-radius: 12px; border: 1px solid var(--border-strong); font-weight: 600; background: var(--surface-2); }
+  .btn.primary { box-shadow: 0 1px 2px rgba(16,24,40,0.08); }
+  .btn.sm { border-radius: 10px; } .btn.xs { border-radius: 8px; }
+  .btn.dghost { background: transparent; }
+  input[type=text], input[type=date], input[type=time], input[type=number], input[type=password], select, textarea { border-radius: 10px; border: 1px solid var(--border-strong); }
+  .ok, .notice { border-radius: 12px; }
+  .badge { font-weight: 600; }
+  .sh { font-weight: 700; letter-spacing: .07em; color: var(--text-muted); }
+  .n, .ledger .r, .av-stats b, .owe-short .n, .stat .n, .front-tiles b, .score, td { font-variant-numeric: tabular-nums; }
+  /* App bar */
+  .appbar { display: flex; align-items: center; gap: 10px; margin: -6px 0 14px; }
+  .appbar img { width: 36px; height: 36px; border-radius: 10px; }
+  .appbar .ab-t { flex: 1; min-width: 0; }
+  .appbar .ab-t b { display: block; font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
+  .appbar .ab-t small { font-size: 12px; color: var(--text-muted); }
+  .themebtn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface-2); color: var(--text-secondary); display: grid; place-items: center; cursor: pointer; font-size: 18px; }
+  .themebtn:focus-visible { outline: 2px solid var(--fill-accent); outline-offset: 2px; }
+  /* Greeting */
+  .hi { border-radius: 16px; border: 1px solid var(--border); box-shadow: var(--shadow); padding: 12px 16px; }
+  .hi strong { font-size: 20px; font-weight: 750; letter-spacing: -0.02em; }
+  .hi .chips span { font-size: 12px; font-weight: 600; padding: 4px 10px; display: inline-flex; align-items: center; gap: 4px; }
+  .hi .chips .ti { font-size: 14px; }
+  /* Front page: next game */
+  .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-accent); }
+  .front-when { font-size: 24px; font-weight: 800; letter-spacing: -0.03em; margin-top: 2px; }
+  .front-facts { gap: 6px 14px; }
+  .front-facts .ti { font-size: 15px; vertical-align: -2px; color: var(--text-muted); }
+  .front-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+  .front-tiles div { background: var(--surface-1); border-radius: 12px; padding: 8px 10px; min-width: 0; }
+  .front-tiles b { display: block; font-size: 19px; font-weight: 800; letter-spacing: -0.02em; }
+  .front-tiles small { font-size: 11.5px; color: var(--text-secondary); }
+  .avgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 6px; margin-top: 14px; }
+  .avgrid span { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11.5px; color: var(--text-secondary); min-width: 0; text-align: center; }
+  .avgrid span > :last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .avi { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 12.5px; font-weight: 700; background: var(--surface-1); color: var(--text-primary); }
+  .avi.res { background: var(--bg-warning); color: var(--text-warning); }
+  /* Money tiles on the front page and Payments */
+  .stat { border-radius: 14px; text-align: left; }
+  .stat .n { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+  .money-tiles .stat, .owe-short { border: 1px solid var(--border); }
+  .money-tiles .kit { background: var(--surface-2); } .money-tiles .kit .l, .money-tiles .kit .s { color: var(--text-secondary); } .money-tiles .kit .n { color: var(--text-primary); }
+  .money-tiles .owed { background: var(--surface-2); }
+  .owe-short { border-radius: 16px; background: var(--surface-2); color: var(--text-primary); }
+  .owe-short .l { color: var(--text-secondary); font-weight: 600; }
+  .owe-short .n { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; }
+  .owe-short .s { color: var(--text-secondary); }
+  .owe-short.owe, .owe-short.cred, .owe-short.paid { background: var(--surface-2); color: var(--text-primary); }
+  .owe-short.owe .n { color: var(--text-danger); } .owe-short.paid .n, .owe-short.paid .l { color: var(--text-success); }
+  #my-balance .row { padding: 12px 0; }
+  #my-balance .row .name { font-weight: 650; }
+  /* Availability */
+  .av-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .av-btns .btn { padding: 13px 8px; font-size: 15px; border-radius: 12px; }
+  .av-btns .btn:only-child { grid-column: 1 / -1; }
+  .av-in { color: var(--text-primary); border-color: var(--border-strong); }
+  .av-in.on, .av-in:not(.on):first-child:hover { }
+  .av-in.on { background: var(--fill-accent); color: var(--on-accent); border-color: var(--fill-accent); }
+  .av-out { color: var(--text-primary); border-color: var(--border-strong); }
+  .av-out.on { background: var(--surface-1); color: var(--text-primary); }
+  .av-timer { background: transparent; border-top: 1px solid var(--border); border-radius: 0; padding: 10px 0 0; margin-top: 12px; font-size: 13px; color: var(--text-secondary); }
+  .av-timer strong { color: var(--text-primary); }
+  .av-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .av-stats div { border-radius: 12px; padding: 9px 10px; font-size: 11.5px; background: var(--surface-1); color: var(--text-secondary); }
+  .av-stats b { font-size: 20px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; }
+  .av-stats .i, .av-stats .o, .av-stats .b, .av-stats .w { background: var(--surface-1); color: var(--text-secondary); }
+  .av-stats .i b { color: var(--text-success); } .av-stats .o b { color: var(--text-danger); }
+  .av-names { columns: auto; display: flex; flex-wrap: wrap; gap: 6px; line-height: 1.2; }
+  .av-names span { display: inline-block; background: var(--surface-1); border-radius: 20px; padding: 5px 10px; font-size: 12.5px; }
+  /* Bottom bar and tabs */
+  @media (max-width: 720px) {
+    .bnav { background: color-mix(in srgb, var(--surface-2) 92%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-top: 1px solid var(--border); }
+    .bnav button { font-weight: 600; color: var(--text-muted); }
+    .bnav button i { font-size: 21px; width: 52px; height: 28px; display: grid; place-items: center; border-radius: 14px; transition: background .15s; }
+    .bnav button.active { color: var(--text-accent); }
+    .bnav button.active i { background: var(--bg-accent); }
+  }
+  .nav { border-bottom: 1px solid var(--border); }
+  .nav .nb { font-weight: 600; color: var(--text-secondary); }
+  .nav .nb.active { color: var(--text-accent); }
+  #modebar { border: 1px solid var(--border); border-radius: 12px; }
+  body.mode-view #modebar { background: var(--surface-2); }
+  body.mode-edit #modebar { background: var(--bg-accent); color: var(--text-accent); border-color: transparent; }
 </style>
 </head>
 <body class="on-front">
 <div class="app">
-  <h2><i class="ti ti-ball-football" style="margin-right:8px;font-size:20px"></i>Brent Football</h2>
+  <header class="appbar"><img src="icons/icon.svg" alt=""><div class="ab-t"><b>Brent Football</b><small>Monday and Thursday football</small></div>
+    <button class="themebtn" id="theme-btn" onclick="themeNext()" aria-label="Theme"><i class="ti ti-circle-half-2"></i></button></header>
   <div id="sync-status" style="font-size:11px;color:var(--text-muted);margin:-8px 0 14px 2px"></div>
   <div class="hi" id="hi" style="display:none"></div>
 
@@ -2204,16 +2308,16 @@ function renderMyBalance() {
   const el = document.getElementById('my-balance'); if (!el) return;
   const p = ME && S.players.find(x => x.id === ME);
   if (!p) {
-    el.innerHTML = `<h3>💷 Your balance</h3><p class="hint" style="margin-bottom:8px">Choose your name to see what you owe and any credit.</p>
+    el.innerHTML = `<h3>Your balance</h3><p class="hint" style="margin-bottom:8px">Choose your name to see what you owe and any credit.</p>
       <select aria-label="Your name" onchange="if (this.value) { avSetMe(+this.value); renderMyBalance(); }">${avOptions(null)}</select>`;
     return;
   }
   const mine = debtsOwed().filter(d => d.pid === ME), owed = mine.reduce((t, d) => t + d.amt, 0), credit = creditOf(ME);
-  el.innerHTML = `<h3>💷 Your balance, ${esc(p.name)}</h3>
+  el.innerHTML = `<h3>Your balance, ${esc(p.name)}</h3>
     <div class="owe-shortcuts">${owed
-      ? `<div class="owe-short owe"><span class="l">🔴 You owe</span><span class="n">${gbp(owed)}</span><span class="s">${pushPlural(mine.length, 'game')}</span></div>`
+      ? `<div class="owe-short owe"><span class="l">You owe</span><span class="n">${gbp(owed)}</span><span class="s">${pushPlural(mine.length, 'game')}</span></div>`
       : `<div class="owe-short paid"><span class="l">✓ All paid up</span><span class="n">${gbp(0)}</span><span class="s">Nothing owed</span></div>`}
-      <div class="owe-short cred"><span class="l">💷 Credit</span><span class="n">${gbp(credit)}</span><span class="s">${credit ? 'Used for your next games' : 'None held'}</span></div></div>
+      <div class="owe-short cred"><span class="l">Credit</span><span class="n">${gbp(credit)}</span><span class="s">${credit ? 'Used for your next games' : 'None held'}</span></div></div>
     ${mine.map(d => `<div class="row"><span class="name">${esc(d.g.iso ? dashShort(d.g.iso) : d.g.date)}</span><span class="my-pay">Pay ${esc(d.m.org)}</span><strong>${gbp(d.amt)}</strong></div>`).join('')}
     <p class="hint" style="margin-top:8px">Pay the organiser on the day. Only your own balance is shown here; organisers see everyone's. <button class="linkbtn" style="margin:0" onclick="hiNotYou(); renderMyBalance()">Not you?</button></p>`;
 }
@@ -2402,6 +2506,8 @@ const ORGANISER_PASS_SHA256 = '1414c1fd5e48a46f2f7c7a99bc9fa13da297ab4499899b66d
 let appMode = null;   // null on the front page, then 'view' or 'edit'
 const isLoggedIn = () => { try { return localStorage.getItem('fbv3_organiser') === '1'; } catch (e) { return false; } };
 
+// Initials in a circle, for squads and teams
+const avInitials = (name, cls = '') => `<i class="avi ${cls}" aria-hidden="true">${esc(String(name).replace(/[^A-Za-z ]/g, '').trim().slice(0, 2) || '?')}</i>`;
 function renderFront() {
   // Next game: the earliest game today or later; otherwise the most recent one
   const today = isoToday();
@@ -2415,11 +2521,13 @@ function renderFront() {
     const nm = id => { const p = S.players.find(x => x.id === id); return p ? p.name : '?'; };
     const m = S.money.games.find(x => x.gameId === g.id);
     const wa = WA[g.day] || WA.mon;
-    el.innerHTML = `<div class="sh" style="margin-top:0">${upcoming.length ? 'Next game' : 'Last game'}</div>
+    const price = m ? m.price : S.money.settings.price;
+    el.innerHTML = `<div class="eyebrow">${upcoming.length ? 'Next game' : 'Last game'}</div>
       <div class="front-when">${esc(g.iso ? isoToDate(g.iso).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) : g.date)}</div>
-      <div class="front-facts"><span>⏰ ${esc(wa.time)}</span><span>📍 ${esc(wa.venue)}</span>${m ? `<span>Organised by ${whoBadge(m.org)}</span>` : ''}</div>
-      ${frontTeams(g) || `<div class="front-squad">${g.playingIds.map((id, i) => `<span><em>${i + 1}</em>${esc(nm(id))}</span>`).join('')}</div>`}
-      ${g.reserveIds.length ? `<p class="hint" style="margin-top:10px">Reserves: ${g.reserveIds.map(id => esc(nm(id))).join(', ')}</p>` : ''}`;
+      <div class="front-facts"><span><i class="ti ti-clock"></i> ${esc(wa.time)}</span><span><i class="ti ti-map-pin"></i> ${esc(wa.venue)}</span>${m ? `<span>Organised by ${whoBadge(m.org)}</span>` : ''}</div>
+      <div class="front-tiles"><div><b>${g.playingIds.length}</b><small>Playing</small></div><div><b>${g.reserveIds.length}</b><small>${g.reserveIds.length === 1 ? 'Reserve' : 'Reserves'}</small></div><div><b>${gbp(price)}</b><small>Per player</small></div></div>
+      ${frontTeams(g) || `<div class="avgrid">${g.playingIds.map(id => `<span>${avInitials(nm(id))}<span>${esc(nm(id))}</span></span>`).join('')}${g.reserveIds.map(id => `<span>${avInitials(nm(id), 'res')}<span>${esc(nm(id))}</span></span>`).join('')}</div>`}
+      ${g.reserveIds.length ? `<p class="hint" style="margin:10px 0 0">Reserves: ${g.reserveIds.map(id => esc(nm(id))).join(', ')}</p>` : ''}`;
   }
   const t = moneyTotals();
   document.getElementById('front-kitty').innerHTML =
@@ -2651,7 +2759,7 @@ function renderTeamsPage() {
         const xt = gameTeams(x.id);
         return `<option value="${x.id}"${x.id === g.id ? ' selected' : ''}>${esc(x.date)} — ${dayLabel(x.day)}${xt ? (xt.status === 'confirmed' ? ' · teams confirmed' : ' · draft teams') : ' · no teams yet'}</option>`;
       }).join('')}</select>
-      <div class="tgame-head"><div><div class="tgame-when">${esc(when)}</div><div class="hint" style="margin:2px 0 0">⏰ ${esc(wa.time)} · 📍 ${esc(wa.venue)}${m ? ` · Organised by ${esc(m.org)}` : ''}</div></div>${teamsStatusChip(t)}</div>
+      <div class="tgame-head"><div><div class="tgame-when">${esc(when)}</div><div class="hint" style="margin:2px 0 0"><i class="ti ti-clock"></i> ${esc(wa.time)} · <i class="ti ti-map-pin"></i> ${esc(wa.venue)}${m ? ` · Organised by ${esc(m.org)}` : ''}</div></div>${teamsStatusChip(t)}</div>
     </div>`;
 
   // Squad: drop-outs and reserves can be changed until the teams are confirmed
@@ -3852,14 +3960,14 @@ function avPlayerCard() {
   if (!r) {
     const n = avNextOpening();
     return `<div class="card"><div class="sh" style="margin-top:0">Next game</div>${n
-      ? `<div class="front-when">${esc(avLongDate(n.iso))}</div><div class="front-facts"><span>⏰ ${esc(avKick())}</span><span>📍 ${esc(AV.settings.venue || '')}</span></div>
+      ? `<div class="front-when">${esc(avLongDate(n.iso))}</div><div class="front-facts"><span><i class="ti ti-clock"></i> ${esc(avKick())}</span><span><i class="ti ti-map-pin"></i> ${esc(AV.settings.venue || '')}</span></div>
          <div class="av-timer">Availability opens <strong>${esc(isoToDate(n.open).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }))}, ${esc(avClock(AV.settings.open_time))}</strong></div>
          <p class="hint" style="margin-top:6px">${pushOn() ? "We'll send you a notification when it opens." : 'Turn on notifications to be told when it opens.'}</p>`
       : '<p class="hint">Nothing open right now.</p>'}</div>`;
   }
   const dn = avDayName(r.day), mine = avMine(r.game_iso), closes = avClock(AV.settings.close_time);
   let html = `<div class="card"><div class="sh" style="margin-top:0">Next game · ${r.status === 'open' && !avWindowShut(r) ? 'availability open' : r.status === 'open' || r.status === 'held' ? 'availability closed' : r.status === 'closed' ? 'squad picked' : 'cancelled'}</div>
-    <div class="front-when">${esc(avLongDate(r.game_iso))}</div><div class="front-facts"><span>⏰ ${esc(avKick())}</span><span>📍 ${esc(AV.settings.venue || '')}</span></div>`;
+    <div class="front-when">${esc(avLongDate(r.game_iso))}</div><div class="front-facts"><span><i class="ti ti-clock"></i> ${esc(avKick())}</span><span><i class="ti ti-map-pin"></i> ${esc(AV.settings.venue || '')}</span></div>`;
   if (r.status === 'cancelled') return html + `<div class="notice" style="display:block;margin-top:10px">❌ ${dn} is cancelled.</div></div>`;
   if (avStarted(r)) return html + '<p class="hint" style="margin-top:10px">This game has started.</p></div>';
   if ((r.status === 'open' || r.status === 'held') && avWindowShut(r)) {
@@ -4147,7 +4255,7 @@ function dashNextCard() {
     const left = avCloseDate(r) - Date.now();
     const tags = p => `${avGuar(p, r.day) ? '<span class="badge b-guar">Guar</span>' : ''}${rn.includes(p.id) ? '<span class="badge b-guar">→Next</span>' : ''}${latePenalty(p.id) ? '<span class="badge b-late">Late last time</span>' : ''}`;
     return `<div class="card dash-next da-next"><h3 class="dash-h">⚽ ${esc(avLongDate(r.game_iso))} <span class="badge ${r.status === 'open' ? 'b-thu' : 'b-guar'}">${r.status === 'open' ? `Availability open${left > 0 ? ` · ${Math.floor(left / 36e5)}h ${Math.floor(left / 6e4) % 60}m left` : ''}` : 'Waiting for you to confirm'}</span></h3>
-      <p class="hint">⏰ ${esc(avKick())} · 📍 ${esc(AV.settings.venue || '')}${avMode() === 'trial' ? ' · Trial' : ''}</p>
+      <p class="hint"><i class="ti ti-clock"></i> ${esc(avKick())} · <i class="ti ti-map-pin"></i> ${esc(AV.settings.venue || '')}${avMode() === 'trial' ? ' · Trial' : ''}</p>
       <div class="dash-cols"><div>
         <div class="av-stats"><div class="i"><b>${ins.length}</b>In</div><div class="o"><b>${ans.length - ins.length}</b>Out</div><div class="n"><b>${none}</b>No answer</div></div>
         <div class="dash-bar"><i style="width:${ins.length / total * 100}%;background:var(--border-success)"></i><i style="width:${(ans.length - ins.length) / total * 100}%;background:var(--border-danger)"></i></div>
@@ -4284,7 +4392,7 @@ function dashSeasonCard() {
    about what matters to them. Players see it on the front page; organisers see it
    on the Dashboard with the time of day and their to-do count. */
 function hiChips() {
-  const out = [], chip = (cls, text) => out.push(`<span class="${cls}">${esc(text)}</span>`);
+  const out = [], chip = (cls, text, icon) => out.push(`<span class="${cls}">${icon ? `<i class="ti ti-${icon}"></i> ` : ''}${esc(text)}</span>`);
   const r = avVisible() ? avRound() : null;
   if (r && r.status === 'cancelled') chip('c-bad', `✕ ${avDayName(r.day)} cancelled`);
   else if (r && (r.status === 'open' || r.status === 'held')) {
@@ -4292,21 +4400,21 @@ function hiChips() {
     if (mine === 'in') chip('c-ok', `✓ You're in for ${dn}`);
     else if (avWindowShut(r)) chip('c-grey', `${dn}'s availability has closed`);
     else if (mine === 'out') chip('c-grey', `You're out for ${dn}`);
-    else chip('c-warn', "❓ You haven't said if you're in");
+    else chip('c-warn', "You haven't said if you're in", 'help-circle');
   } else {
     const g = S.games.filter(x => x.iso && x.iso >= isoToday()).sort((a, b) => a.iso.localeCompare(b.iso))[0];
     if (g) {
       const dn = isoToDate(g.iso).toLocaleDateString('en-GB', { weekday: 'long' }), ri = g.reserveIds.indexOf(ME);
       if (g.cancelled) chip('c-bad', `✕ ${dn} cancelled`);
-      else if (g.playingIds.includes(ME)) chip('c-ok', `⚽ Playing ${dn}`);
-      else if (ri !== -1) chip('c-warn', `🪑 ${avOrdinal(ri + 1)} reserve for ${dn}`);
+      else if (g.playingIds.includes(ME)) chip('c-ok', `Playing ${dn}`, 'ball-football');
+      else if (ri !== -1) chip('c-warn', `${avOrdinal(ri + 1)} reserve for ${dn}`, 'armchair');
       else chip('c-grey', `Not in ${dn}'s squad`);
     }
   }
   const owed = debtsOwed().filter(d => d.pid === ME).reduce((t, d) => t + d.amt, 0), credit = creditOf(ME);
-  if (owed) chip('c-bad', `💷 You owe ${gbp(owed)}`);
+  if (owed) chip('c-bad', `You owe ${gbp(owed)}`, 'currency-pound');
   else chip('c-ok', '✓ All paid up');
-  if (credit) chip('c-info', `💷 ${gbp(credit)} credit`);
+  if (credit) chip('c-info', `${gbp(credit)} credit`, 'wallet');
   return out;
 }
 function renderHi() {
@@ -4350,6 +4458,16 @@ function renderDash() {
 try { const o = localStorage.getItem('fbv3_org'); if (ORGANISERS.includes(o)) document.getElementById('org-select').value = o; } catch (e) {}
 loadState();
 document.getElementById('app-version').textContent = 'Brent Football ' + APP_VERSION;
+// Theme: Auto (follows the phone), Light or Dark, remembered on this device
+const THEMES = { auto: ['circle-half-2', 'Theme: Auto (follows your phone)'], light: ['sun', 'Theme: Light'], dark: ['moon', 'Theme: Dark'] };
+function themeGet() { try { const t = localStorage.getItem('fbv3_theme'); return THEMES[t] ? t : 'auto'; } catch (e) { return 'auto'; } }
+function themeApply(t) {
+  if (t === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
+  const b = document.getElementById('theme-btn'); if (!b) return;
+  b.innerHTML = `<i class="ti ti-${THEMES[t][0]}"></i>`; b.title = THEMES[t][1]; b.setAttribute('aria-label', THEMES[t][1] + '. Tap to change.');
+}
+function themeNext() { const order = ['auto', 'light', 'dark'], t = order[(order.indexOf(themeGet()) + 1) % 3]; try { localStorage.setItem('fbv3_theme', t); } catch (e) {} themeApply(t); }
+themeApply(themeGet());
 pushLoadStatus();
 availLoad();
 // Tapping a payment notification opens Payments (the app may already be open)
