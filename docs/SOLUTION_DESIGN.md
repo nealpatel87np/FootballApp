@@ -844,6 +844,7 @@ Relationships are held as id arrays (`playing_ids`, `paid_ids` and so on) rather
 | `fbv3` | Full data copy (state `S`) |
 | `fbv3_synced` | Sync baseline (last state known to match the database) |
 | `fbv3_backup` | Snapshot before an import |
+| `fbv3_av` | The last availability settings, rounds and answers loaded, shown on opening until the fresh copy arrives |
 | `fbv3_organiser` | Organiser mode remembered on the device |
 | `fbv3_org` | Default organiser |
 | `fbv3_whatsapp` | Time and venue for each day type, pitch-booked tick |
@@ -930,6 +931,7 @@ The app stores **first names or nicknames**, attendance, ratings, scores and pay
   - Icons instead of emojis on screen (clock, pin, chips, money). Emojis stay in WhatsApp messages and notifications.
   - Front page next game: a big date, tiles for playing, reserves and price per player, and the squad as initials avatars.
   - Rolled out page by page: first the front page, Availability and Payments; then the Dashboard (line icons on every card heading and To do item, tinted to match), the Game Log (the score, or Score needed / Draft teams / Teams picked, on the right of each row) and Teams (neutral team cards with a bib-colour dot and initials avatars); then Setup, Ratings, Player Stats and Attendance (clean tables with initials and your own row highlighted), Notifications and App users (icons instead of emojis).
+  - The availability card for a saved squad shows the same tiles and squad as the Next game card, and the teams once they're confirmed (`gameSquadBlock`). The last availability loaded is kept on the phone (`fbv3_av`) and shown straight away on opening, then refreshed, so the front page doesn't swap cards a second after it opens.
   - Stat tiles (for example the Dashboard's kitty, owed and credit) shrink their numbers to fit the tile, so large amounts never spill over on narrow phones.
 - **Navigation:**
   - Phones (720px or less): organisers get a bottom bar with Dashboard, Run game, Teams, Payments and More (a sheet with Setup, Ratings, Availability, Game Log, Player Stats, Attendance, Notifications and App users).
