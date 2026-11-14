@@ -2401,10 +2401,10 @@ function renderPayMsg(fold = false) {
     <textarea id="paymsg-preview" rows="11" readonly style="width:100%;padding:10px;font:inherit;font-size:13px;line-height:1.45;background:var(--surface-1);color:var(--text-primary)">${esc(payMsgText())}</textarea>
     <div class="tactions" style="margin-top:8px"><button class="btn primary" onclick="payMsgCopy()" ${set ? '' : 'disabled'}><i class="ti ti-copy"></i> Copy for WhatsApp</button><button class="btn" onclick="payMsgOpen()" ${set ? '' : 'disabled'}><i class="ti ti-brand-whatsapp"></i> Open WhatsApp</button></div>
     <div id="paymsg-msg" class="hint" style="margin:6px 0 0"></div>
-    <div class="fold-h" style="margin-top:12px"><span class="sh" style="margin:0">Your bank details</span><button class="btn xs" onclick="toggleFold('paymsg-box', this)" aria-expanded="${open}" aria-controls="paymsg-box">${open ? 'Hide' : 'Edit'}</button></div>
+    <div class="fold-h" style="margin-top:12px"><span class="sh" style="margin:0">Neal's bank details</span><button class="btn xs" onclick="toggleFold('paymsg-box', this)" aria-expanded="${open}" aria-controls="paymsg-box">${open ? 'Hide' : 'Edit'}</button></div>
     <div id="paymsg-box"${open ? '' : ' hidden'}>
-      <p class="hint" style="margin:6px 0 4px">Saved on this phone only. They're never stored in the app or shared with anyone else.</p>
-      <label for="pd-name">Name on the account</label><input type="text" id="pd-name" autocomplete="off" value="${esc(d.name || '')}" placeholder="e.g. Mr A Smith">
+      <p class="hint" style="margin:6px 0 4px">All payments go to Neal, so enter Neal's details. They're saved on this phone only, never in the app or the database.</p>
+      <label for="pd-name">Name on the account</label><input type="text" id="pd-name" autocomplete="off" value="${esc(d.name || '')}" placeholder="e.g. Mr Neal Patel">
       <div class="g2" style="gap:10px"><div><label for="pd-sort">Sort code</label><input type="text" id="pd-sort" inputmode="numeric" autocomplete="off" value="${esc(d.sort || '')}" placeholder="00-00-00"></div>
         <div><label for="pd-acc">Account number</label><input type="text" id="pd-acc" inputmode="numeric" autocomplete="off" value="${esc(d.acc || '')}" placeholder="12345678"></div></div>
       <div class="tactions" style="margin-top:10px"><button class="btn sm primary" onclick="payDetailsSave()">Save on this phone</button>${set ? '<button class="btn sm dghost" onclick="payDetailsClear()">Remove</button>' : ''}</div>

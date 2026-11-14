@@ -259,7 +259,7 @@ The repository also contains an unrelated starter app (`server.js`, `public/`, S
 
 **Organisers** see the full page:
 
-0. **Payment details message** (under Outstanding Payments): the message to paste into the WhatsApp group with the organiser's bank details. It reads: "Hi all, for anyone playing tonight below are my details, please pay £8.50 each to:" then the name on the account, sort code and account number, then "Please ensure you have put your name somewhere on the payment reference and let me know on here when you have paid." It says "tonight" on game day and "on {day}" before it, and uses that game's price. **Copy for WhatsApp** and **Open WhatsApp**. Each organiser enters their details once under **Your bank details**; they're saved on that phone only and never shown to players.
+0. **Payment details message** (under Outstanding Payments): the message to paste into the WhatsApp group with the organiser's bank details. It reads: "Hi all, for anyone playing tonight below are my details, please pay £8.50 each to:" then the name on the account, sort code and account number, then "Please ensure you have put your name somewhere on the payment reference and let me know on here when you have paid." It says "tonight" on game day and "on {day}" before it, and uses that game's price. **Copy for WhatsApp** and **Open WhatsApp**. All payments go to Neal, so the message always carries Neal's details. They're entered once under **Neal's bank details** and saved on that phone only (no database or SQL), never shown to players.
 
 Sections, from top to bottom:
 
