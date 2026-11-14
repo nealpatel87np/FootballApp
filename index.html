@@ -2563,6 +2563,14 @@ const ORGANISER_PASS_SHA256 = '1414c1fd5e48a46f2f7c7a99bc9fa13da297ab4499899b66d
 let appMode = null;   // null on the front page, then 'view' or 'edit'
 const isLoggedIn = () => { try { return localStorage.getItem('fbv3_organiser') === '1'; } catch (e) { return false; } };
 
+// The squad for a saved game, the same on the Next game card and the availability card:
+// tiles, then the teams once they're confirmed, otherwise the squad as initials (reserves in amber)
+function gameSquadBlock(g) {
+  const nm = id => pName(id), m = S.money.games.find(x => x.gameId === g.id), price = m ? m.price : S.money.settings.price;
+  return `<div class="front-tiles"><div><b>${g.playingIds.length}</b><small>Playing</small></div><div><b>${g.reserveIds.length}</b><small>${g.reserveIds.length === 1 ? 'Reserve' : 'Reserves'}</small></div><div><b>${gbp(price)}</b><small>Per player</small></div></div>
+    ${frontTeams(g) || `<div class="avgrid">${g.playingIds.map(id => `<span>${avInitials(nm(id))}<span>${esc(nm(id))}</span></span>`).join('')}${g.reserveIds.map(id => `<span>${avInitials(nm(id), 'res')}<span>${esc(nm(id))}</span></span>`).join('')}</div>`}
+    ${g.reserveIds.length ? `<p class="hint" style="margin:10px 0 0">Reserves: ${g.reserveIds.map(id => esc(nm(id))).join(', ')}</p>` : ''}`;
+}
 // Initials in a circle, for squads and teams
 const avInitials = (name, cls = '') => `<i class="avi ${cls}" aria-hidden="true">${esc(String(name).replace(/[^A-Za-z ]/g, '').trim().slice(0, 2) || '?')}</i>`;
 function renderFront() {
@@ -2578,13 +2586,10 @@ function renderFront() {
     const nm = id => { const p = S.players.find(x => x.id === id); return p ? p.name : '?'; };
     const m = S.money.games.find(x => x.gameId === g.id);
     const wa = WA[g.day] || WA.mon;
-    const price = m ? m.price : S.money.settings.price;
     el.innerHTML = `<div class="eyebrow">${upcoming.length ? 'Next game' : 'Last game'}</div>
       <div class="front-when">${esc(g.iso ? isoToDate(g.iso).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) : g.date)}</div>
       <div class="front-facts"><span><i class="ti ti-clock"></i> ${esc(wa.time)}</span><span><i class="ti ti-map-pin"></i> ${esc(wa.venue)}</span>${m ? `<span>Organised by ${whoBadge(m.org)}</span>` : ''}</div>
-      <div class="front-tiles"><div><b>${g.playingIds.length}</b><small>Playing</small></div><div><b>${g.reserveIds.length}</b><small>${g.reserveIds.length === 1 ? 'Reserve' : 'Reserves'}</small></div><div><b>${gbp(price)}</b><small>Per player</small></div></div>
-      ${frontTeams(g) || `<div class="avgrid">${g.playingIds.map(id => `<span>${avInitials(nm(id))}<span>${esc(nm(id))}</span></span>`).join('')}${g.reserveIds.map(id => `<span>${avInitials(nm(id), 'res')}<span>${esc(nm(id))}</span></span>`).join('')}</div>`}
-      ${g.reserveIds.length ? `<p class="hint" style="margin:10px 0 0">Reserves: ${g.reserveIds.map(id => esc(nm(id))).join(', ')}</p>` : ''}`;
+      ${gameSquadBlock(g)}`;
   }
   const t = moneyTotals();
   document.getElementById('front-kitty').innerHTML =
@@ -3949,6 +3954,15 @@ function avPreview(r) {
   return BF_SELECT.splitSquad(BF_SELECT.orderSquad(S.players.filter(p => at.has(p.id)), { day: r.day, reserveNext: S.reserveNext, late: latePenalty, answeredAt: at }));
 }
 
+// The last availability this phone loaded, shown straight away on opening (then refreshed), so the
+// front page doesn't swap cards a second after it opens
+const AV_CACHE_KEY = 'fbv3_av';
+function availFromCache() {
+  try {
+    const c = JSON.parse(localStorage.getItem(AV_CACHE_KEY) || 'null');
+    if (c && c.settings && Array.isArray(c.rounds) && Array.isArray(c.answers)) { Object.assign(AV, { settings: c.settings, rounds: c.rounds, answers: c.answers, dbOk: true }); availRender(); }
+  } catch (e) {}
+}
 async function availLoad() {
   if (!sb) { AV.dbOk = false; availRender(); return; }
   AV.loadedAt = Date.now();
@@ -3960,6 +3974,7 @@ async function availLoad() {
     AV.rounds = rr.data || [];
     const isos = AV.rounds.map(r => r.game_iso);
     AV.answers = isos.length ? ((await sb.from('availability_answers').select('*').in('game_iso', isos)).data || []) : [];
+    try { localStorage.setItem(AV_CACHE_KEY, JSON.stringify({ settings: AV.settings, rounds: AV.rounds, answers: AV.answers })); } catch (e) {}
     // A squad the function saved that this phone hasn't loaded yet
     if (AV.rounds.some(r => r.game_id && !S.games.some(g => g.id === Number(r.game_id))) && !avReloaded) { avReloaded = true; loadState(); }
   } catch (e) { AV.dbOk = !tableMissing(e) && AV.dbOk; if (!AV.settings) AV.settings = { mode: 'off' }; if (tableMissing(e)) AV.dbOk = false; }
@@ -4058,12 +4073,10 @@ function avPlayerCard() {
   if (!g) return html + '<p class="hint" style="margin-top:10px">Loading the squad…</p></div>';
   if (g.cancelled) return html + cancelPlayerBox(g) + '</div>';
   const ri = g.reserveIds.indexOf(ME);
-  html += g.playingIds.includes(ME) ? `<div class="ok" style="margin:10px 0 0">⚽ You're <strong>playing</strong>, ${esc(p.name)}.</div><div class="av-btns"><button class="btn av-out" onclick="avAnswer('${r.game_iso}','out')">I can't make it any more</button></div><p class="hint">Your place goes to the first reserve and they're told straight away.</p>`
-    : ri !== -1 ? `<div class="notice" style="display:block;margin:10px 0 0">🪑 You're <strong>${avOrdinal(ri + 1)} reserve</strong>. If someone drops out you'll be told straight away.</div><div class="av-btns"><button class="btn av-out" onclick="avAnswer('${r.game_iso}','out')">I can't make it</button></div>`
+  html += g.playingIds.includes(ME) ? `<div class="ok" style="margin:10px 0 0"><i class="ti ti-ball-football"></i> You're <strong>playing</strong>, ${esc(p.name)}.</div><div class="av-btns"><button class="btn av-out" onclick="avAnswer('${r.game_iso}','out')">I can't make it any more</button></div><p class="hint">Your place goes to the first reserve and they're told straight away.</p>`
+    : ri !== -1 ? `<div class="notice" style="display:block;margin:10px 0 0"><i class="ti ti-armchair"></i> You're <strong>${avOrdinal(ri + 1)} reserve</strong>. If someone drops out you'll be told straight away.</div><div class="av-btns"><button class="btn av-out" onclick="avAnswer('${r.game_iso}','out')">I can't make it</button></div>`
     : `<div class="notice" style="display:block;margin:10px 0 0">The squad has been picked and availability is closed. ${AV_ASK}</div>`;
-  return html + `${note}<div class="sh">Squad · ${g.playingIds.length}${g.reserveIds.length ? ` + ${g.reserveIds.length} reserve${g.reserveIds.length === 1 ? '' : 's'}` : ''}</div>
-    <div class="front-squad">${g.playingIds.map((id, i) => `<span><em>${i + 1}</em>${esc(pName(id))}</span>`).join('')}</div>
-    ${g.reserveIds.length ? `<p class="hint" style="margin-top:8px">Reserves: ${g.reserveIds.map(id => esc(pName(id))).join(', ')}</p>` : ''}</div>`;
+  return html + `${note}${gameSquadBlock(g)}</div>`;
 }
 // How to install, for the welcome card and the Notifications page
 function avInstallSteps() {
@@ -4531,6 +4544,7 @@ function themeApply(t) {
 function themeNext() { const order = ['auto', 'light', 'dark'], t = order[(order.indexOf(themeGet()) + 1) % 3]; try { localStorage.setItem('fbv3_theme', t); } catch (e) {} themeApply(t); }
 themeApply(themeGet());
 pushLoadStatus();
+availFromCache();
 availLoad();
 // Tapping a payment notification opens Payments (the app may already be open)
 function openFromLink() {

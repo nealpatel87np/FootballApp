@@ -313,7 +313,7 @@ Shown on the front page and on the **Availability** page, but only when Self-ser
   - Guaranteed players see that they must say in by the closing time, or count as out.
   - Players never see late flags.
 - **After closing time** (4.0 update): **I'm in** disappears. Players who said in see that the squad is being picked and can still tap **I can't make it any more**. Everyone else sees "Availability closed at 9pm. Contact the organiser if you'd like to play." This applies as soon as closing time passes, even before the squad is picked, and while it's held for an organiser.
-- **When closed:** players see whether they're playing or which reserve they are (e.g. 2nd).
+- **When closed:** players see whether they're playing or which reserve they are (e.g. 2nd). Below that is the same squad view as the Next game card: tiles for players, reserves and price, then the **teams** once they're confirmed (with bibs), or the squad as initials until then.
   - Players in the squad and reserves can drop out with **I can't make it any more**.
   - Others can't join themselves any more: they see "The squad has been picked and availability is closed. Contact the organiser if you'd like to play." An organiser can add them with **Answer for a player**.
 - **Kept open:** if organisers choose **Keep it open** after closing time, **I'm in** comes back with "Kept open for late joiners until the organisers close it."
