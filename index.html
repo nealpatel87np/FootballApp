@@ -992,6 +992,7 @@
     <div id="money-notice" class="notice" style="display:none"></div>
     <div class="owe-shortcuts" id="owe-shortcuts"></div>
     <div class="card" id="owe-panel"></div>
+    <div class="card" id="paymsg-card"></div>
     <div class="card">
       <h3>Kitty</h3>
       <div class="money-tiles" id="money-tiles"></div>
@@ -2378,15 +2379,66 @@ function renderMyBalance() {
     ${mine.map(d => `<div class="row"><span class="name">${esc(d.g.iso ? dashShort(d.g.iso) : d.g.date)}</span><span class="my-pay">Pay ${esc(d.m.org)}</span><strong>${gbp(d.amt)}</strong></div>`).join('')}
     <p class="hint" style="margin-top:8px">Pay the organiser on the day. Only your own balance is shown here; organisers see everyone's. <button class="linkbtn" style="margin:0" onclick="hiNotYou(); renderMyBalance()">Not you?</button></p>`;
 }
+/* Payment details message (organisers): the message an organiser pastes into the WhatsApp group with
+   their bank details. The details are saved on this phone only, never in the app or the database. */
+const PAYDETAILS_KEY = 'fbv3_paydetails';
+function payDetails() { try { return JSON.parse(localStorage.getItem(PAYDETAILS_KEY) || 'null') || {}; } catch (e) { return {}; } }
+// "tonight" when there's a game today, otherwise the day of the next game; its price, or the usual price
+function payMsgGame() {
+  const today = isoToday(), next = realGames().filter(g => g.iso && g.iso >= today).sort((a, b) => a.iso.localeCompare(b.iso))[0];
+  const m = next && S.money.games.find(x => x.gameId === next.id);
+  return { when: !next || next.iso === today ? 'tonight' : 'on ' + isoToDate(next.iso).toLocaleDateString('en-GB', { weekday: 'long' }), price: m ? m.price : S.money.settings.price };
+}
+function payMsgText() {
+  const d = payDetails(), { when, price } = payMsgGame();
+  return `Hi all, for anyone playing ${when} below are my details, please pay ${gbp(price)} each to:\n\n${d.name || '[Name on the account]'}\nSort code - ${d.sort || '[sort code]'}\nAcc no - ${d.acc || '[account number]'}\n\nPlease ensure you have put your name somewhere on the payment reference and let me know on here when you have paid.`;
+}
+function renderPayMsg(fold = false) {
+  const el = document.getElementById('paymsg-card'); if (!el) return;
+  const d = payDetails(), set = !!(d.name && d.sort && d.acc), open = !set || (!fold && !!document.querySelector('#paymsg-box:not([hidden])'));
+  el.innerHTML = `<div class="fold-h"><h3><i class="ti ti-brand-whatsapp h-i" style="color:#25a244"></i>Payment details message</h3></div>
+    <p class="hint" style="margin:6px 0 10px">Paste this into the WhatsApp group so players know where to pay.</p>
+    <textarea id="paymsg-preview" rows="11" readonly style="width:100%;padding:10px;font:inherit;font-size:13px;line-height:1.45;background:var(--surface-1);color:var(--text-primary)">${esc(payMsgText())}</textarea>
+    <div class="tactions" style="margin-top:8px"><button class="btn primary" onclick="payMsgCopy()" ${set ? '' : 'disabled'}><i class="ti ti-copy"></i> Copy for WhatsApp</button><button class="btn" onclick="payMsgOpen()" ${set ? '' : 'disabled'}><i class="ti ti-brand-whatsapp"></i> Open WhatsApp</button></div>
+    <div id="paymsg-msg" class="hint" style="margin:6px 0 0"></div>
+    <div class="fold-h" style="margin-top:12px"><span class="sh" style="margin:0">Neal's bank details</span><button class="btn xs" onclick="toggleFold('paymsg-box', this)" aria-expanded="${open}" aria-controls="paymsg-box">${open ? 'Hide' : 'Edit'}</button></div>
+    <div id="paymsg-box"${open ? '' : ' hidden'}>
+      <p class="hint" style="margin:6px 0 4px">All payments go to Neal, so enter Neal's details. They're saved on this phone only, never in the app or the database.</p>
+      <label for="pd-name">Name on the account</label><input type="text" id="pd-name" autocomplete="off" value="${esc(d.name || '')}" placeholder="e.g. Mr Neal Patel">
+      <div class="g2" style="gap:10px"><div><label for="pd-sort">Sort code</label><input type="text" id="pd-sort" inputmode="numeric" autocomplete="off" value="${esc(d.sort || '')}" placeholder="00-00-00"></div>
+        <div><label for="pd-acc">Account number</label><input type="text" id="pd-acc" inputmode="numeric" autocomplete="off" value="${esc(d.acc || '')}" placeholder="12345678"></div></div>
+      <div class="tactions" style="margin-top:10px"><button class="btn sm primary" onclick="payDetailsSave()">Save on this phone</button>${set ? '<button class="btn sm dghost" onclick="payDetailsClear()">Remove</button>' : ''}</div>
+    </div>`;
+}
+function payDetailsSave() {
+  const v = id => document.getElementById(id).value.trim();
+  const d = { name: v('pd-name').slice(0, 60), sort: v('pd-sort').slice(0, 12), acc: v('pd-acc').slice(0, 16) };
+  if (!d.name || !d.sort || !d.acc) { setMsg('paymsg-msg', 'Fill in all three: name, sort code and account number.'); return; }
+  try { localStorage.setItem(PAYDETAILS_KEY, JSON.stringify(d)); } catch (e) {}
+  renderPayMsg(true); setMsg('paymsg-msg', 'Saved on this phone.', true);
+}
+function payDetailsClear() {
+  if (!confirm('Remove your bank details from this phone?')) return;
+  try { localStorage.removeItem(PAYDETAILS_KEY); } catch (e) {}
+  renderPayMsg();
+}
+function payMsgCopy() {
+  const text = payMsgText(), ta = document.getElementById('paymsg-preview');
+  const done = () => setMsg('paymsg-msg', 'Copied. Paste it into the WhatsApp group.', true);
+  const fallback = () => { ta.focus(); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) {} setMsg('paymsg-msg', ok ? 'Copied. Paste it into the WhatsApp group.' : 'Text selected. Copy it manually.', true); };
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done).catch(fallback); else fallback();
+}
+function payMsgOpen() { window.open('https://wa.me/?text=' + encodeURIComponent(payMsgText()), '_blank'); }
 function renderMoney() {
   renderMyBalance();
   // Players (View mode) get only their own balance: other players' payments aren't put on the page at all
   if (appMode !== 'edit') {
-    ['owe-shortcuts', 'owe-panel', 'money-tiles', 'money-holders', 'money-games', 'money-games-more', 'money-ledger', 'money-ledger-more'].forEach(id => { const e = document.getElementById(id); if (e) e.innerHTML = ''; });
+    ['owe-shortcuts', 'owe-panel', 'paymsg-card', 'money-tiles', 'money-holders', 'money-games', 'money-games-more', 'money-ledger', 'money-ledger-more'].forEach(id => { const e = document.getElementById(id); if (e) e.innerHTML = ''; });
     return;
   }
   renderMoneyNotice();
   renderOwes();
+  renderPayMsg();
   const h = moneyHoldings(), tracked = trackedGames();
   let kitty = 0, owed = 0, owedPeople = 0, owedGames = 0;
   ORGANISERS.forEach(o => { kitty += h[o].kitty; });

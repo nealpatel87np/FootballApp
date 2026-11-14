@@ -844,6 +844,7 @@ Relationships are held as id arrays (`playing_ids`, `paid_ids` and so on) rather
 | `fbv3` | Full data copy (state `S`) |
 | `fbv3_synced` | Sync baseline (last state known to match the database) |
 | `fbv3_backup` | Snapshot before an import |
+| `fbv3_paydetails` | An organiser's own bank details (name, sort code, account number) for the payment details message. This phone only; never synced or stored in the database |
 | `fbv3_av` | The last availability settings, rounds and answers loaded, shown on opening until the fresh copy arrives |
 | `fbv3_organiser` | Organiser mode remembered on the device |
 | `fbv3_org` | Default organiser |
@@ -917,7 +918,7 @@ Relationships are held as id arrays (`playing_ids`, `paid_ids` and so on) rather
 
 ### 10.3 Personal data
 
-The app stores **first names or nicknames**, attendance, ratings, scores and payment status only. There are no contact details, payment cards or passwords for players. With notifications on, a phone's push address is stored against the player's id in a closed table. A phone that has picked "Who are you?" also stores its browser, platform, whether it's installed and when it was last seen (`app_devices`, closed). No full addresses or postcodes are stored. Ratings are hidden from viewers in the UI but can be read via the API (known limitation). Players see only their own balance on Payments; everyone's payments are organiser-only in the UI (the API limitation is the same). A players' FAQ explains what's kept and who sees it.
+The app stores **first names or nicknames**, attendance, ratings, scores and payment status only. There are no contact details, payment cards or passwords for players. With notifications on, a phone's push address is stored against the player's id in a closed table. A phone that has picked "Who are you?" also stores its browser, platform, whether it's installed and when it was last seen (`app_devices`, closed). No full addresses or postcodes are stored. Ratings are hidden from viewers in the UI but can be read via the API (known limitation). Players see only their own balance on Payments; everyone's payments are organiser-only in the UI (the API limitation is the same). A players' FAQ explains what's kept and who sees it. Organisers' bank details for the WhatsApp payment message are kept only on their own phone (`fbv3_paydetails`), never in the code, the database or the sync, because the code is public on GitHub.
 
 ---
 
