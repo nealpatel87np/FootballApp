@@ -133,7 +133,7 @@ Players can get notifications on their phone from the installed app. They're tol
   - **Notify the players** is ticked on Teams when you confirm teams.
   - **Send reminders** on Outstanding Payments sends a reminder to everyone who owes and has notifications on.
   - When credit pays for a game, that player is told automatically.
-  - Every day at **12pm** UK time, anyone who still owes on any tracked game gets one reminder with the total, the games and who to pay, until they've paid. Players can switch payment reminders off on the Notifications page.
+  - Every day at **12pm** UK time, anyone who still owes for a game that has already been played (from the day after the game) gets one reminder with the total, the games and who to pay, until they've paid. Players can switch payment reminders off on the Notifications page.
 - Tapping a payment notification opens Payments.
 
 **Setup (once):** until this is done, the Notifications page and options don't appear.

@@ -63,7 +63,7 @@ If you aren't sure, treat it as minor unless it changes the data model or a core
 | 3.8 | 25 Oct 2026 | Quieter Supabase traffic: availability refreshes every 30 seconds only while a round is open (otherwise every 5 minutes, and when the app comes back on screen). The availability check runs from 8am to 10:45pm UK time, so Setup only accepts opening and closing times in that window. Nightly tidy-up of schedule history. Run `supabase/schedule-3.8.sql`. |
 | 3.9 | 26 Oct 2026 | Dashboard Turnout shows just the numbers, and Money drops who owes most. A game with fewer than 10 playing counts as cancelled: no money, score or late prompts, and Payments shows it only under Show paid and cancelled games, with Track anyway. |
 | 4.0 | 26 Oct 2026 | **Cancel a game.** Run game offers Cancel game: not enough players when fewer than 10 are picked. Organisers can cancel any saved game from the Dashboard, Run game or Game Log (Drop-outs, Pitch not available, Weather, Other, plus a note), and Undo it. Availability that closes with fewer than 10 is held: Cancel game, Keep it open or Confirm anyway. Cancelled games stay in the Game Log but don't count and need no money. Players are told and the front page says the game is off. Run `supabase/cancel.sql`, then redeploy the `notify` function. |
-| 4.0 (update) | 31 Oct 2026 | No version change. Payments shows players only their own balance. Once availability's closing time has passed, players can't say they're in (they can still drop out); organisers can still add players, and Keep it open lets players in again. Redeploy the `notify` function. Scores only count from 9 Oct 2026: earlier scores stay in the Game Log but don't count in the league, win % or Player Stats. |
+| 4.0 (update) | 31 Oct 2026 | No version change. Payments shows players only their own balance. Once availability's closing time has passed, players can't say they're in (they can still drop out); organisers can still add players, and Keep it open lets players in again. Redeploy the `notify` function. Scores only count from 9 Oct 2026: earlier scores stay in the Game Log but don't count in the league, win % or Player Stats. Payment reminders (automatic and Send reminders) only cover games played before today. |
 
 ---
 
@@ -299,7 +299,7 @@ This page appears only once the `notify` function is set up (11.2). It's under *
   - Teams has **Notify the players** before Confirm teams. Each player gets their team, and whether it wears the bibs.
   - Outstanding Payments has **Send reminders (N)**. Each player who owes gets the total, the games and who to pay.
   - Credit used is sent automatically when tracking a game's money uses someone's credit.
-- **Automatic:** every day at 12pm UK time, each player who still owes on any tracked game gets one payment reminder with the total, the games and who to pay. It repeats daily until they've paid.
+- **Automatic:** every day at 12pm UK time, each player who still owes for a game played **before today** gets one payment reminder with the total, the games and who to pay. It repeats daily until they've paid. Tonight's game is only included from 12pm the next day. **Send reminders** follows the same rule.
 - **Tapping:** tapping a payment or credit notification opens Payments. The others open the front page.
 
 ### 6.11 Availability (players, when switched on)

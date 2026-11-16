@@ -127,11 +127,14 @@ async function daily(force = false) {
   if (!money?.length) return { sent: 0, players: 0, removed: 0 };
   const { data: games, error: e2 } = await db.from('games').select('id, iso, date, playing_ids').in('id', money.map(m => m.game_id));
   if (e2) throw e2;
-  // Everything each player still owes, oldest game first
+  // Everything each player still owes for games before today (UK), oldest first. Nobody is reminded
+  // about tonight's game until the day after it's been played.
+  const today = londonNow().iso;
   const owed = new Map<number, { iso: string; date: string; amount: number; org: string }[]>();
   for (const m of money) {
     const g = (games ?? []).find(x => Number(x.id) === Number(m.game_id));
     if (!g) continue;   // the game was deleted
+    if (g.iso && g.iso >= today) continue;   // not played yet, or being played today
     const paid = new Set((m.paid_ids ?? []).map(Number));
     for (const pid of (g.playing_ids ?? []).map(Number)) {
       if (paid.has(pid)) continue;

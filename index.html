@@ -2274,6 +2274,8 @@ function debtsOwed() {
   trackedGames().forEach(({ g, m }) => g.playingIds.forEach(pid => { if (!m.paidIds.includes(pid)) out.push({ g, m, pid, amt: m.price }); }));
   return out.sort((a, b) => (a.g.iso || '').localeCompare(b.g.iso || '') || a.g.id - b.g.id);
 }
+// What's owed for games before today: the only debts payment reminders are sent for
+const debtsDue = () => { const today = isoToday(); return debtsOwed().filter(d => !d.g.iso || d.g.iso < today); };
 const creditOf = pid => { const c = S.money.credit.find(x => x.playerId === pid); return c ? c.amount : 0; };
 function setCredit(pid, amount) {
   S.money.credit = S.money.credit.filter(x => x.playerId !== pid);
@@ -2312,7 +2314,7 @@ function renderOwes() {
         const mine = debts.filter(d => d.pid === pid);
         return `<div class="owe-person"><div class="top"><span class="nm">${esc(pName(pid))}</span><span class="amt">${gbp(total(pid))}</span>${mine.length > 1 ? `<button class="btn xs owe-clear" onclick="oweClearAll(${pid})">✓ Clear all</button>` : ''}</div>
           ${mine.map(d => `<div class="owe-game"><span class="d">${esc(d.g.date)} ${whoBadge(d.m.org)}</span><span class="v">${gbp(d.amt)}</span><button class="btn xs owe-clear" onclick="oweClear(${d.g.id},${pid})">✓ Clear</button></div>`).join('')}</div>`;
-      }).join('') || '<p class="owe-empty">Everyone\'s paid up 🎉</p>') + pushRemindButton(people);
+      }).join('') || '<p class="owe-empty">Everyone\'s paid up 🎉</p>') + pushRemindButton([...new Set(debtsDue().map(d => d.pid))]);
   } else {
     credits.sort((a, b) => b.amount - a.amount || pName(a.playerId).localeCompare(pName(b.playerId)));
     const price = S.money.settings.price;
@@ -3762,10 +3764,10 @@ function pushRemindButton(people) {
   const n = pushCount(people);
   if (!pushReady || !people.length) return '';
   return `<div class="edit-only" style="margin-top:12px"><button class="btn sm" onclick="pushRemind()" ${n ? '' : 'disabled'}><i class="ti ti-bell"></i> Send reminders (${n})</button>
-    <p class="hint" style="margin-top:6px">${n ? 'Sends a payment reminder to each player who owes and has notifications on.' : 'Nobody who owes has notifications on yet.'} Reminders also go out automatically every day at 12pm to anyone who owes.</p></div>`;
+    <p class="hint" style="margin-top:6px">${n ? 'Sends a payment reminder to each player who owes for a game that\'s been played and has notifications on.' : 'Nobody who owes has notifications on yet.'} Reminders also go out automatically every day at 12pm, starting the day after each game.</p></div>`;
 }
 async function pushRemind() {
-  const debts = debtsOwed(), people = [...new Set(debts.map(d => d.pid))].filter(pid => pushPlayers.has(pid));
+  const debts = debtsDue(), people = [...new Set(debts.map(d => d.pid))].filter(pid => pushPlayers.has(pid));
   if (!people.length || !confirm(`Send a payment reminder to ${pushPlural(people.length, 'player')}?`)) return;
   const r = await pushSend(people.map(pid => {
     const mine = debts.filter(d => d.pid === pid), total = mine.reduce((s, d) => s + d.amt, 0);
@@ -4359,7 +4361,7 @@ function dashTodos() {
   if (debts.length) {
     const people = new Set(debts.map(d => d.pid)), total = debts.reduce((s, d) => s + d.amt, 0);
     const oldest = debts[0] && debts[0].g.iso ? Math.round((isoToDate(today) - isoToDate(debts[0].g.iso)) / 864e5) : null;
-    item('currency-pound', 'var(--bg-danger)', `${gbp(total)} still owed`, `${people.size} player${people.size === 1 ? '' : 's'}${oldest !== null ? ` · oldest ${oldest} day${oldest === 1 ? '' : 's'}` : ''}`, pushReady ? 'Remind' : 'View', pushReady ? 'pushRemind()' : "goTab('money')");
+    item('currency-pound', 'var(--bg-danger)', `${gbp(total)} still owed`, `${people.size} player${people.size === 1 ? '' : 's'}${oldest !== null ? ` · oldest ${oldest} day${oldest === 1 ? '' : 's'}` : ''}`, pushReady && debtsDue().length ? 'Remind' : 'View', pushReady && debtsDue().length ? 'pushRemind()' : "goTab('money')");
   }
   const last = S.games.filter(g => g.iso && g.iso <= today).sort((a, b) => b.iso.localeCompare(a.iso))[0];
   if (last && !gameCancelled(last) && last.iso >= avAddDays(today, -1) && !lateIdsOf(last.id).length && (last.iso < today || (AV.settings && avStarted({ game_iso: last.iso }))))
@@ -4417,7 +4419,7 @@ function dashNextCard() {
 }
 function dashMoneyCard() {
   const t = moneyTotals(), h = moneyHoldings(), credit = S.money.credit.reduce((s, x) => s + x.amount, 0), debts = debtsOwed();
-  const owing = [...new Set(debts.map(d => d.pid))];
+  const owing = [...new Set(debtsDue().map(d => d.pid))];   // reminders only cover games before today
   return `<div class="card da-money"><h3 class="dash-h"><i class="ti ti-currency-pound dash-i"></i>Money <button class="btn xs" onclick="goTab('money')">Payments →</button></h3>
     <div class="av-stats"><div class="i"><b>${gbp(t.kitty)}</b>In the kitty</div><div class="o"><b>${gbp(t.owed)}</b>Still owed</div><div class="b"><b>${gbp(credit)}</b>Credit held</div></div>
     <table class="ledger" style="min-width:0"><thead><tr><th>Organiser</th><th class="r">Holds</th><th class="r">Owed to them</th></tr></thead><tbody>${ORGANISERS.map(o => `<tr><td>${esc(o)}</td><td class="r">${gbp(h[o].kitty)}</td><td class="r">${h[o].owed ? gbp(h[o].owed) : '–'}</td></tr>`).join('')}</tbody></table>
